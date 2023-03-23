@@ -1,0 +1,4 @@
+[tasks.clippy]
+install_crate = "clippy"
+command = "cargo"
+args = ["clippy", "--", "-D", "warnings", "-D", "clippy::pedantic"]
