@@ -1,6 +1,6 @@
 ## Stacks.rs
 
-A Rust port of existing Javascript/Typescript tooling to interact with the [Stacks blockchain](https://www.stacks.co/what-is-stacks)</br>
+A Rust port of existing Javascript/Typescript tooling to interact with the [Stacks blockchain](https://www.stacks.co/what-is-stacks).</br>
 **Disclaimer**: Built for educational purposes - use at your own risk.
 
 This project is inspired by [micro-stacks][micro-stacks][^micro-stacks] & [Stacks.js][stacks.js][^stacks.js]
