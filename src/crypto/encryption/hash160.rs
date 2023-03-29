@@ -1,7 +1,7 @@
 use ripemd::Digest;
 use ripemd::Ripemd160;
 
-use crate::crypto::encryption::sha256::Sha256;
+use crate::crypto::encryption::sha::Sha256;
 use crate::crypto::encryption::FromSlice;
 
 pub(crate) const HASH160_ENCODED_SIZE: usize = 20;

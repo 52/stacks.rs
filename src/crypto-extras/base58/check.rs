@@ -1,4 +1,4 @@
-use crate::crypto::encryption::sha256::DoubleSha256;
+use crate::crypto::encryption::sha::DoubleSha256;
 use crate::crypto::encryption::FromSlice;
 use crate::crypto_extras::base58::encoding::b58_decode;
 use crate::crypto_extras::base58::encoding::b58_encode;
