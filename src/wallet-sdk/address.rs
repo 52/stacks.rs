@@ -1,6 +1,6 @@
 use secp256k1::PublicKey;
 
-use crate::crypto::encryption::hash160::Hash160;
+use crate::crypto::encryption::ripemd::Hash160;
 use crate::crypto::encryption::FromSlice;
 use crate::crypto_extras::c32::check::c32_address;
 use crate::wallet_sdk::network::StacksNetworkVersion;

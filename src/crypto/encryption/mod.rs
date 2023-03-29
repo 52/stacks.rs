@@ -1,4 +1,4 @@
-pub(crate) mod hash160;
+pub(crate) mod ripemd;
 pub(crate) mod sha;
 
 pub(crate) trait FromSlice
