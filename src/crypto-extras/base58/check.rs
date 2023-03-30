@@ -2,7 +2,7 @@ use crate::crypto::encryption::sha::DoubleSha256;
 use crate::crypto::encryption::FromSlice;
 use crate::crypto_extras::base58::encoding::b58_decode;
 use crate::crypto_extras::base58::encoding::b58_encode;
-use crate::wallet_sdk::network::BitcoinNetworkVersion;
+use crate::crypto_extras::base58::network::BitcoinNetworkVersion;
 
 pub(crate) fn base58check_encode(hash: &[u8], network: BitcoinNetworkVersion) -> String {
     let version = network as u8;
@@ -49,7 +49,7 @@ mod tests {
     fn base58_test() {
         use crate::crypto_extras::base58::check::base58check_decode;
         use crate::crypto_extras::base58::check::base58check_encode;
-        use crate::wallet_sdk::network::BitcoinNetworkVersion;
+        use crate::crypto_extras::base58::network::BitcoinNetworkVersion;
 
         let dummy = vec![
             (
