@@ -17,17 +17,6 @@ impl StacksNetworkVersion {
     }
 }
 
-impl From<StacksNetworkVersion> for u8 {
-    fn from(version: StacksNetworkVersion) -> Self {
-        match version {
-            StacksNetworkVersion::MainnetP2PKH => 22,
-            StacksNetworkVersion::MainnetP2SH => 20,
-            StacksNetworkVersion::TestnetP2PKH => 26,
-            StacksNetworkVersion::TestnetP2SH => 21,
-        }
-    }
-}
-
 impl From<u8> for StacksNetworkVersion {
     fn from(value: u8) -> Self {
         match value {

@@ -17,17 +17,6 @@ impl BitcoinNetworkVersion {
     }
 }
 
-impl From<BitcoinNetworkVersion> for u8 {
-    fn from(version: BitcoinNetworkVersion) -> Self {
-        match version {
-            BitcoinNetworkVersion::MainnetP2PKH => 0,
-            BitcoinNetworkVersion::MainnetP2SH => 5,
-            BitcoinNetworkVersion::TestnetP2PKH => 111,
-            BitcoinNetworkVersion::TestnetP2SH => 196,
-        }
-    }
-}
-
 impl From<u8> for BitcoinNetworkVersion {
     fn from(value: u8) -> Self {
         match value {
