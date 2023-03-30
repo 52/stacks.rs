@@ -2,6 +2,8 @@
 name = "stacks"
 version = "0.1.0"
 edition = "2021"
+authors = ["Max Karou <max@trustmachines.co>"]
+repository = "https://github.com/mxnnn/stacks.rs"
 
 [dependencies]
 bip39 = "2.0.0"
