@@ -3,10 +3,10 @@ use crate::crypto::encryption::FromSlice;
 use crate::crypto_extras::c32::encoding::c32_decode;
 use crate::crypto_extras::c32::encoding::c32_encode;
 use crate::crypto_extras::c32::encoding::C32_ALPHABET;
+use crate::crypto_extras::c32::network::StacksNetworkVersion;
 use crate::prelude::*;
-use crate::wallet_sdk::network::StacksNetworkVersion;
 
-pub(crate) fn c32check_encode(data: &[u8], version: StacksNetworkVersion) -> Result<String> {
+pub(crate) fn c32check_encode(data: &[u8], version: &StacksNetworkVersion) -> Result<String> {
     let version = version.as_ref();
 
     let mut check = vec![version];
@@ -53,7 +53,7 @@ pub(crate) fn c32check_decode(input: impl Into<String>) -> Result<(Vec<u8>, u8)>
     Ok((bytes.to_vec(), check[0]))
 }
 
-pub(crate) fn c32_address(data: &[u8], version: StacksNetworkVersion) -> Result<String> {
+pub(crate) fn c32_address(data: &[u8], version: &StacksNetworkVersion) -> Result<String> {
     let address = f!(
         "S{}",
         c32check_encode(data, version).map_err(|_| Error::Generic)?
@@ -85,7 +85,7 @@ mod tests {
         let data = hex_to_bytes("8a4d3f2e55c87f964bae8b2963b3a824a2e9c9ab").unwrap();
         let version = 22;
 
-        let encoded = super::c32_address(&data, version.into()).unwrap();
+        let encoded = super::c32_address(&data, &version.into()).unwrap();
         let (decoded, decoded_version) = super::c32_address_decode(encoded).unwrap();
 
         assert_eq!(decoded, data);
@@ -102,7 +102,7 @@ mod tests {
             let versions = [22, 26, 20, 21];
 
             for version in versions.iter() {
-                let encoded = super::c32_address(&bytes, (*version).into()).unwrap();
+                let encoded = super::c32_address(&bytes, &(*version).into()).unwrap();
                 let (decoded, decoded_version) = super::c32_address_decode(encoded).unwrap();
 
                 assert_eq!(decoded, bytes);
