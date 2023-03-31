@@ -55,13 +55,11 @@ pub(crate) fn base58check_decode(
 }
 
 mod tests {
+    #[allow(unused_imports)]
+    use super::*;
 
     #[test]
     fn base58_test() {
-        use crate::crypto_extras::base58::check::base58check_decode;
-        use crate::crypto_extras::base58::check::base58check_encode;
-        use crate::crypto_extras::base58::network::BitcoinNetworkVersion;
-
         let dummy = vec![
             (
                 BitcoinNetworkVersion::MainnetP2PKH,
