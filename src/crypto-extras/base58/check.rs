@@ -20,7 +20,7 @@ pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkV
     data.extend_from_slice(hash);
     data.extend_from_slice(&checksum);
 
-    b58_encode(&data).unwrap()
+    b58_encode(&data)
 }
 
 pub(crate) fn base58check_decode(address: impl Into<String>) -> (Vec<u8>, BitcoinNetworkVersion) {
