@@ -1,5 +1,4 @@
-use crate::prelude::*;
-use crate::Error;
+use crate::crypto_extras::base58::Base58Error;
 
 pub(crate) const B58_ALPHABET: &[u8; 58] =
     b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -51,8 +50,12 @@ pub(crate) fn b58_encode(data: &[u8]) -> String {
     result.into_iter().collect()
 }
 
-pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>> {
+pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Base58Error> {
     let encoded = encoded.into();
+
+    if encoded.is_empty() {
+        return Ok(vec![]);
+    }
 
     let mut zeros = 0;
     while zeros < encoded.len() && encoded.as_bytes()[zeros] == b'1' {
@@ -65,7 +68,7 @@ pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>> {
         let index = B58_BYTE_MAP[c as usize];
 
         if index == -1 {
-            return Err(Error::Generic);
+            return Err(Base58Error::InvalidChar(c));
         }
 
         let mut carry = index as u32;
@@ -117,6 +120,16 @@ mod tests {
             let encoded = super::b58_encode(&input);
             let decoded = super::b58_decode(encoded).unwrap();
             assert_eq!(decoded, input);
+        }
+    }
+
+    #[test]
+    fn test_invalid_char_error() {
+        for c in "^&*(@#%!~`?><,.;:{]}[{|)-_=+§äöüßÄÖÜ".chars() {
+            let input = format!("{}", c);
+
+            let decoded = super::b58_decode(input);
+            assert_eq!(decoded, Err(super::Base58Error::InvalidChar(c)));
         }
     }
 }

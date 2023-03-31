@@ -1,6 +1,7 @@
 use crate::crypto_extras::base58::encoding::b58_decode;
 use crate::crypto_extras::base58::encoding::b58_encode;
 use crate::crypto_extras::base58::network::BitcoinNetworkVersion;
+use crate::crypto_extras::base58::Base58Error;
 use crate::crypto_extras::sha::DoubleSha256;
 
 pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkVersion>) -> String {
@@ -13,7 +14,7 @@ pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkV
     let sha = DoubleSha256::from_slice(&payload);
     let bytes = sha.as_ref();
 
-    let checksum: [u8; 4] = bytes[0..4].try_into().unwrap();
+    let checksum = &bytes[0..4];
 
     let mut data = Vec::with_capacity(25);
     data.push(version);
@@ -23,24 +24,32 @@ pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkV
     b58_encode(&data)
 }
 
-pub(crate) fn base58check_decode(address: impl Into<String>) -> (Vec<u8>, BitcoinNetworkVersion) {
+pub(crate) fn base58check_decode(
+    address: impl Into<String>,
+) -> Result<(Vec<u8>, BitcoinNetworkVersion), Base58Error> {
     let address = address.into();
 
-    let buffer = b58_decode(address).unwrap().to_vec();
+    let buffer = b58_decode(address)?.to_vec();
+    let buffer_len = buffer.len();
 
-    let checksum = &buffer[buffer.len() - 4..];
-    let data = buffer[1..buffer.len() - 4].to_vec();
+    let checksum = &buffer[buffer_len - 4..];
+    let data = buffer[1..buffer_len - 4].to_vec();
 
-    let sha = DoubleSha256::from_slice(&buffer[0..buffer.len() - 4]);
+    let sha = DoubleSha256::from_slice(&buffer[0..buffer_len - 4]);
     let bytes = sha.as_ref();
 
     for i in 0..4 {
-        assert_eq!(checksum[i], bytes[i]);
+        if checksum[i] != bytes[i] {
+            return Err(Base58Error::InvalidChecksum(
+                format!("{checksum:?}"),
+                format!("{bytes:?}"),
+            ));
+        }
     }
 
     let prefix = buffer[0];
 
-    (data, BitcoinNetworkVersion::from(prefix))
+    Ok((data, BitcoinNetworkVersion::from(prefix)))
 }
 
 mod tests {
@@ -96,7 +105,7 @@ mod tests {
 
         for (version, addresses) in dummy {
             for address in addresses {
-                let (decoded_data, decoded_version) = base58check_decode(address);
+                let (decoded_data, decoded_version) = base58check_decode(address).unwrap();
                 let encoded = base58check_encode(&decoded_data, decoded_version);
 
                 assert_eq!(encoded, address);
