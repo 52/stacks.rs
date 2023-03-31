@@ -1,33 +1,53 @@
 use std::fmt::Write;
 
-pub(crate) fn hex_to_bytes(value: impl Into<String>) -> Option<Vec<u8>> {
+use crate::prelude::*;
+
+/// Error variants for Hex encoding/decoding.
+#[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
+pub(crate) enum HexError {
+    /// Invalid hex
+    #[error("invalid hex string: {0}")]
+    InvalidHex(String),
+
+    /// Unpadded hex
+    #[error("received unpadded hex: received input {0} with length {1}")]
+    UnpaddedHex(String, usize),
+}
+
+/// Convert a hex string to a byte array.
+pub(crate) fn hex_to_bytes(value: impl Into<String>) -> Result<Vec<u8>> {
     let value: String = value.into();
+    let value_len = value.len();
 
-    let mut bytes = Vec::with_capacity(value.len() / 2);
-    let mut chars = value.chars();
-
-    if value.len() % 2 != 0 {
-        chars.next();
+    if value_len % 2 > 0 {
+        return Err(HexError::UnpaddedHex(value, value_len).into());
     }
 
-    while let Some(high_char) = chars.next() {
-        let high = match high_char.to_digit(16) {
-            Some(n) => n as u8,
-            None => return None,
+    let mut bytes = Vec::with_capacity(value_len / 2);
+    let mut iter = value.bytes();
+
+    while let Some(high) = iter.next() {
+        let high = match high {
+            b @ b'0'..=b'9' => b - b'0',
+            b @ b'a'..=b'f' => b - b'a' + 10,
+            b @ b'A'..=b'F' => b - b'A' + 10,
+            _ => return Err(HexError::InvalidHex(value).into()),
         };
-        let low = match chars.next() {
-            Some(low_char) => match low_char.to_digit(16) {
-                Some(n) => n as u8,
-                None => return None,
-            },
-            None => return None,
+
+        let low = match iter.next() {
+            Some(b @ b'0'..=b'9') => b - b'0',
+            Some(b @ b'a'..=b'f') => b - b'a' + 10,
+            Some(b @ b'A'..=b'F') => b - b'A' + 10,
+            _ => return Err(HexError::InvalidHex(value).into()),
         };
+
         bytes.push((high << 4) | low);
     }
 
-    Some(bytes)
+    Ok(bytes)
 }
 
+/// Convert a byte array to a hex string.
 pub(crate) fn bytes_to_hex(value: &[u8]) -> String {
     let mut buff = String::with_capacity(value.len());
     for b in value.iter() {
