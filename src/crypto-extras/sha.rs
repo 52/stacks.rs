@@ -48,6 +48,7 @@ impl DoubleSha256 {
 
         DoubleSha256(buff)
     }
+
     pub(crate) fn checksum(&self) -> [u8; 4] {
         let bytes = self.as_ref();
         let mut buff = [0u8; 4];
