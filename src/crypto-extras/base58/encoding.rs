@@ -1,5 +1,5 @@
-use crate::error::Error;
 use crate::prelude::*;
+use crate::Error;
 
 pub(crate) const B58_ALPHABET: &[u8; 58] =
     b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";

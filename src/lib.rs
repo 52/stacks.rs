@@ -1,12 +1,16 @@
 pub(crate) mod prelude;
 
-pub mod error;
-
 #[path = "./wallet-sdk/mod.rs"]
 pub mod wallet_sdk;
 
 #[path = "./crypto-extras/mod.rs"]
 pub mod crypto_extras;
+
+#[derive(thiserror::Error, Copy, Clone, Debug, Eq, PartialEq)]
+pub enum Error {
+    #[error("Error")]
+    Generic,
+}
 
 // use crate::crypto::hash160::Hash160;
 // use crate::crypto::sha256::Sha256;
