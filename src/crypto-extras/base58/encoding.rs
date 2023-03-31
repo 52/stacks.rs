@@ -52,7 +52,7 @@ pub(crate) fn b58_encode(data: &[u8]) -> Result<String> {
 }
 
 pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>> {
-    let encoded: String = encoded.into();
+    let encoded = encoded.into();
 
     let mut zeros = 0;
     while zeros < encoded.len() && encoded.as_bytes()[zeros] == b'1' {

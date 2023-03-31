@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 pub(crate) fn hex_to_bytes(value: impl Into<String>) -> Option<Vec<u8>> {
-    let value: String = value.into();
+    let value = value.into();
 
     let mut bytes = Vec::with_capacity(value.len() / 2);
     let mut chars = value.chars().peekable();

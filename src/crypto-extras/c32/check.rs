@@ -23,7 +23,7 @@ pub(crate) fn c32check_encode(data: &[u8], version: u8) -> Result<String> {
 }
 
 pub(crate) fn c32check_decode(input: impl Into<String>) -> Result<(Vec<u8>, u8)> {
-    let input: String = input.into();
+    let input = input.into();
 
     if !input.is_ascii() {
         return Err(Error::Generic);
@@ -66,7 +66,7 @@ pub(crate) fn c32_address(data: &[u8], version: impl Into<StacksNetworkVersion>)
 }
 
 pub(crate) fn c32_address_decode(address: impl Into<String>) -> Result<(Vec<u8>, u8)> {
-    let address: String = address.into();
+    let address = address.into();
 
     if !address.starts_with("S") {
         return Err(Error::Generic);
