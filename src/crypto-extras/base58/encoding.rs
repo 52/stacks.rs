@@ -1,8 +1,10 @@
 use crate::crypto_extras::base58::Base58Error;
 
+/// Base58 alphabet, used for encoding/decoding.
 pub(crate) const B58_ALPHABET: &[u8; 58] =
     b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
+/// Base58 byte map, used for lookup of values.
 pub(crate) const B58_BYTE_MAP: [i8; 256] = [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -17,6 +19,7 @@ pub(crate) const B58_BYTE_MAP: [i8; 256] = [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 ];
 
+/// Encode a byte slice into a Base58 string.
 pub(crate) fn b58_encode(data: &[u8]) -> String {
     let mut zeros = 0;
     while zeros < data.len() && data[zeros] == 0 {
@@ -50,6 +53,7 @@ pub(crate) fn b58_encode(data: &[u8]) -> String {
     result.into_iter().collect()
 }
 
+/// Decode a Base58 string into a byte vector.
 pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Base58Error> {
     let encoded = encoded.into();
 
