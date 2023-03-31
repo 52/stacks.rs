@@ -1,8 +1,7 @@
-use crate::crypto::encryption::sha::DoubleSha256;
-use crate::crypto::encryption::FromSlice;
 use crate::crypto_extras::base58::encoding::b58_decode;
 use crate::crypto_extras::base58::encoding::b58_encode;
 use crate::crypto_extras::base58::network::BitcoinNetworkVersion;
+use crate::crypto_extras::sha::DoubleSha256;
 
 pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkVersion>) -> String {
     let version = network.into().as_ref();

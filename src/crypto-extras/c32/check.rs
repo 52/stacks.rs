@@ -1,9 +1,8 @@
-use crate::crypto::encryption::sha::DoubleSha256;
-use crate::crypto::encryption::FromSlice;
 use crate::crypto_extras::c32::encoding::c32_decode;
 use crate::crypto_extras::c32::encoding::c32_encode;
 use crate::crypto_extras::c32::encoding::C32_ALPHABET;
 use crate::crypto_extras::c32::network::StacksNetworkVersion;
+use crate::crypto_extras::sha::DoubleSha256;
 use crate::prelude::*;
 
 pub(crate) fn c32check_encode(data: &[u8], version: u8) -> Result<String> {

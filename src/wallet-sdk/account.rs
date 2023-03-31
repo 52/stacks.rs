@@ -1,8 +1,7 @@
-use crate::crypto::encryption::ripemd::Hash160;
-use crate::crypto::encryption::FromSlice;
 use crate::crypto_extras::bip32::extended_key::ExtendedPrivateKey;
 use crate::crypto_extras::c32::check::c32_address;
 use crate::crypto_extras::c32::network::StacksNetworkVersion;
+use crate::crypto_extras::ripemd::Hash160;
 use crate::wallet_sdk::STX_DERIVATION_PATH;
 
 #[derive(Clone, Debug)]

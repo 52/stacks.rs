@@ -48,25 +48,47 @@ impl FromStr for DerivationPath {
     }
 }
 
+impl TryFrom<String> for DerivationPath {
+    type Error = Error;
+
+    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
+        match value.parse() {
+            Ok(path) => Ok(path),
+            Err(_) => Err(Error::Generic),
+        }
+    }
+}
+
+impl TryFrom<&str> for DerivationPath {
+    type Error = Error;
+
+    fn try_from(value: &str) -> std::result::Result<Self, Self::Error> {
+        match value.parse() {
+            Ok(path) => Ok(path),
+            Err(_) => Err(Error::Generic),
+        }
+    }
+}
+
 pub(crate) trait IntoDerivationPath {
-    fn into(self) -> Result<DerivationPath, Error>;
+    fn into_path(self) -> Result<DerivationPath>;
 }
 
 impl IntoDerivationPath for DerivationPath {
-    fn into(self) -> Result<DerivationPath, Error> {
+    fn into_path(self) -> Result<DerivationPath> {
         Ok(self)
     }
 }
 
 impl IntoDerivationPath for String {
-    fn into(self) -> Result<DerivationPath, Error> {
-        self.parse()
+    fn into_path(self) -> Result<DerivationPath> {
+        self.try_into()
     }
 }
 
 impl IntoDerivationPath for &str {
-    fn into(self) -> Result<DerivationPath, Error> {
-        self.parse()
+    fn into_path(self) -> Result<DerivationPath> {
+        self.try_into()
     }
 }
 
@@ -88,13 +110,14 @@ mod tests {
         ];
 
         for path in paths {
-            assert_eq!(path.parse::<DerivationPath>().unwrap().to_string(), path);
+            let parsed: DerivationPath = path.try_into().unwrap();
+            assert_eq!(parsed.to_string(), path);
         }
     }
 
     #[test]
     fn test_derivation_path_indecies() {
-        let path = "m/1'/2'/3'/0".parse::<DerivationPath>().unwrap();
+        let path: DerivationPath = "m/1'/2'/3'/0".try_into().unwrap();
 
         assert_eq!(
             path,
