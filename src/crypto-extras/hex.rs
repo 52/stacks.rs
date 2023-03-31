@@ -1,10 +1,10 @@
 use std::fmt::Write;
 
 pub(crate) fn hex_to_bytes(value: impl Into<String>) -> Option<Vec<u8>> {
-    let value = value.into();
+    let value: String = value.into();
 
     let mut bytes = Vec::with_capacity(value.len() / 2);
-    let mut chars = value.chars().peekable();
+    let mut chars = value.chars();
 
     if value.len() % 2 != 0 {
         chars.next();
@@ -29,7 +29,7 @@ pub(crate) fn hex_to_bytes(value: impl Into<String>) -> Option<Vec<u8>> {
 }
 
 pub(crate) fn bytes_to_hex(value: &[u8]) -> String {
-    let mut buff = String::with_capacity(value.len() * 2);
+    let mut buff = String::with_capacity(value.len());
     for b in value.iter() {
         write!(buff, "{:02x}", b).unwrap();
     }
