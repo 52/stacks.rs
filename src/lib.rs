@@ -1,4 +1,3 @@
-pub(crate) mod crypto;
 pub(crate) mod prelude;
 
 pub mod error;
