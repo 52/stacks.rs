@@ -14,7 +14,7 @@ pub struct StacksAccount {
 
 impl StacksAccount {
     pub fn derive(root: &ExtendedPrivateKey, index: u32) -> StacksAccount {
-        let child = root
+        let hd_child = root
             .derive(STX_DERIVATION_PATH)
             .unwrap()
             .child(index.into())
@@ -22,12 +22,12 @@ impl StacksAccount {
 
         let version = StacksNetworkVersion::MainnetP2PKH;
 
-        let hash = Hash160::from_slice(&child.public_key().serialize());
+        let hash = Hash160::from_slice(&hd_child.public_key().serialize());
         let stx_address = c32_address(&hash.as_ref(), version).unwrap();
 
         Self {
             index,
-            private_key: child,
+            private_key: hd_child,
             stx_address,
             stx_network_version: version,
         }
