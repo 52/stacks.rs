@@ -30,7 +30,7 @@ pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkV
 pub(crate) fn base58check_decode(
     address: impl Into<String>,
 ) -> Result<(Vec<u8>, BitcoinNetworkVersion)> {
-    let address = address.into();
+    let address: String = address.into();
 
     let buffer = b58_decode(address)?.to_vec();
     let buffer_len = buffer.len();

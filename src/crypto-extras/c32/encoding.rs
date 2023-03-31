@@ -52,7 +52,7 @@ pub(crate) fn c32_encode(data: &[u8]) -> Result<String> {
 }
 
 pub(crate) fn c32_decode(input: impl Into<String>) -> Result<Vec<u8>> {
-    let input = input.into();
+    let input: String = input.into();
 
     if !input.is_ascii() {
         return Err(Error::Generic);

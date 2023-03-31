@@ -56,7 +56,7 @@ pub(crate) fn b58_encode(data: &[u8]) -> String {
 
 /// Decode a Base58 string into a byte vector.
 pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>> {
-    let encoded = encoded.into();
+    let encoded: String = encoded.into();
 
     if encoded.is_empty() {
         return Ok(vec![]);
