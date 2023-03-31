@@ -18,7 +18,7 @@ pub(crate) const B58_BYTE_MAP: [i8; 256] = [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 ];
 
-pub(crate) fn b58_encode(data: &[u8]) -> Result<String> {
+pub(crate) fn b58_encode(data: &[u8]) -> String {
     let mut zeros = 0;
     while zeros < data.len() && data[zeros] == 0 {
         zeros += 1;
@@ -48,7 +48,7 @@ pub(crate) fn b58_encode(data: &[u8]) -> Result<String> {
     }
 
     result.reverse();
-    Ok(result.into_iter().collect())
+    result.into_iter().collect()
 }
 
 pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>> {
@@ -92,14 +92,14 @@ mod tests {
     #[test]
     fn test_long_encode() {
         let input = b"ji1bAyOeHisrHIT1zCvy4RtPee3l3BQYI7AxPryRcuXQ4myW4cZlJF861RZif9lgrigWw0bKMXtMUwngfm51jNWDXBdqjYG4PFg6fOFhne7jh61VrhDhdOBSq6UTXlbYYHB4HISWsoYj0tL2S9YfHiHbAlLscNrdngkcPKQaXa1WqcdDnMlnDXsWT9JAHdudnNzyX3nRWrZCZZpw9BTHxYKB5ptcjU7T12MpDFIlELprtqtNGyPeTNgbOG1x2yz8XElLoziXrIdgZczGBSmbrFAiA0FOb4zxVi10pLVt9x3zAtakfO5KQvjCWKDnWmK2nE8DTY3fcn3QqYBxA0756mNrzPjvfikqyv5FUmwHvuDtaLtU2U3XycFoSVkohOste3rrR7sCPtCgug0AtWXCJSsuCFSafFemQwz1sCqBETy6dTUiezAb6XTA9VtMMTJetOeoNIYTGAZp9CDHWVUAtpQhylBHwfb2rzlijR6nhwYXpMQ78zYZ";
-        let encoded = super::b58_encode(input).unwrap();
+        let encoded = super::b58_encode(input);
         assert_eq!(encoded, "D3fDjDoPWxoGK1Bu8ySCct98oPWuvGDeFd6ZZpvyPCoQRMaic2sEruSiB9NguzczheNDQi6gENfdxbjYtNcCU71TcikDrpjWefhmii5ecF1WpC8QKAAGfCwbyBRWrGpBi6kB8wbkMbHBtvT8DXVkwMkjXDxMoRqCKJy3KJrMig84csPV5zmRLBMZuW6Q7b4xykCToVemtF5eTWLYGB4EzfEfQShc3yxSZxENXqn5WTga2PbXxPyBY29wvHcUcTicc43UAsvmxATpNmy34BeJUKPt6g34KKL7T86dBWZFLj96svrMFH7NHkTQXbhrSQ7SVGjKivBMJECFviLc5aC9BAXmBQch7ofxQ26exE97oQ8crLgSbX7avtiU7cuUVMd4ussRsXEv2nPnVbSECfh2f9txzbHe2cA1zC357rkjkgvXNfnifBZu1HvcSw4hxagnSa2brBx65VdKWh9dmyayXVzPtZHX6kThqXs8dZqNZTwuNtkEBcCfpDo9ZJg2LRHxfUmxcYVBfbaLj54ZkFLvwFa8YFVq9FUkGupzbNgC1bf8eSVJ6jmFt4a534MxwMyJouYKfMK7HH9dBc5vecrMgFgTsfZ65BHWnzqaVTQwY99nqVGkst4ueWVEsuNWGBG6vKmsKKBHQWVbiiDES9jgfyUWPDmgzyhckow19rE5MLm");
     }
 
     #[test]
     fn test_long_decode() {
         let input = b"ji1bAyOeHisrHIT1zCvy4RtPee3l3BQYI7AxPryRcuXQ4myW4cZlJF861RZif9lgrigWw0bKMXtMUwngfm51jNWDXBdqjYG4PFg6fOFhne7jh61VrhDhdOBSq6UTXlbYYHB4HISWsoYj0tL2S9YfHiHbAlLscNrdngkcPKQaXa1WqcdDnMlnDXsWT9JAHdudnNzyX3nRWrZCZZpw9BTHxYKB5ptcjU7T12MpDFIlELprtqtNGyPeTNgbOG1x2yz8XElLoziXrIdgZczGBSmbrFAiA0FOb4zxVi10pLVt9x3zAtakfO5KQvjCWKDnWmK2nE8DTY3fcn3QqYBxA0756mNrzPjvfikqyv5FUmwHvuDtaLtU2U3XycFoSVkohOste3rrR7sCPtCgug0AtWXCJSsuCFSafFemQwz1sCqBETy6dTUiezAb6XTA9VtMMTJetOeoNIYTGAZp9CDHWVUAtpQhylBHwfb2rzlijR6nhwYXpMQ78zYZ";
-        let encoded = super::b58_encode(input).unwrap();
+        let encoded = super::b58_encode(input);
         let decoded = super::b58_decode(encoded).unwrap();
         assert_eq!(decoded, input);
     }
@@ -114,7 +114,7 @@ mod tests {
             let mut input = vec![0u8; len];
             rng.fill_bytes(&mut input);
 
-            let encoded = super::b58_encode(&input).unwrap();
+            let encoded = super::b58_encode(&input);
             let decoded = super::b58_decode(encoded).unwrap();
             assert_eq!(decoded, input);
         }
