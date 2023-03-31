@@ -3,6 +3,7 @@ use crate::crypto_extras::base58::encoding::b58_encode;
 use crate::crypto_extras::base58::network::BitcoinNetworkVersion;
 use crate::crypto_extras::base58::Base58Error;
 use crate::crypto_extras::sha::DoubleSha256;
+use crate::prelude::*;
 
 /// Encode a byte slice into a Base58Check encoded string.
 pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkVersion>) -> String {
@@ -28,7 +29,7 @@ pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkV
 /// Decode a Base58Check encoded string into a byte vector.
 pub(crate) fn base58check_decode(
     address: impl Into<String>,
-) -> Result<(Vec<u8>, BitcoinNetworkVersion), Base58Error> {
+) -> Result<(Vec<u8>, BitcoinNetworkVersion)> {
     let address = address.into();
 
     let buffer = b58_decode(address)?.to_vec();
@@ -45,7 +46,8 @@ pub(crate) fn base58check_decode(
             return Err(Base58Error::InvalidChecksum(
                 format!("{checksum:?}"),
                 format!("{bytes:?}"),
-            ));
+            )
+            .into());
         }
     }
 

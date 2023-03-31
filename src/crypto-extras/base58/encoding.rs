@@ -1,4 +1,5 @@
 use crate::crypto_extras::base58::Base58Error;
+use crate::prelude::*;
 
 /// Base58 alphabet, used for encoding/decoding.
 pub(crate) const B58_ALPHABET: &[u8; 58] =
@@ -54,7 +55,7 @@ pub(crate) fn b58_encode(data: &[u8]) -> String {
 }
 
 /// Decode a Base58 string into a byte vector.
-pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Base58Error> {
+pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>> {
     let encoded = encoded.into();
 
     if encoded.is_empty() {
@@ -72,7 +73,7 @@ pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Base58Er
         let index = B58_BYTE_MAP[c as usize];
 
         if index == -1 {
-            return Err(Base58Error::InvalidChar(c));
+            return Err(Base58Error::InvalidChar(c).into());
         }
 
         let mut carry = index as u32;
@@ -135,7 +136,7 @@ mod tests {
             let input = format!("{}", c);
 
             let decoded = b58_decode(input);
-            assert_eq!(decoded, Err(Base58Error::InvalidChar(c)));
+            assert_eq!(decoded, Err(Error::Base58(Base58Error::InvalidChar(c))));
         }
     }
 }
