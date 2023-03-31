@@ -2,7 +2,7 @@ pub(crate) mod check;
 pub(crate) mod encoding;
 pub(crate) mod network;
 
-/// Error enumeration for Base58 encoding/decoding
+/// Error variants for Base58 encoding/decoding
 #[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
 pub(crate) enum Base58Error {
     /// Invalid character
