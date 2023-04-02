@@ -57,12 +57,11 @@ pub(crate) fn bytes_to_hex(value: &[u8]) -> String {
 }
 
 mod tests {
+    #[allow(unused_imports)]
+    use super::*;
 
     #[test]
     fn test_hex_conversion() {
-        use crate::crypto_extras::hex::bytes_to_hex;
-        use crate::crypto_extras::hex::hex_to_bytes;
-
         let input = "2a6b3badb7816e12cb12e3b50e6ea0d5";
         let bytes = hex_to_bytes(input).unwrap();
         let hex = bytes_to_hex(&bytes);
@@ -72,8 +71,6 @@ mod tests {
 
     #[test]
     fn test_randomized_input() {
-        use crate::crypto_extras::hex::bytes_to_hex;
-        use crate::crypto_extras::hex::hex_to_bytes;
         use rand::{thread_rng, Rng, RngCore};
 
         let mut rng = thread_rng();
