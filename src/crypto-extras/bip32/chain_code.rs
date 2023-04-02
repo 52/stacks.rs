@@ -4,7 +4,7 @@ use crate::crypto_extras::bip32::KEY_BYTE_SIZE;
 pub(crate) struct ChainCode([u8; KEY_BYTE_SIZE]);
 
 impl ChainCode {
-    pub(crate) fn bytes(&self) -> &[u8] {
+    pub(crate) fn bytes(&self) -> &[u8; KEY_BYTE_SIZE] {
         &self.0
     }
 }
