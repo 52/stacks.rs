@@ -8,6 +8,7 @@ use secp256k1::SecretKey;
 use crate::crypto_extras::bip32::chain_code::ChainCode;
 use crate::crypto_extras::bip32::derivation_path::IntoDerivationPath;
 use crate::crypto_extras::bip32::key_index::KeyIndex;
+use crate::crypto_extras::bip32::Bip32Error;
 use crate::crypto_extras::bip32::KEY_BYTE_SIZE;
 use crate::prelude::*;
 
@@ -25,8 +26,10 @@ impl ExtendedPrivateKey {
     where
         S: AsRef<[u8]>,
     {
-        if ![16, 32, 64].contains(&seed.as_ref().len()) {
-            return Err(Error::Generic);
+        let seed_len = seed.as_ref().len();
+
+        if ![16, 32, 64].contains(&seed_len) {
+            return Err(Bip32Error::InvalidSeedLength(seed_len).into());
         }
 
         let sig_result = {
@@ -40,7 +43,7 @@ impl ExtendedPrivateKey {
         let (key, chain_code) = bytes.split_at(bytes.len() / 2);
 
         let key = ExtendedPrivateKey {
-            secret_key: SecretKey::from_slice(&key).map_err(|_| Error::Generic)?,
+            secret_key: SecretKey::from_slice(&key)?,
             chain_code: ChainCode::from(chain_code),
             depth: 0,
         };
@@ -62,7 +65,7 @@ impl ExtendedPrivateKey {
     }
 
     pub(crate) fn child(&self, index: KeyIndex) -> Result<Self> {
-        let depth = self.depth.checked_add(1).ok_or(Error::Generic)?;
+        let depth = self.depth.checked_add(1).ok_or(Bip32Error::DepthOverflow)?;
 
         let sig_result = {
             let key = Key::new(HMAC_SHA512, self.chain_code.bytes());
@@ -84,10 +87,7 @@ impl ExtendedPrivateKey {
         let signature_bytes = sig_result.as_ref();
         let (key, chain_code) = signature_bytes.split_at(signature_bytes.len() / 2);
 
-        let secret_key = SecretKey::from_slice(&key)
-            .map_err(|_| Error::Generic)?
-            .add_tweak(&self.secret_key.into())
-            .map_err(|_| Error::Generic)?;
+        let secret_key = SecretKey::from_slice(&key)?.add_tweak(&self.secret_key.into())?;
 
         Ok(ExtendedPrivateKey {
             secret_key,

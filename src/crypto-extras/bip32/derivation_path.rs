@@ -2,6 +2,7 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use crate::crypto_extras::bip32::key_index::KeyIndex;
+use crate::crypto_extras::bip32::Bip32Error;
 use crate::prelude::*;
 
 const DERIVATION_PATH_PREFIX: &'static str = "m";
@@ -39,11 +40,14 @@ impl FromStr for DerivationPath {
         let mut path = path.split("/");
 
         if path.next() != Some(DERIVATION_PATH_PREFIX) {
-            return Err(Error::Generic);
+            return Err(Bip32Error::InvalidDerivationPath.into());
         }
 
         Ok(DerivationPath {
-            path: path.map(str::parse).collect::<Result<_>>()?,
+            path: path
+                .map(str::parse)
+                .collect::<Result<_>>()
+                .map_err(|_| Bip32Error::InvalidDerivationPath)?,
         })
     }
 }
@@ -54,7 +58,7 @@ impl TryFrom<String> for DerivationPath {
     fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
         match value.parse() {
             Ok(path) => Ok(path),
-            Err(_) => Err(Error::Generic),
+            Err(_) => Err(Bip32Error::InvalidDerivationPath.into()),
         }
     }
 }
