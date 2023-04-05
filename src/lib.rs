@@ -1,5 +1,4 @@
 pub mod crypto;
-pub mod network;
 
 #[path = "./wallet-sdk/mod.rs"]
 pub mod wallet_sdk;

@@ -1,7 +1,7 @@
 use crate::crypto::bip32::ExtendedPrivateKey;
 use crate::crypto::c32::c32_address;
+use crate::crypto::c32::network::StacksNetworkVersion;
 use crate::crypto::hash::Hash160;
-use crate::network::StacksNetworkVersion;
 use crate::wallet_sdk::STX_DERIVATION_PATH;
 
 #[derive(Clone, Debug)]

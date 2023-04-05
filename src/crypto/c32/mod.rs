@@ -1,5 +1,7 @@
+use crate::crypto::c32::network::StacksNetworkVersion;
 use crate::crypto::hash::DoubleSha256;
-use crate::network::StacksNetworkVersion;
+
+pub(crate) mod network;
 
 pub(crate) const C32_ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
@@ -179,9 +181,9 @@ pub(crate) fn c32check_decode(input: impl Into<String>) -> Result<(Vec<u8>, u8),
 
 pub(crate) fn c32_address(
     data: &[u8],
-    version: impl Into<StacksNetworkVersion>,
+    network: impl Into<StacksNetworkVersion>,
 ) -> Result<String, Error> {
-    let version = version.into().as_ref();
+    let version = network.into().version();
 
     if ![22, 26, 20, 21].contains(&version) {
         return Err(Error::InvalidAddressVersion(version));
