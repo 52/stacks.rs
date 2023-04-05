@@ -1,11 +1,8 @@
-pub(crate) mod error;
-pub(crate) mod prelude;
+pub mod crypto;
+pub mod network;
 
 #[path = "./wallet-sdk/mod.rs"]
 pub mod wallet_sdk;
-
-#[path = "./crypto-extras/mod.rs"]
-pub mod crypto_extras;
 
 // use crate::crypto::hash160::Hash160;
 // use crate::crypto::sha256::Sha256;

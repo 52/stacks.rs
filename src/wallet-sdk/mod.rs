@@ -1,7 +1,7 @@
 use bip39::Mnemonic;
 use std::collections::HashMap;
 
-use crate::crypto_extras::bip32::extended_key::ExtendedPrivateKey;
+use crate::crypto::bip32::ExtendedPrivateKey;
 use crate::wallet_sdk::account::StacksAccount;
 
 pub mod account;
