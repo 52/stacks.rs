@@ -86,7 +86,7 @@ pub(crate) fn c32_decode(input: impl Into<String>) -> Result<Vec<u8>, Error> {
         let mut buffer: Vec<u8> = Vec::with_capacity(input.len());
 
         for i in input.as_bytes().into_iter().rev() {
-            let byte = C32_BYTE_MAP.get(*i as usize).unwrap_or_else(|| &-1);
+            let byte = C32_BYTE_MAP.get(*i as usize).unwrap_or(&-1);
 
             if byte.is_negative() {
                 return Err(Error::InvalidChar(*i as char));
@@ -197,7 +197,7 @@ pub(crate) fn c32_address(
 pub(crate) fn c32_address_decode(address: impl Into<String>) -> Result<(Vec<u8>, u8), Error> {
     let address: String = address.into();
 
-    if !address.starts_with("S") {
+    if !address.starts_with('S') {
         return Err(Error::InvalidAddress(address));
     }
 

@@ -12,7 +12,7 @@ use crate::crypto::bip32::child_index::ChildIndex;
 use crate::crypto::bip32::derivation_path::IntoDerivationPath;
 
 pub(crate) const KEY_BYTE_SIZE: usize = 32;
-pub(crate) const MASTER_SEED: &'static [u8; 12] = b"Bitcoin seed";
+pub(crate) const MASTER_SEED: &[u8; 12] = b"Bitcoin seed";
 
 /// Error variants for BIP32.
 #[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
@@ -72,7 +72,7 @@ impl ExtendedPrivateKey {
         chain_code.copy_from_slice(cc);
 
         let key = ExtendedPrivateKey {
-            private_key: SecretKey::from_slice(&key)?,
+            private_key: SecretKey::from_slice(key)?,
             chain_code,
             depth: 0,
         };
@@ -116,7 +116,7 @@ impl ExtendedPrivateKey {
         let signature_bytes = sig_result.as_ref();
         let (key, cc) = signature_bytes.split_at(signature_bytes.len() / 2);
 
-        let private_key = SecretKey::from_slice(&key)?.add_tweak(&self.private_key.into())?;
+        let private_key = SecretKey::from_slice(key)?.add_tweak(&self.private_key.into())?;
 
         let mut chain_code = [0u8; KEY_BYTE_SIZE];
         chain_code.copy_from_slice(cc);
@@ -140,7 +140,7 @@ impl ExtendedPrivateKey {
 #[cfg(test)]
 mod tests {
     use bip39::Mnemonic;
-    const MNEMONIC_PHRASE: &'static str = "panda eyebrow bullet gorilla call smoke muffin taste mesh discover soft ostrich alcohol speed nation flash devote level hobby quick inner drive ghost inside";
+    const MNEMONIC_PHRASE: &str = "panda eyebrow bullet gorilla call smoke muffin taste mesh discover soft ostrich alcohol speed nation flash devote level hobby quick inner drive ghost inside";
 
     #[test]
     fn test_xpriv_from_seed() {
@@ -152,7 +152,7 @@ mod tests {
         let expected_depth = 0;
 
         let seed = Mnemonic::parse(MNEMONIC_PHRASE).unwrap().to_seed("");
-        let key = super::ExtendedPrivateKey::from_seed(&seed).unwrap();
+        let key = super::ExtendedPrivateKey::from_seed(seed).unwrap();
 
         assert_eq!(key.as_bytes(), expected_bytes);
         assert_eq!(key.depth, expected_depth)
@@ -168,7 +168,7 @@ mod tests {
         let expected_depth = 1;
 
         let seed = Mnemonic::parse(MNEMONIC_PHRASE).unwrap().to_seed("");
-        let key = super::ExtendedPrivateKey::from_seed(&seed).unwrap();
+        let key = super::ExtendedPrivateKey::from_seed(seed).unwrap();
 
         let child = key.child(1.into()).unwrap();
 
@@ -186,7 +186,7 @@ mod tests {
         let expected_depth = 5;
 
         let seed = Mnemonic::parse(MNEMONIC_PHRASE).unwrap().to_seed("");
-        let key = super::ExtendedPrivateKey::from_seed(&seed)
+        let key = super::ExtendedPrivateKey::from_seed(seed)
             .unwrap()
             .derive("m/0/2147483647'/1/2147483646'/2")
             .unwrap();

@@ -72,7 +72,7 @@ pub(crate) fn hex_to_bytes(value: impl Into<String>) -> Result<Vec<u8>, Error> {
 pub(crate) fn bytes_to_hex(value: &[u8]) -> String {
     let mut buff = String::with_capacity(value.len());
     for b in value.iter() {
-        write!(buff, "{:02x}", b).unwrap();
+        write!(buff, "{b:02x}").unwrap();
     }
     buff
 }

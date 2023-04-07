@@ -6,9 +6,9 @@ use crate::wallet_sdk::account::StacksAccount;
 
 pub mod account;
 
-pub const STX_DERIVATION_PATH: &'static str = "m/44'/5757'/0'/0";
-pub const WALLET_CONFIG_PATH: &'static str = "m/44/5757'/0'/1";
-pub const DATA_DERIVATION_PATH: &'static str = "m/888'/0'";
+pub const STX_DERIVATION_PATH: &str = "m/44'/5757'/0'/0";
+pub const WALLET_CONFIG_PATH: &str = "m/44/5757'/0'/1";
+pub const DATA_DERIVATION_PATH: &str = "m/888'/0'";
 
 pub struct StacksWallet {
     pub root_key: ExtendedPrivateKey,
@@ -19,7 +19,7 @@ impl StacksWallet {
     pub fn from_secret_key(secret_key: &str, passphrase: Option<&str>) -> Self {
         let mnemonic = Mnemonic::parse(secret_key).unwrap();
         let seed = mnemonic.to_seed(passphrase.unwrap_or(""));
-        let root_key = ExtendedPrivateKey::from_seed(&seed).unwrap();
+        let root_key = ExtendedPrivateKey::from_seed(seed).unwrap();
 
         Self {
             root_key,

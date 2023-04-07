@@ -113,8 +113,8 @@ mod tests {
         assert_eq!(arr[0].to_string(), "42'");
         assert_eq!(arr[1].to_string(), "42");
 
-        assert_eq!(arr[0].is_hardened(), true);
-        assert_eq!(arr[1].is_hardened(), false);
+        assert!(arr[0].is_hardened());
+        assert!(!arr[1].is_hardened());
     }
 
     #[test]

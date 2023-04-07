@@ -18,7 +18,7 @@ impl BitcoinNetworkVersion {
         }
     }
 
-    pub(crate) fn to_stacks_network_version(&self) -> StacksNetworkVersion {
+    pub(crate) fn to_stacks_network_version(self) -> StacksNetworkVersion {
         match self {
             BitcoinNetworkVersion::MainnetP2PKH => StacksNetworkVersion::MainnetP2PKH,
             BitcoinNetworkVersion::MainnetP2SH => StacksNetworkVersion::MainnetP2SH,

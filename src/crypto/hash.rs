@@ -14,7 +14,7 @@ impl Sha256 {
             let mut buff = [0u8; SHA256_ENCODED_SIZE];
             ctx.update(value);
             let digest = ctx.finish();
-            buff.copy_from_slice(&digest.as_ref());
+            buff.copy_from_slice(digest.as_ref());
             buff
         };
 
@@ -42,11 +42,11 @@ impl DoubleSha256 {
         let sha = Sha256::from_slice(value);
         let bytes = sha.as_ref();
 
-        let sha2 = Sha256::from_slice(&bytes);
+        let sha2 = Sha256::from_slice(bytes);
         let bytes2 = sha2.as_ref();
 
         let mut buff = [0u8; SHA256_ENCODED_SIZE];
-        buff.copy_from_slice(&bytes2);
+        buff.copy_from_slice(bytes2);
 
         DoubleSha256(buff)
     }

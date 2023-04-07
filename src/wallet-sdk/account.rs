@@ -23,7 +23,7 @@ impl StacksAccount {
         let version = StacksNetworkVersion::MainnetP2PKH;
 
         let hash = Hash160::from_slice(&hd_child.public_key().serialize());
-        let stx_address = c32_address(&hash.as_ref(), version).unwrap();
+        let stx_address = c32_address(hash.as_ref(), version).unwrap();
 
         Self {
             index,

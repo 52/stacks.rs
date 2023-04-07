@@ -124,7 +124,7 @@ pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkV
     let mut data = Vec::with_capacity(25);
     data.push(version);
     data.extend_from_slice(hash);
-    data.extend_from_slice(&checksum);
+    data.extend_from_slice(checksum);
 
     b58_encode(&data)
 }

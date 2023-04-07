@@ -1,7 +1,7 @@
 use crate::crypto::bip32::child_index::ChildIndex;
 use crate::crypto::bip32::Error;
 
-pub(crate) const DERIVATION_PATH_PREFIX: &'static str = "m";
+pub(crate) const DERIVATION_PATH_PREFIX: &str = "m";
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct DerivationPath {
@@ -33,7 +33,7 @@ impl std::str::FromStr for DerivationPath {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut iter = s.split("/");
+        let mut iter = s.split('/');
 
         if iter.next() != Some(DERIVATION_PATH_PREFIX) {
             return Err(Error::InvalidDerivationPath);
