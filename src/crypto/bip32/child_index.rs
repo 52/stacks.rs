@@ -1,6 +1,6 @@
 use crate::crypto::bip32::Error;
 
-pub(crate) const HARDENED_OFFSET: u32 = 0x80000000;
+pub(crate) const HARDENED_OFFSET: u32 = 0x8000_0000;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub(crate) enum ChildIndex {
@@ -29,8 +29,7 @@ impl ChildIndex {
 
     pub(crate) fn raw(self) -> u32 {
         match self {
-            ChildIndex::Normal { index } => index,
-            ChildIndex::Hardened { index } => index,
+            ChildIndex::Hardened { index } | ChildIndex::Normal { index } => index,
         }
     }
 
@@ -72,12 +71,12 @@ impl std::str::FromStr for ChildIndex {
 
 impl From<u32> for ChildIndex {
     fn from(i: u32) -> Self {
-        if i & HARDENED_OFFSET != 0 {
+        if i & HARDENED_OFFSET == 0 {
+            ChildIndex::Normal { index: i }
+        } else {
             ChildIndex::Hardened {
                 index: i ^ HARDENED_OFFSET,
             }
-        } else {
-            ChildIndex::Normal { index: i }
         }
     }
 }

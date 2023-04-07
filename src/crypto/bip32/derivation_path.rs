@@ -19,10 +19,10 @@ impl IntoIterator for DerivationPath {
 
 impl std::fmt::Display for DerivationPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", DERIVATION_PATH_PREFIX)?;
+        write!(f, "{DERIVATION_PATH_PREFIX}")?;
 
         for child in &self.path {
-            write!(f, "/{}", child)?;
+            write!(f, "/{child}")?;
         }
 
         Ok(())
@@ -40,7 +40,7 @@ impl std::str::FromStr for DerivationPath {
         }
 
         let path = iter
-            .map(|child| child.parse())
+            .map(str::parse)
             .collect::<Result<Vec<ChildIndex>, Self::Err>>()?;
 
         Ok(DerivationPath { path })

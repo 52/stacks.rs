@@ -3,11 +3,11 @@ use crate::crypto::hash::DoubleSha256;
 
 pub(crate) mod network;
 
-/// Base58 alphabet, used for encoding/decoding.
+/// `Base58` alphabet, used for encoding/decoding.
 pub(crate) const B58_ALPHABET: &[u8; 58] =
     b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-/// Base58 byte map, used for lookup of values.
+/// `Base58` byte map, used for lookup of values.
 pub(crate) const B58_BYTE_MAP: [i8; 256] = [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -22,7 +22,7 @@ pub(crate) const B58_BYTE_MAP: [i8; 256] = [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 ];
 
-/// Error variants for Base58 encoding/decoding.
+/// Error variants for `Base58` encoding/decoding.
 #[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
 pub(crate) enum Error {
     /// Invalid character.
@@ -33,7 +33,7 @@ pub(crate) enum Error {
     InvalidChecksum(String, String),
 }
 
-/// Encode a byte slice into a Base58 string.
+/// Encode a byte slice into a `Base58` string.
 pub(crate) fn b58_encode(data: &[u8]) -> String {
     let mut zeros = 0;
     while zeros < data.len() && data[zeros] == 0 {
@@ -48,7 +48,7 @@ pub(crate) fn b58_encode(data: &[u8]) -> String {
         let mut temp = Vec::with_capacity(buff.len());
 
         for b in &buff {
-            let cur = (rem << 8) + *b as u32;
+            let cur = (rem << 8) + u32::from(*b);
             let div = cur / 58;
             rem = cur % 58;
             if !temp.is_empty() || div != 0 {
@@ -67,7 +67,7 @@ pub(crate) fn b58_encode(data: &[u8]) -> String {
     result.into_iter().collect()
 }
 
-/// Decode a Base58 string into a byte vector.
+/// Decode a `Base58` string into a byte vector.
 pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Error> {
     let encoded: String = encoded.into();
 
@@ -92,7 +92,7 @@ pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Error> {
         let mut carry = index as u32;
 
         for byte in buff.iter_mut().rev() {
-            carry += *byte as u32 * 58;
+            carry += u32::from(*byte) * 58;
             *byte = (carry & 0xFF) as u8;
             carry >>= 8;
         }
@@ -108,7 +108,7 @@ pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Error> {
     Ok(result)
 }
 
-/// Encode a byte slice into a Base58Check encoded string.
+/// Encode a byte slice into a `Base58Check` encoded string.
 pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkVersion>) -> String {
     let version = network.into().version();
 
@@ -129,7 +129,7 @@ pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkV
     b58_encode(&data)
 }
 
-/// Decode a Base58Check encoded string into a byte vector.
+/// Decode a `Base58Check` encoded string into a byte vector.
 pub(crate) fn base58check_decode(
     address: impl Into<String>,
 ) -> Result<(Vec<u8>, BitcoinNetworkVersion), Error> {

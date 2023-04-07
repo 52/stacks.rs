@@ -9,7 +9,7 @@ pub enum StacksNetworkVersion {
 }
 
 impl StacksNetworkVersion {
-    pub(crate) fn version(&self) -> u8 {
+    pub(crate) fn version(self) -> u8 {
         match self {
             StacksNetworkVersion::MainnetP2PKH => 22,
             StacksNetworkVersion::MainnetP2SH => 20,

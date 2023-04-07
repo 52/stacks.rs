@@ -86,7 +86,7 @@ impl ExtendedPrivateKey {
     {
         let mut key = *self;
 
-        for index in path.into_derivation_path()?.into_iter() {
+        for index in path.into_derivation_path()? {
             key = key.child(index)?;
         }
 
