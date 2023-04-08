@@ -11,7 +11,7 @@ macro_rules! impl_hash {
             }
 
             pub(crate) fn into_bytes(self) -> [u8; $size] {
-                self.0.clone()
+                self.0
             }
         }
     };

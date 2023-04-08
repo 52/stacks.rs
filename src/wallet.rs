@@ -1,17 +1,16 @@
 use bip39::Mnemonic;
 use std::collections::HashMap;
 
+use crate::account::StacksAccount;
 use crate::crypto::bip32::ExtendedPrivateKey;
-use crate::wallet_sdk::account::StacksAccount;
-
-pub mod account;
 
 pub const STX_DERIVATION_PATH: &str = "m/44'/5757'/0'/0";
 pub const WALLET_CONFIG_PATH: &str = "m/44/5757'/0'/1";
 pub const DATA_DERIVATION_PATH: &str = "m/888'/0'";
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StacksWallet {
-    pub root_key: ExtendedPrivateKey,
+    root_key: ExtendedPrivateKey,
     accounts: HashMap<u32, StacksAccount>,
 }
 
@@ -42,22 +41,22 @@ mod tests {
         let mut wallet = super::StacksWallet::from_secret_key(secret_key, None);
 
         assert_eq!(
-            wallet.get_account(0).stx_address,
+            wallet.get_account(0).address.encoded,
             "SP1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2XG1V316"
         );
 
         assert_eq!(
-            wallet.get_account(1).stx_address,
+            wallet.get_account(1).address.encoded,
             "SP2G0KVR849MZHJ6YB4DCN8K5TRDVXF92A682K5GV"
         );
 
         assert_eq!(
-            wallet.get_account(2).stx_address,
+            wallet.get_account(2).address.encoded,
             "SP21HQTGHGJ3DDWM8BC1E00TYZPD3DF31NSD24KZQ"
         );
 
         assert_eq!(
-            wallet.get_account(3).stx_address,
+            wallet.get_account(3).address.encoded,
             "SP1PM9M2B1YS6GM5FH8GKEGD2M9DVN03V1A5QK7ME"
         );
     }

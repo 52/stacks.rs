@@ -128,12 +128,12 @@ impl ExtendedPrivateKey {
         })
     }
 
-    pub(crate) fn as_bytes(&self) -> [u8; KEY_BYTE_SIZE] {
-        self.private_key.secret_bytes()
-    }
-
     pub(crate) fn public_key(&self) -> PublicKey {
         self.private_key.public_key(&Secp256k1::new())
+    }
+
+    pub(crate) fn into_bytes(&self) -> [u8; KEY_BYTE_SIZE] {
+        self.private_key.secret_bytes()
     }
 }
 
@@ -154,7 +154,7 @@ mod tests {
         let seed = Mnemonic::parse(MNEMONIC_PHRASE).unwrap().to_seed("");
         let key = super::ExtendedPrivateKey::from_seed(seed).unwrap();
 
-        assert_eq!(key.as_bytes(), expected_bytes);
+        assert_eq!(key.into_bytes(), expected_bytes);
         assert_eq!(key.depth, expected_depth)
     }
 
@@ -172,7 +172,7 @@ mod tests {
 
         let child = key.child(1.into()).unwrap();
 
-        assert_eq!(child.as_bytes(), expected_bytes);
+        assert_eq!(child.into_bytes(), expected_bytes);
         assert_eq!(child.depth, expected_depth)
     }
 
@@ -191,7 +191,7 @@ mod tests {
             .derive("m/0/2147483647'/1/2147483646'/2")
             .unwrap();
 
-        assert_eq!(key.as_bytes(), expected_bytes);
+        assert_eq!(key.into_bytes(), expected_bytes);
         assert_eq!(key.depth, expected_depth)
     }
 }

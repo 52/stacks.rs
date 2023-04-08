@@ -1,8 +1,9 @@
 pub mod crypto;
 pub mod transactions;
 
-#[path = "./wallet-sdk/mod.rs"]
-pub mod wallet_sdk;
+pub mod account;
+pub mod address;
+pub mod wallet;
 
 // use crate::crypto::hash160::Hash160;
 // use crate::crypto::sha256::Sha256;
