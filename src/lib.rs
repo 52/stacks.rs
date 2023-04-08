@@ -1,4 +1,5 @@
 pub mod crypto;
+pub mod transactions;
 
 #[path = "./wallet-sdk/mod.rs"]
 pub mod wallet_sdk;

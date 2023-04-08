@@ -1,5 +1,5 @@
 use crate::crypto::c32::network::StacksNetworkVersion;
-use crate::crypto::hash::DoubleSha256;
+use crate::crypto::hash::DSha256Hash;
 
 pub(crate) mod network;
 
@@ -139,7 +139,7 @@ pub(crate) fn c32_decode(input: impl Into<String>) -> Result<Vec<u8>, Error> {
 pub(crate) fn c32check_encode(data: &[u8], version: u8) -> Result<String, Error> {
     let mut check = vec![version];
     check.extend_from_slice(data);
-    let checksum = DoubleSha256::from_slice(&check).checksum();
+    let checksum = DSha256Hash::from_slice(&check).checksum();
 
     let mut buffer = data.to_vec();
     buffer.extend_from_slice(&checksum);
@@ -170,7 +170,7 @@ pub(crate) fn c32check_decode(input: impl Into<String>) -> Result<(Vec<u8>, u8),
     let mut check = c32_decode(ver)?;
     check.extend_from_slice(bytes);
 
-    let comp_checksum = DoubleSha256::from_slice(&check).checksum();
+    let comp_checksum = DSha256Hash::from_slice(&check).checksum();
 
     if comp_checksum != exp_checksum {
         return Err(Error::InvalidChecksum(comp_checksum, exp_checksum.to_vec()));

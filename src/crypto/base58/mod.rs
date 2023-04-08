@@ -1,5 +1,5 @@
 use crate::crypto::base58::network::BitcoinNetworkVersion;
-use crate::crypto::hash::DoubleSha256;
+use crate::crypto::hash::DSha256Hash;
 
 pub(crate) mod network;
 
@@ -116,8 +116,8 @@ pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkV
     payload.push(version);
     payload.extend_from_slice(hash);
 
-    let sha = DoubleSha256::from_slice(&payload);
-    let bytes = sha.as_ref();
+    let sha = DSha256Hash::from_slice(&payload);
+    let bytes = sha.as_bytes();
 
     let checksum = &bytes[0..4];
 
@@ -141,8 +141,8 @@ pub(crate) fn base58check_decode(
     let checksum = &buffer[buffer_len - 4..];
     let data = buffer[1..buffer_len - 4].to_vec();
 
-    let sha = DoubleSha256::from_slice(&buffer[0..buffer_len - 4]);
-    let bytes = sha.as_ref();
+    let sha = DSha256Hash::from_slice(&buffer[0..buffer_len - 4]);
+    let bytes = sha.as_bytes();
 
     for i in 0..4 {
         if checksum[i] != bytes[i] {

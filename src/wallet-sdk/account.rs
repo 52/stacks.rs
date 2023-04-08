@@ -1,7 +1,7 @@
 use crate::crypto::bip32::ExtendedPrivateKey;
 use crate::crypto::c32::c32_address;
 use crate::crypto::c32::network::StacksNetworkVersion;
-use crate::crypto::hash::Hash160;
+use crate::crypto::hash::Ripemd160Hash;
 use crate::wallet_sdk::STX_DERIVATION_PATH;
 
 #[derive(Clone, Debug)]
@@ -22,8 +22,8 @@ impl StacksAccount {
 
         let version = StacksNetworkVersion::MainnetP2PKH;
 
-        let hash = Hash160::from_slice(&hd_child.public_key().serialize());
-        let stx_address = c32_address(hash.as_ref(), version).unwrap();
+        let hash = Ripemd160Hash::from_slice(&hd_child.public_key().serialize());
+        let stx_address = c32_address(hash.as_bytes(), version).unwrap();
 
         Self {
             index,
