@@ -26,12 +26,14 @@ impl std::fmt::Debug for TrueCV {
 }
 
 impl ClarityValue for TrueCV {
+    type Err = Error;
+
     fn type_id(&self) -> u8 {
         CLARITY_TYPE_BOOL_TRUE
     }
 
-    fn serialize(&self) -> Vec<u8> {
-        vec![CLARITY_TYPE_BOOL_TRUE]
+    fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
+        Ok(vec![CLARITY_TYPE_BOOL_TRUE])
     }
 }
 
@@ -69,12 +71,14 @@ impl std::fmt::Display for FalseCV {
 }
 
 impl ClarityValue for FalseCV {
+    type Err = Error;
+
     fn type_id(&self) -> u8 {
         CLARITY_TYPE_BOOL_FALSE
     }
 
-    fn serialize(&self) -> Vec<u8> {
-        vec![CLARITY_TYPE_BOOL_FALSE]
+    fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
+        Ok(vec![CLARITY_TYPE_BOOL_FALSE])
     }
 }
 
@@ -97,7 +101,7 @@ mod tests {
         use super::*;
 
         let cv = TrueCV::new();
-        let serialized = cv.serialize();
+        let serialized = cv.serialize().unwrap();
         let deserialized = TrueCV::deserialize(&serialized).unwrap();
         assert_eq!(cv, deserialized);
     }
@@ -107,7 +111,7 @@ mod tests {
         use super::*;
 
         let cv = FalseCV::new();
-        let serialized = cv.serialize();
+        let serialized = cv.serialize().unwrap();
         let deserialized = FalseCV::deserialize(&serialized).unwrap();
         assert_eq!(cv, deserialized);
     }

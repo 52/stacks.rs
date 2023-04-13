@@ -30,12 +30,14 @@ impl std::fmt::Debug for NoneCV {
 }
 
 impl ClarityValue for NoneCV {
+    type Err = Error;
+
     fn type_id(&self) -> u8 {
         CLARITY_TYPE_OPTIONAL_NONE
     }
 
-    fn serialize(&self) -> Vec<u8> {
-        vec![CLARITY_TYPE_OPTIONAL_NONE]
+    fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
+        Ok(vec![CLARITY_TYPE_OPTIONAL_NONE])
     }
 }
 
@@ -55,10 +57,13 @@ impl DeserializeCV for NoneCV {
     }
 }
 
-pub struct SomeCV(u8, Box<dyn ClarityValue>);
+pub struct SomeCV(u8, Box<dyn ClarityValue<Err = Error>>);
 
 impl SomeCV {
-    pub fn new(value: impl ClarityValue + 'static) -> SomeCV {
+    pub fn new<T>(value: T) -> SomeCV
+    where
+        T: ClarityValue<Err = Error> + 'static,
+    {
         SomeCV(CLARITY_TYPE_OPTIONAL_SOME, Box::new(value))
     }
 }
@@ -84,14 +89,16 @@ impl PartialEq for SomeCV {
 impl Eq for SomeCV {}
 
 impl ClarityValue for SomeCV {
+    type Err = Error;
+
     fn type_id(&self) -> u8 {
         CLARITY_TYPE_OPTIONAL_SOME
     }
 
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_OPTIONAL_SOME];
-        buff.extend_from_slice(&self.1.serialize());
-        buff
+        buff.extend_from_slice(&self.1.serialize()?);
+        Ok(buff)
     }
 }
 
@@ -124,7 +131,7 @@ mod tests {
         use super::*;
 
         let cv = NoneCV::new();
-        let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize());
+        let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
         assert_eq!(hex, "09");
     }
 
@@ -134,10 +141,10 @@ mod tests {
         use crate::clarity::int::IntCV;
 
         let cv = SomeCV::new(IntCV::new(-1));
-        let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize());
+        let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
         assert_eq!(hex, "0a00ffffffffffffffffffffffffffffffff");
 
-        let deserialized = SomeCV::deserialize(&cv.serialize()).unwrap();
+        let deserialized = SomeCV::deserialize(&cv.serialize().unwrap()).unwrap();
 
         assert_eq!(deserialized, cv);
     }

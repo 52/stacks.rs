@@ -25,15 +25,17 @@ impl std::fmt::Debug for BufferCV {
 }
 
 impl ClarityValue for BufferCV {
-    fn type_id(&self) -> u8 {
-        self.0
-    }
+    type Err = Error;
 
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_BUFFER];
         buff.extend_from_slice(&(self.1.len() as u32).to_be_bytes());
         buff.extend_from_slice(&self.1);
-        buff
+        Ok(buff)
+    }
+
+    fn type_id(&self) -> u8 {
+        self.0
     }
 }
 
@@ -70,7 +72,7 @@ mod tests {
         use crate::crypto::hex::bytes_to_hex;
 
         let buffer = BufferCV::new(&[0xde, 0xad, 0xbe, 0xef]);
-        let serialized = buffer.serialize();
+        let serialized = buffer.serialize().unwrap();
 
         let hex = bytes_to_hex(&serialized);
         assert_eq!(hex, "0200000004deadbeef");

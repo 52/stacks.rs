@@ -33,8 +33,10 @@ pub enum Error {
 }
 
 pub trait ClarityValue: Display + Debug {
+    type Err;
+
     fn type_id(&self) -> u8;
-    fn serialize(&self) -> Vec<u8>;
+    fn serialize(&self) -> Result<Vec<u8>, Self::Err>;
 }
 
 pub trait DeserializeCV: Sized {

@@ -27,14 +27,16 @@ impl std::fmt::Debug for IntCV {
 }
 
 impl ClarityValue for IntCV {
+    type Err = Error;
+
     fn type_id(&self) -> u8 {
         self.0
     }
 
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_INT];
         buff.extend_from_slice(&self.1.to_be_bytes());
-        buff
+        Ok(buff)
     }
 }
 
@@ -77,14 +79,16 @@ impl std::fmt::Debug for UIntCV {
 }
 
 impl ClarityValue for UIntCV {
+    type Err = Error;
+
     fn type_id(&self) -> u8 {
         self.0
     }
 
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_UINT];
         buff.extend_from_slice(&self.1.to_be_bytes());
-        buff
+        Ok(buff)
     }
 }
 
@@ -114,10 +118,10 @@ mod tests {
         let cv_1 = IntCV::new(1);
         let cv_2 = IntCV::new(-1);
 
-        let hex_1 = crate::crypto::hex::bytes_to_hex(&cv_1.serialize());
+        let hex_1 = crate::crypto::hex::bytes_to_hex(&cv_1.serialize().unwrap());
         assert_eq!(hex_1, "0000000000000000000000000000000001");
 
-        let hex_2 = crate::crypto::hex::bytes_to_hex(&cv_2.serialize());
+        let hex_2 = crate::crypto::hex::bytes_to_hex(&cv_2.serialize().unwrap());
         assert_eq!(hex_2, "00ffffffffffffffffffffffffffffffff");
 
         let bytes_1 = crate::crypto::hex::hex_to_bytes(&hex_1).unwrap();
@@ -132,7 +136,7 @@ mod tests {
         use super::*;
 
         let cv = UIntCV::new(1);
-        let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize());
+        let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
         assert_eq!(hex, "0100000000000000000000000000000001");
 
         let bytes = crate::crypto::hex::hex_to_bytes(&hex).unwrap();
@@ -149,7 +153,7 @@ mod tests {
             let value: i128 = rng.gen_range(i128::MIN..=i128::MAX);
             let cv = IntCV::new(value);
 
-            let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize());
+            let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
             let bytes = crate::crypto::hex::hex_to_bytes(&hex).unwrap();
             assert_eq!(cv, IntCV::deserialize(&bytes).unwrap());
         }
@@ -165,7 +169,7 @@ mod tests {
             let value: u128 = rng.gen_range(u128::MIN..=u128::MAX);
             let cv = UIntCV::new(value);
 
-            let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize());
+            let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
             let bytes = crate::crypto::hex::hex_to_bytes(&hex).unwrap();
             assert_eq!(cv, UIntCV::deserialize(&bytes).unwrap());
         }
