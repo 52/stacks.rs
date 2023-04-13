@@ -94,12 +94,12 @@ impl DeserializeCV for FalseCV {
     }
 }
 
+#[cfg(test)]
 mod tests {
+    use super::*;
 
     #[test]
     fn test_true_cv() {
-        use super::*;
-
         let cv = TrueCV::new();
         let serialized = cv.serialize().unwrap();
         let deserialized = TrueCV::deserialize(&serialized).unwrap();
@@ -108,8 +108,6 @@ mod tests {
 
     #[test]
     fn test_false_cv() {
-        use super::*;
-
         let cv = FalseCV::new();
         let serialized = cv.serialize().unwrap();
         let deserialized = FalseCV::deserialize(&serialized).unwrap();

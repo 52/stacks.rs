@@ -18,7 +18,7 @@ impl StandardPrincipalCV {
 
 impl std::fmt::Display for StandardPrincipalCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "standard-principal({})", self.1)
+        write!(f, "{}", self.1)
     }
 }
 
@@ -69,7 +69,7 @@ impl ContractPrincipalCV {
 
 impl std::fmt::Display for ContractPrincipalCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "contract-principal({})", self.1)
+        write!(f, "{}.{}", self.1, self.2)
     }
 }
 
@@ -118,36 +118,51 @@ impl DeserializeCV for ContractPrincipalCV {
     }
 }
 
+#[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::crypto::hex::bytes_to_hex;
 
     #[test]
     fn test_standard_principal_cv() {
-        use super::*;
-        use crate::crypto::hex::bytes_to_hex;
+        let address = "STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6";
 
-        let cv = StandardPrincipalCV::new("STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6");
+        let cv = StandardPrincipalCV::new(address);
+
         let serialized = cv.serialize().unwrap();
-
-        let hex = bytes_to_hex(&serialized);
         let deserialized = StandardPrincipalCV::deserialize(&serialized).unwrap();
         assert_eq!(cv, deserialized);
-        assert_eq!(hex, "051a164247d6f2b425ac5771423ae6c80c754f7172b0")
+
+        let hex = bytes_to_hex(&serialized);
+        let expected_hex = "051a164247d6f2b425ac5771423ae6c80c754f7172b0";
+        assert_eq!(hex, expected_hex);
     }
 
     #[test]
     fn test_contract_principal_cv() {
-        use super::*;
-        use crate::crypto::hex::bytes_to_hex;
+        let address = "STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6";
+        let contract = "abcd";
 
-        let cv = ContractPrincipalCV::new("STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6", "abcd");
+        let cv = ContractPrincipalCV::new(address, contract);
+
         let serialized = cv.serialize().unwrap();
-
-        let hex = bytes_to_hex(&serialized);
         let deserialized = ContractPrincipalCV::deserialize(&serialized).unwrap();
         assert_eq!(cv, deserialized);
-        assert_eq!(
-            hex,
-            "061a164247d6f2b425ac5771423ae6c80c754f7172b00461626364"
-        );
+
+        let hex = bytes_to_hex(&serialized);
+        let expected_hex = "061a164247d6f2b425ac5771423ae6c80c754f7172b00461626364";
+        assert_eq!(hex, expected_hex);
+    }
+
+    #[test]
+    fn test_principal_cv_string() {
+        let address = "STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6";
+        let contract = "abcd";
+
+        let std_cv = StandardPrincipalCV::new(address);
+        let contract_cv = ContractPrincipalCV::new(address, contract);
+
+        assert_eq!(std_cv.to_string(), address);
+        assert_eq!(contract_cv.to_string(), format!("{}.{}", address, contract));
     }
 }

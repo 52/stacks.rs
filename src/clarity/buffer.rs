@@ -64,13 +64,14 @@ impl DeserializeCV for BufferCV {
     }
 }
 
+#[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::crypto::hex::bytes_to_hex;
+    use crate::crypto::hex::hex_to_bytes;
 
     #[test]
     fn test_buffer() {
-        use super::*;
-        use crate::crypto::hex::bytes_to_hex;
-
         let buffer = BufferCV::new(&[0xde, 0xad, 0xbe, 0xef]);
         let serialized = buffer.serialize().unwrap();
 
@@ -83,9 +84,6 @@ mod tests {
 
     #[test]
     fn test_buffer_string() {
-        use super::*;
-        use crate::crypto::hex::hex_to_bytes;
-
         let buffer = BufferCV::new(&hex_to_bytes("00").unwrap());
         assert_eq!(buffer.to_string(), "0x00");
 

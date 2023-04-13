@@ -45,10 +45,6 @@ impl DeserializeCV for NoneCV {
     type Err = Error;
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
-        if bytes.len() != 1 {
-            return Err(Error::DeserializationError);
-        }
-
         if bytes[0] != CLARITY_TYPE_OPTIONAL_NONE {
             return Err(Error::DeserializationError);
         }
@@ -124,12 +120,15 @@ impl DeserializeCV for SomeCV {
     }
 }
 
+#[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::clarity::bool::FalseCV;
+    use crate::clarity::bool::TrueCV;
+    use crate::clarity::int::IntCV;
 
     #[test]
     fn test_none_cv() {
-        use super::*;
-
         let cv = NoneCV::new();
         let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
         assert_eq!(hex, "09");
@@ -137,9 +136,6 @@ mod tests {
 
     #[test]
     fn test_some_cv() {
-        use super::*;
-        use crate::clarity::int::IntCV;
-
         let cv = SomeCV::new(IntCV::new(-1));
         let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
         assert_eq!(hex, "0a00ffffffffffffffffffffffffffffffff");
@@ -151,10 +147,6 @@ mod tests {
 
     #[test]
     fn test_optional_cv_string() {
-        use super::*;
-        use crate::clarity::bool::FalseCV;
-        use crate::clarity::bool::TrueCV;
-
         assert_eq!(SomeCV::new(IntCV::new(1)).to_string(), "some( 1)");
         assert_eq!(SomeCV::new(UIntCV::new(1)).to_string(), "some( u1)");
         assert_eq!(SomeCV::new(TrueCV::new()).to_string(), "some( true)");

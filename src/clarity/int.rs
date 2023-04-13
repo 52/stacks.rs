@@ -109,68 +109,65 @@ impl DeserializeCV for UIntCV {
     }
 }
 
+#[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::crypto::hex::bytes_to_hex;
+    use crate::crypto::hex::hex_to_bytes;
+    use rand::{thread_rng, Rng};
 
     #[test]
     fn test_int_cv() {
-        use super::*;
-
         let cv_1 = IntCV::new(1);
         let cv_2 = IntCV::new(-1);
 
-        let hex_1 = crate::crypto::hex::bytes_to_hex(&cv_1.serialize().unwrap());
+        let hex_1 = bytes_to_hex(&cv_1.serialize().unwrap());
         assert_eq!(hex_1, "0000000000000000000000000000000001");
 
-        let hex_2 = crate::crypto::hex::bytes_to_hex(&cv_2.serialize().unwrap());
+        let hex_2 = bytes_to_hex(&cv_2.serialize().unwrap());
         assert_eq!(hex_2, "00ffffffffffffffffffffffffffffffff");
 
-        let bytes_1 = crate::crypto::hex::hex_to_bytes(&hex_1).unwrap();
+        let bytes_1 = hex_to_bytes(&hex_1).unwrap();
         assert_eq!(cv_1, IntCV::deserialize(&bytes_1).unwrap());
 
-        let bytes_2 = crate::crypto::hex::hex_to_bytes(&hex_2).unwrap();
+        let bytes_2 = hex_to_bytes(&hex_2).unwrap();
         assert_eq!(cv_2, IntCV::deserialize(&bytes_2).unwrap());
     }
 
     #[test]
     fn test_uint_cv() {
-        use super::*;
-
         let cv = UIntCV::new(1);
-        let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
+        let hex = bytes_to_hex(&cv.serialize().unwrap());
         assert_eq!(hex, "0100000000000000000000000000000001");
 
-        let bytes = crate::crypto::hex::hex_to_bytes(&hex).unwrap();
+        let bytes = hex_to_bytes(&hex).unwrap();
         assert_eq!(cv, UIntCV::deserialize(&bytes).unwrap());
     }
 
     #[test]
     fn test_int_cv_randomized_input() {
-        use super::*;
-        use rand::{thread_rng, Rng};
         let mut rng = thread_rng();
 
         for _ in 0..100_000 {
             let value: i128 = rng.gen_range(i128::MIN..=i128::MAX);
             let cv = IntCV::new(value);
 
-            let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
-            let bytes = crate::crypto::hex::hex_to_bytes(&hex).unwrap();
+            let hex = bytes_to_hex(&cv.serialize().unwrap());
+            let bytes = hex_to_bytes(&hex).unwrap();
             assert_eq!(cv, IntCV::deserialize(&bytes).unwrap());
         }
     }
 
     #[test]
     fn test_uint_cv_randomized_input() {
-        use super::*;
-        use rand::{thread_rng, Rng};
         let mut rng = thread_rng();
 
         for _ in 0..100_000 {
             let value: u128 = rng.gen_range(u128::MIN..=u128::MAX);
             let cv = UIntCV::new(value);
 
-            let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
-            let bytes = crate::crypto::hex::hex_to_bytes(&hex).unwrap();
+            let hex = bytes_to_hex(&cv.serialize().unwrap());
+            let bytes = hex_to_bytes(&hex).unwrap();
             assert_eq!(cv, UIntCV::deserialize(&bytes).unwrap());
         }
     }

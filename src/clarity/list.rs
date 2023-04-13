@@ -1,23 +1,9 @@
-use crate::clarity::bool::FalseCV;
-use crate::clarity::bool::TrueCV;
-use crate::clarity::int::IntCV;
-use crate::clarity::int::UIntCV;
-use crate::clarity::optional::NoneCV;
-use crate::clarity::optional::SomeCV;
-use crate::clarity::principal::ContractPrincipalCV;
-use crate::clarity::principal::StandardPrincipalCV;
 use crate::clarity::ClarityValue;
 use crate::clarity::DeserializeCV;
 use crate::clarity::Error;
-use crate::clarity::CLARITY_TYPE_BOOL_FALSE;
-use crate::clarity::CLARITY_TYPE_BOOL_TRUE;
-use crate::clarity::CLARITY_TYPE_INT;
 use crate::clarity::CLARITY_TYPE_LIST;
-use crate::clarity::CLARITY_TYPE_OPTIONAL_NONE;
-use crate::clarity::CLARITY_TYPE_OPTIONAL_SOME;
-use crate::clarity::CLARITY_TYPE_PRINCIPAL_CONTRACT;
-use crate::clarity::CLARITY_TYPE_PRINCIPAL_STANDARD;
-use crate::clarity::CLARITY_TYPE_UINT;
+
+use super::ClarityType;
 
 pub struct ListCV(u8, Vec<Box<dyn ClarityValue<Err = Error>>>);
 
@@ -100,21 +86,7 @@ impl DeserializeCV for ListCV {
             let type_id = bytes[offset];
             let slice = &bytes[offset..];
 
-            let value: Box<dyn ClarityValue<Err = Self::Err>> = match type_id {
-                CLARITY_TYPE_INT => Box::new(IntCV::deserialize(slice)?),
-                CLARITY_TYPE_UINT => Box::new(UIntCV::deserialize(slice)?),
-                CLARITY_TYPE_BOOL_TRUE => Box::new(TrueCV::deserialize(slice)?),
-                CLARITY_TYPE_BOOL_FALSE => Box::new(FalseCV::deserialize(slice)?),
-                CLARITY_TYPE_PRINCIPAL_STANDARD => {
-                    Box::new(StandardPrincipalCV::deserialize(slice)?)
-                }
-                CLARITY_TYPE_PRINCIPAL_CONTRACT => {
-                    Box::new(ContractPrincipalCV::deserialize(slice)?)
-                }
-                CLARITY_TYPE_OPTIONAL_NONE => Box::new(NoneCV::deserialize(slice)?),
-                CLARITY_TYPE_OPTIONAL_SOME => Box::new(SomeCV::deserialize(slice)?),
-                _ => return Err(Error::DeserializationError),
-            };
+            let value = ClarityType::from_id(type_id, slice)?;
 
             offset += value.serialize()?.len();
             values.push(value)
@@ -124,12 +96,21 @@ impl DeserializeCV for ListCV {
     }
 }
 
+#[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::clarity::bool::FalseCV;
+    use crate::clarity::bool::TrueCV;
+    use crate::clarity::buffer::BufferCV;
+    use crate::clarity::int::IntCV;
+    use crate::clarity::int::UIntCV;
+    use crate::clarity::optional::NoneCV;
+    use crate::clarity::optional::SomeCV;
+    use crate::clarity::principal::ContractPrincipalCV;
+    use crate::clarity::principal::StandardPrincipalCV;
 
     #[test]
     fn test_list_cv() {
-        use super::*;
-
         let cv = ListCV::new(vec![
             Box::new(IntCV::new(1)),
             Box::new(IntCV::new(2)),
@@ -146,8 +127,6 @@ mod tests {
 
     #[test]
     fn test_list_cv_deserialize() {
-        use super::*;
-
         let cv = ListCV::new(vec![
             Box::new(IntCV::new(3)),
             Box::new(IntCV::new(-4)),
@@ -157,10 +136,13 @@ mod tests {
             Box::new(StandardPrincipalCV::new(
                 "ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA",
             )),
+            Box::new(NoneCV::new()),
             Box::new(ContractPrincipalCV::new(
                 "ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA",
                 "asdf",
             )),
+            Box::new(SomeCV::new(IntCV::new(1))),
+            Box::new(BufferCV::new(&[1, 2, 3, 4])),
         ]);
 
         let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
@@ -172,8 +154,6 @@ mod tests {
 
     #[test]
     fn test_list_cv_deserialize_empty() {
-        use super::*;
-
         let cv = ListCV::new(vec![]);
 
         let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
@@ -185,9 +165,6 @@ mod tests {
 
     #[test]
     fn test_list_cv_string() {
-        use super::*;
-        use crate::clarity::buffer::BufferCV;
-
         assert_eq!(
             ListCV::new(vec![
                 Box::new(IntCV::new(1)),
