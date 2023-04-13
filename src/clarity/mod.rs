@@ -1,4 +1,12 @@
+use std::fmt::Debug;
+use std::fmt::Display;
+
+pub mod bool;
+pub mod buffer;
 pub mod int;
+pub mod list;
+pub mod optional;
+pub mod principal;
 
 pub const CLARITY_TYPE_INT: u8 = 0x00;
 pub const CLARITY_TYPE_UINT: u8 = 0x01;
@@ -24,28 +32,13 @@ pub enum Error {
     DeserializationError,
 }
 
-pub trait ClarityValue: Sized {
+pub trait ClarityValue: Display + Debug {
     fn type_id(&self) -> u8;
-}
-
-pub trait SerializeCV: ClarityValue {
     fn serialize(&self) -> Vec<u8>;
 }
 
-pub trait DeserializeCV: ClarityValue {
+pub trait DeserializeCV: Sized {
     type Err;
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err>;
 }
-
-macro_rules! impl_clarity_value {
-    ($ty:ty) => {
-        impl crate::clarity::ClarityValue for $ty {
-            fn type_id(&self) -> u8 {
-                self.0
-            }
-        }
-    };
-}
-
-pub(crate) use impl_clarity_value;
