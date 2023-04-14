@@ -1,4 +1,3 @@
-use crate::clarity::ClarityValue;
 use crate::clarity::DeserializeCV;
 use crate::clarity::Error;
 use crate::clarity::SerializeCV;
@@ -75,7 +74,7 @@ impl std::fmt::Debug for SomeCV {
 
 impl PartialEq for SomeCV {
     fn eq(&self, other: &SomeCV) -> bool {
-        self.1.to_string() == other.1.to_string()
+        self.1.serialize() == other.1.serialize()
     }
 }
 
@@ -116,34 +115,69 @@ impl DeserializeCV for SomeCV {
         let type_id = bytes[1];
         let slice = &bytes[1..];
 
-        Ok(ClarityValue::from_id(type_id, slice)?.into())
+        Ok(<dyn SerializeCV<Err = Error>>::from_bytes(type_id, slice)?.into())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::clarity::bool::FalseCV;
-    use crate::clarity::bool::TrueCV;
-    use crate::clarity::int::IntCV;
-    use crate::clarity::int::UIntCV;
+    use crate::clarity::BufferCV;
+    use crate::clarity::ContractPrincipalCV;
+    use crate::clarity::ErrCV;
+    use crate::clarity::FalseCV;
+    use crate::clarity::IntCV;
+    use crate::clarity::ListCV;
+    use crate::clarity::OkCV;
+    use crate::clarity::StandardPrincipalCV;
+    use crate::clarity::TrueCV;
+    use crate::clarity::TupleCV;
+    use crate::clarity::UIntCV;
+    use crate::crypto::hex::bytes_to_hex;
 
     #[test]
-    fn test_none_cv() {
-        let cv = NoneCV::new();
-        let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
-        assert_eq!(hex, "09");
+    fn test_optional_cv() {
+        let some = SomeCV::new(IntCV::new(-1));
+        let none = NoneCV::new();
+
+        let some_hex = bytes_to_hex(&some.serialize().unwrap());
+        let none_hex = bytes_to_hex(&none.serialize().unwrap());
+
+        assert_eq!(some_hex, "0a00ffffffffffffffffffffffffffffffff");
+        assert_eq!(none_hex, "09");
+
+        let deserialized_some = SomeCV::deserialize(&some.serialize().unwrap()).unwrap();
+        let deserialized_none = NoneCV::deserialize(&none.serialize().unwrap()).unwrap();
+
+        assert_eq!(deserialized_some, some);
+        assert_eq!(deserialized_none, none);
     }
 
     #[test]
-    fn test_some_cv() {
-        let cv = SomeCV::new(IntCV::new(-1));
-        let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
-        assert_eq!(hex, "0a00ffffffffffffffffffffffffffffffff");
+    fn test_optional_cv_complex() {
+        let list = ListCV::new(vec![
+            IntCV::new(3).into(),
+            IntCV::new(-4).into(),
+            UIntCV::new(1).into(),
+            TrueCV::new().into(),
+            FalseCV::new().into(),
+            ErrCV::new(IntCV::new(1)).into(),
+            StandardPrincipalCV::new("ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA").into(),
+            NoneCV::new().into(),
+            ContractPrincipalCV::new("ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA", "asdf").into(),
+            OkCV::new(IntCV::new(1)).into(),
+            SomeCV::new(IntCV::new(1)).into(),
+            TupleCV::new(vec![
+                ("foo".to_string(), IntCV::new(1).into()),
+                ("bar".to_string(), IntCV::new(2).into()),
+            ])
+            .into(),
+            BufferCV::new(&[0x01, 0x02, 0x03, 0x04]).into(),
+        ]);
 
-        let deserialized = SomeCV::deserialize(&cv.serialize().unwrap()).unwrap();
-
-        assert_eq!(deserialized, cv);
+        let some = SomeCV::new(list);
+        let some_deserialized = SomeCV::deserialize(&some.serialize().unwrap()).unwrap();
+        assert_eq!(some_deserialized, some);
     }
 
     #[test]

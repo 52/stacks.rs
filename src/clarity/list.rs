@@ -1,4 +1,3 @@
-use crate::clarity::ClarityValue;
 use crate::clarity::DeserializeCV;
 use crate::clarity::Error;
 use crate::clarity::SerializeCV;
@@ -39,8 +38,11 @@ impl std::fmt::Debug for ListCV {
 }
 
 impl PartialEq for ListCV {
-    fn eq(&self, other: &ListCV) -> bool {
-        self.1 == other.1
+    fn eq(&self, other: &Self) -> bool {
+        self.1
+            .iter()
+            .zip(other.1.iter())
+            .all(|(a, b)| a.serialize() == b.serialize())
     }
 }
 
@@ -86,7 +88,7 @@ impl DeserializeCV for ListCV {
             let type_id = bytes[offset];
             let slice = &bytes[offset..];
 
-            let cv = ClarityValue::from_id(type_id, slice)?;
+            let cv = <dyn SerializeCV<Err = Error>>::from_bytes(type_id, slice)?;
 
             offset += cv.serialize()?.len();
             buff.push(cv)
@@ -101,9 +103,11 @@ mod tests {
     use super::*;
     use crate::clarity::BufferCV;
     use crate::clarity::ContractPrincipalCV;
+    use crate::clarity::ErrCV;
     use crate::clarity::FalseCV;
     use crate::clarity::IntCV;
     use crate::clarity::NoneCV;
+    use crate::clarity::OkCV;
     use crate::clarity::SomeCV;
     use crate::clarity::StandardPrincipalCV;
     use crate::clarity::TrueCV;
@@ -136,7 +140,9 @@ mod tests {
             FalseCV::new().into(),
             StandardPrincipalCV::new("ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA").into(),
             NoneCV::new().into(),
+            ErrCV::new(IntCV::new(1)).into(),
             ContractPrincipalCV::new("ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA", "asdf").into(),
+            OkCV::new(IntCV::new(1)).into(),
             SomeCV::new(IntCV::new(1)).into(),
             TupleCV::new(vec![
                 ("foo".to_string(), IntCV::new(1).into()),

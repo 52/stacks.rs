@@ -1,4 +1,3 @@
-use crate::clarity::ClarityValue;
 use crate::clarity::DeserializeCV;
 use crate::clarity::Error;
 use crate::clarity::SerializeCV;
@@ -76,7 +75,8 @@ impl DeserializeCV for TupleCV {
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
         let len = u32::from_be_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]);
-        let mut values = vec![];
+
+        let mut buff = vec![];
         let mut offset = 5;
 
         for _ in 0..len {
@@ -87,13 +87,13 @@ impl DeserializeCV for TupleCV {
 
             offset += 1 + key_len;
 
-            let value = ClarityValue::from_id(bytes[offset], &bytes[offset..])?;
-            offset += value.serialize()?.len();
+            let cv = <dyn SerializeCV<Err = Error>>::from_bytes(bytes[offset], &bytes[offset..])?;
+            offset += cv.serialize()?.len();
 
-            values.push((key, value));
+            buff.push((key, cv));
         }
 
-        Ok(TupleCV::new(values))
+        Ok(TupleCV::new(buff))
     }
 }
 
@@ -102,8 +102,12 @@ mod tests {
     use super::*;
     use crate::clarity::BufferCV;
     use crate::clarity::ContractPrincipalCV;
+    use crate::clarity::ErrCV;
+    use crate::clarity::FalseCV;
     use crate::clarity::IntCV;
+    use crate::clarity::ListCV;
     use crate::clarity::NoneCV;
+    use crate::clarity::OkCV;
     use crate::clarity::SomeCV;
     use crate::clarity::StandardPrincipalCV;
     use crate::clarity::TrueCV;
@@ -139,9 +143,23 @@ mod tests {
             ("f", NoneCV::new().into()),
             ("g", StandardPrincipalCV::new(address).into()),
             ("h", ContractPrincipalCV::new(address, "test").into()),
+            ("i", OkCV::new(TrueCV::new()).into()),
+            ("j", ErrCV::new(FalseCV::new()).into()),
+            (
+                "k",
+                ListCV::new(vec![TrueCV::new().into(), FalseCV::new().into()]).into(),
+            ),
+            (
+                "l",
+                TupleCV::new(vec![
+                    ("a", TrueCV::new().into()),
+                    ("b", FalseCV::new().into()),
+                ])
+                .into(),
+            ),
         ]);
 
-        let expected = "(tuple (a -1) (b u1) (c 0x74657374) (d true) (e (some true)) (f none) (g ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA) (h ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA.test))";
+        let expected = "(tuple (a -1) (b u1) (c 0x74657374) (d true) (e (some true)) (f none) (g ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA) (h ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA.test) (i (ok true)) (j (err false)) (k (list true false)) (l (tuple (a true) (b false))))";
 
         assert_eq!(cv.to_string(), expected);
     }
