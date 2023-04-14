@@ -1,7 +1,7 @@
-use crate::crypto::c32::network::StacksNetworkVersion;
 use crate::crypto::hash::DSha256Hash;
 
 pub(crate) mod network;
+pub use network::StacksNetworkVersion;
 
 pub(crate) const C32_ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
@@ -15,7 +15,7 @@ pub(crate) const C32_BYTE_MAP: [i8; 128] = [
 ];
 
 #[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
-pub(crate) enum Error {
+pub enum Error {
     /// Invalid C32 string.
     #[error("Invalid C32 string")]
     InvalidC32,
@@ -35,7 +35,7 @@ pub(crate) enum Error {
     FromUtf8Error(#[from] std::string::FromUtf8Error),
 }
 
-pub(crate) fn c32_encode(data: &[u8]) -> Result<String, Error> {
+pub fn c32_encode(data: &[u8]) -> Result<String, Error> {
     let mut encoded = Vec::new();
 
     let mut buffer = 0u32;
@@ -75,7 +75,7 @@ pub(crate) fn c32_encode(data: &[u8]) -> Result<String, Error> {
     Ok(String::from_utf8(encoded)?)
 }
 
-pub(crate) fn c32_decode(input: impl Into<String>) -> Result<Vec<u8>, Error> {
+pub fn c32_decode(input: impl Into<String>) -> Result<Vec<u8>, Error> {
     let input: String = input.into();
 
     if !input.is_ascii() {
@@ -136,7 +136,7 @@ pub(crate) fn c32_decode(input: impl Into<String>) -> Result<Vec<u8>, Error> {
     Ok(decoded)
 }
 
-pub(crate) fn c32check_encode(data: &[u8], version: u8) -> Result<String, Error> {
+pub fn c32check_encode(data: &[u8], version: u8) -> Result<String, Error> {
     let mut check = vec![version];
     check.extend_from_slice(data);
     let checksum = DSha256Hash::from_slice(&check).checksum();
@@ -151,7 +151,7 @@ pub(crate) fn c32check_encode(data: &[u8], version: u8) -> Result<String, Error>
     Ok(String::from_utf8(encoded)?)
 }
 
-pub(crate) fn c32check_decode(input: impl Into<String>) -> Result<(Vec<u8>, u8), Error> {
+pub fn c32check_decode(input: impl Into<String>) -> Result<(Vec<u8>, u8), Error> {
     let input: String = input.into();
 
     if !input.is_ascii() {
@@ -179,10 +179,7 @@ pub(crate) fn c32check_decode(input: impl Into<String>) -> Result<(Vec<u8>, u8),
     Ok((bytes.to_vec(), check[0]))
 }
 
-pub(crate) fn c32_address(
-    data: &[u8],
-    network: impl Into<StacksNetworkVersion>,
-) -> Result<String, Error> {
+pub fn c32_address(data: &[u8], network: impl Into<StacksNetworkVersion>) -> Result<String, Error> {
     let version = network.into().version();
 
     if ![22, 26, 20, 21].contains(&version) {
@@ -194,7 +191,7 @@ pub(crate) fn c32_address(
     Ok(address)
 }
 
-pub(crate) fn c32_address_decode(address: impl Into<String>) -> Result<(Vec<u8>, u8), Error> {
+pub fn c32_address_decode(address: impl Into<String>) -> Result<(Vec<u8>, u8), Error> {
     let address: String = address.into();
 
     if !address.starts_with('S') {
