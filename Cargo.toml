@@ -1,5 +1,5 @@
 [package]
-name = "stacks"
+name = "stacks-rs"
 version = "0.1.0"
 edition = "2021"
 authors = ["Max Karou <max@trustmachines.co>"]
