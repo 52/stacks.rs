@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 /// Error variants for Hex encoding/decoding.
 #[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
-pub(crate) enum Error {
+pub enum Error {
     /// Non-hexadecimal character.
     #[error("Invalid hex character")]
     InvalidChar,
@@ -11,12 +11,12 @@ pub(crate) enum Error {
     UnpaddedHex(String, usize),
 }
 
-pub(crate) struct HexIterator<'a> {
+pub struct HexIterator<'a> {
     iter: std::str::Bytes<'a>,
 }
 
 impl<'a> HexIterator<'a> {
-    pub(crate) fn new(value: &'a str) -> Result<Self, Error> {
+    pub fn new(value: &'a str) -> Result<Self, Error> {
         let value_len = value.len();
 
         if value_len % 2 > 0 {
@@ -52,7 +52,7 @@ impl<'a> Iterator for HexIterator<'a> {
 }
 
 /// Convert a hex string to a byte array.
-pub(crate) fn hex_to_bytes(value: impl Into<String>) -> Result<Vec<u8>, Error> {
+pub fn hex_to_bytes(value: impl Into<String>) -> Result<Vec<u8>, Error> {
     let value: String = value.into();
     let value_len = value.len();
 
@@ -69,7 +69,7 @@ pub(crate) fn hex_to_bytes(value: impl Into<String>) -> Result<Vec<u8>, Error> {
 }
 
 /// Convert a byte array to a hex string.
-pub(crate) fn bytes_to_hex(value: &[u8]) -> String {
+pub fn bytes_to_hex(value: &[u8]) -> String {
     let mut buff = String::with_capacity(value.len());
     for b in value.iter() {
         write!(buff, "{b:02x}").unwrap();

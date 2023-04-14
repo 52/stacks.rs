@@ -6,11 +6,11 @@ use ripemd::Ripemd160;
 macro_rules! impl_hash {
     ($name:ident, $size:expr) => {
         impl $name {
-            pub(crate) fn as_bytes(&self) -> &[u8] {
+            pub fn as_bytes(&self) -> &[u8] {
                 &self.0
             }
 
-            pub(crate) fn into_bytes(self) -> [u8; $size] {
+            pub fn into_bytes(self) -> [u8; $size] {
                 self.0
             }
         }
@@ -20,11 +20,11 @@ macro_rules! impl_hash {
 pub(crate) const SHA256_ENCODED_SIZE: usize = 32;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct Sha256Hash([u8; SHA256_ENCODED_SIZE]);
+pub struct Sha256Hash([u8; SHA256_ENCODED_SIZE]);
 impl_hash!(Sha256Hash, SHA256_ENCODED_SIZE);
 
 impl Sha256Hash {
-    pub(crate) fn from_slice(value: &[u8]) -> Self {
+    pub fn from_slice(value: &[u8]) -> Self {
         let bytes = {
             let mut ctx = Context::new(&HashSha256);
             let mut buff = [0u8; SHA256_ENCODED_SIZE];
@@ -37,7 +37,7 @@ impl Sha256Hash {
         Sha256Hash(bytes)
     }
 
-    pub(crate) fn checksum(&self) -> [u8; 4] {
+    pub fn checksum(&self) -> [u8; 4] {
         let bytes = self.as_bytes();
         let mut buff = [0u8; 4];
         buff.copy_from_slice(&bytes[0..4]);
@@ -46,11 +46,11 @@ impl Sha256Hash {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct DSha256Hash([u8; SHA256_ENCODED_SIZE]);
+pub struct DSha256Hash([u8; SHA256_ENCODED_SIZE]);
 impl_hash!(DSha256Hash, SHA256_ENCODED_SIZE);
 
 impl DSha256Hash {
-    pub(crate) fn from_slice(value: &[u8]) -> Self {
+    pub fn from_slice(value: &[u8]) -> Self {
         let sha = Sha256Hash::from_slice(value);
         let bytes = sha.as_bytes();
 
@@ -63,7 +63,7 @@ impl DSha256Hash {
         DSha256Hash(buff)
     }
 
-    pub(crate) fn checksum(&self) -> [u8; 4] {
+    pub fn checksum(&self) -> [u8; 4] {
         let bytes = self.as_bytes();
         let mut buff = [0u8; 4];
         buff.copy_from_slice(&bytes[0..4]);
@@ -74,11 +74,11 @@ impl DSha256Hash {
 pub(crate) const HASH160_ENCODED_SIZE: usize = 20;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct Ripemd160Hash([u8; HASH160_ENCODED_SIZE]);
+pub struct Ripemd160Hash([u8; HASH160_ENCODED_SIZE]);
 impl_hash!(Ripemd160Hash, HASH160_ENCODED_SIZE);
 
 impl Ripemd160Hash {
-    pub(crate) fn from_slice(value: &[u8]) -> Self {
+    pub fn from_slice(value: &[u8]) -> Self {
         let mut buff = [0u8; HASH160_ENCODED_SIZE];
 
         let sha = Sha256Hash::from_slice(value);
@@ -90,7 +90,7 @@ impl Ripemd160Hash {
         Ripemd160Hash(buff)
     }
 
-    pub(crate) fn checksum(&self) -> [u8; 4] {
+    pub fn checksum(&self) -> [u8; 4] {
         let bytes = self.as_bytes();
         let mut buff = [0u8; 4];
         buff.copy_from_slice(&bytes[0..4]);

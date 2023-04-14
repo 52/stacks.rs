@@ -1,7 +1,7 @@
-use crate::crypto::base58::network::BitcoinNetworkVersion;
 use crate::crypto::hash::DSha256Hash;
 
 pub(crate) mod network;
+pub use network::BitcoinNetworkVersion;
 
 /// `Base58` alphabet, used for encoding/decoding.
 pub(crate) const B58_ALPHABET: &[u8; 58] =
@@ -24,7 +24,7 @@ pub(crate) const B58_BYTE_MAP: [i8; 256] = [
 
 /// Error variants for `Base58` encoding/decoding.
 #[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
-pub(crate) enum Error {
+pub enum Error {
     /// Invalid character.
     #[error("Invalid B58 character: {0}")]
     InvalidChar(char),
@@ -34,7 +34,7 @@ pub(crate) enum Error {
 }
 
 /// Encode a byte slice into a `Base58` string.
-pub(crate) fn b58_encode(data: &[u8]) -> String {
+pub fn b58_encode(data: &[u8]) -> String {
     let mut zeros = 0;
     while zeros < data.len() && data[zeros] == 0 {
         zeros += 1;
@@ -68,7 +68,7 @@ pub(crate) fn b58_encode(data: &[u8]) -> String {
 }
 
 /// Decode a `Base58` string into a byte vector.
-pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Error> {
+pub fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Error> {
     let encoded: String = encoded.into();
 
     if encoded.is_empty() {
@@ -109,7 +109,7 @@ pub(crate) fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Error> {
 }
 
 /// Encode a byte slice into a `Base58Check` encoded string.
-pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkVersion>) -> String {
+pub fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkVersion>) -> String {
     let version = network.into().version();
 
     let mut payload = Vec::with_capacity(21);
@@ -130,7 +130,7 @@ pub(crate) fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkV
 }
 
 /// Decode a `Base58Check` encoded string into a byte vector.
-pub(crate) fn base58check_decode(
+pub fn base58check_decode(
     address: impl Into<String>,
 ) -> Result<(Vec<u8>, BitcoinNetworkVersion), Error> {
     let address: String = address.into();

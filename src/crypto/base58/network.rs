@@ -9,7 +9,7 @@ pub enum BitcoinNetworkVersion {
 }
 
 impl BitcoinNetworkVersion {
-    pub(crate) fn version(self) -> u8 {
+    pub fn version(self) -> u8 {
         match self {
             BitcoinNetworkVersion::MainnetP2PKH => 0,
             BitcoinNetworkVersion::MainnetP2SH => 5,
@@ -18,7 +18,7 @@ impl BitcoinNetworkVersion {
         }
     }
 
-    pub(crate) fn to_stacks_network_version(self) -> StacksNetworkVersion {
+    pub fn to_stacks_network_version(self) -> StacksNetworkVersion {
         match self {
             BitcoinNetworkVersion::MainnetP2PKH => StacksNetworkVersion::MainnetP2PKH,
             BitcoinNetworkVersion::MainnetP2SH => StacksNetworkVersion::MainnetP2SH,
