@@ -1,6 +1,6 @@
-use crate::clarity::ClarityValue;
 use crate::clarity::DeserializeCV;
 use crate::clarity::Error;
+use crate::clarity::SerializeCV;
 use crate::clarity::CLARITY_TYPE_PRINCIPAL_CONTRACT;
 use crate::clarity::CLARITY_TYPE_PRINCIPAL_STANDARD;
 use crate::crypto::c32::c32_address;
@@ -28,7 +28,7 @@ impl std::fmt::Debug for StandardPrincipalCV {
     }
 }
 
-impl ClarityValue for StandardPrincipalCV {
+impl SerializeCV for StandardPrincipalCV {
     type Err = Error;
 
     fn type_id(&self) -> u8 {
@@ -79,7 +79,7 @@ impl std::fmt::Debug for ContractPrincipalCV {
     }
 }
 
-impl ClarityValue for ContractPrincipalCV {
+impl SerializeCV for ContractPrincipalCV {
     type Err = Error;
 
     fn type_id(&self) -> u8 {

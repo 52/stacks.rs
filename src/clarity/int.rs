@@ -1,9 +1,8 @@
 use crate::clarity::DeserializeCV;
 use crate::clarity::Error;
+use crate::clarity::SerializeCV;
 use crate::clarity::CLARITY_TYPE_INT;
 use crate::clarity::CLARITY_TYPE_UINT;
-
-use super::ClarityValue;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct IntCV(u8, i128);
@@ -26,7 +25,7 @@ impl std::fmt::Debug for IntCV {
     }
 }
 
-impl ClarityValue for IntCV {
+impl SerializeCV for IntCV {
     type Err = Error;
 
     fn type_id(&self) -> u8 {
@@ -78,7 +77,7 @@ impl std::fmt::Debug for UIntCV {
     }
 }
 
-impl ClarityValue for UIntCV {
+impl SerializeCV for UIntCV {
     type Err = Error;
 
     fn type_id(&self) -> u8 {

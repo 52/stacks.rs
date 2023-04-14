@@ -1,6 +1,6 @@
-use crate::clarity::ClarityValue;
 use crate::clarity::DeserializeCV;
 use crate::clarity::Error;
+use crate::clarity::SerializeCV;
 use crate::clarity::CLARITY_TYPE_BOOL_FALSE;
 use crate::clarity::CLARITY_TYPE_BOOL_TRUE;
 
@@ -25,7 +25,7 @@ impl std::fmt::Debug for TrueCV {
     }
 }
 
-impl ClarityValue for TrueCV {
+impl SerializeCV for TrueCV {
     type Err = Error;
 
     fn type_id(&self) -> u8 {
@@ -70,7 +70,7 @@ impl std::fmt::Display for FalseCV {
     }
 }
 
-impl ClarityValue for FalseCV {
+impl SerializeCV for FalseCV {
     type Err = Error;
 
     fn type_id(&self) -> u8 {

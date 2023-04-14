@@ -1,12 +1,9 @@
-use crate::clarity::int::IntCV;
-use crate::clarity::int::UIntCV;
 use crate::clarity::ClarityValue;
 use crate::clarity::DeserializeCV;
 use crate::clarity::Error;
-use crate::clarity::CLARITY_TYPE_INT;
+use crate::clarity::SerializeCV;
 use crate::clarity::CLARITY_TYPE_OPTIONAL_NONE;
 use crate::clarity::CLARITY_TYPE_OPTIONAL_SOME;
-use crate::clarity::CLARITY_TYPE_UINT;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct NoneCV(u8);
@@ -29,7 +26,7 @@ impl std::fmt::Debug for NoneCV {
     }
 }
 
-impl ClarityValue for NoneCV {
+impl SerializeCV for NoneCV {
     type Err = Error;
 
     fn type_id(&self) -> u8 {
@@ -53,20 +50,20 @@ impl DeserializeCV for NoneCV {
     }
 }
 
-pub struct SomeCV(u8, Box<dyn ClarityValue<Err = Error>>);
+pub struct SomeCV(u8, Box<dyn SerializeCV<Err = Error>>);
 
 impl SomeCV {
     pub fn new<T>(value: T) -> SomeCV
     where
-        T: ClarityValue<Err = Error> + 'static,
+        T: SerializeCV<Err = Error> + 'static,
     {
-        SomeCV(CLARITY_TYPE_OPTIONAL_SOME, Box::new(value))
+        SomeCV(CLARITY_TYPE_OPTIONAL_SOME, value.into())
     }
 }
 
 impl std::fmt::Display for SomeCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "some( {})", self.1.to_string())
+        write!(f, "(some {})", self.1.to_string())
     }
 }
 
@@ -77,14 +74,14 @@ impl std::fmt::Debug for SomeCV {
 }
 
 impl PartialEq for SomeCV {
-    fn eq(&self, other: &Self) -> bool {
-        self.1.serialize() == other.1.serialize()
+    fn eq(&self, other: &SomeCV) -> bool {
+        self.1.to_string() == other.1.to_string()
     }
 }
 
 impl Eq for SomeCV {}
 
-impl ClarityValue for SomeCV {
+impl SerializeCV for SomeCV {
     type Err = Error;
 
     fn type_id(&self) -> u8 {
@@ -95,6 +92,12 @@ impl ClarityValue for SomeCV {
         let mut buff = vec![CLARITY_TYPE_OPTIONAL_SOME];
         buff.extend_from_slice(&self.1.serialize()?);
         Ok(buff)
+    }
+}
+
+impl From<Box<dyn SerializeCV<Err = Error>>> for SomeCV {
+    fn from(value: Box<dyn SerializeCV<Err = Error>>) -> Self {
+        SomeCV(CLARITY_TYPE_OPTIONAL_SOME, value)
     }
 }
 
@@ -110,13 +113,10 @@ impl DeserializeCV for SomeCV {
             return Err(Error::DeserializationError);
         }
 
+        let type_id = bytes[1];
         let slice = &bytes[1..];
 
-        match bytes[1] {
-            CLARITY_TYPE_INT => Ok(SomeCV::new(IntCV::deserialize(slice)?)),
-            CLARITY_TYPE_UINT => Ok(SomeCV::new(UIntCV::deserialize(slice)?)),
-            _ => return Err(Error::DeserializationError),
-        }
+        Ok(ClarityValue::from_id(type_id, slice)?.into())
     }
 }
 
@@ -126,6 +126,7 @@ mod tests {
     use crate::clarity::bool::FalseCV;
     use crate::clarity::bool::TrueCV;
     use crate::clarity::int::IntCV;
+    use crate::clarity::int::UIntCV;
 
     #[test]
     fn test_none_cv() {
@@ -147,10 +148,10 @@ mod tests {
 
     #[test]
     fn test_optional_cv_string() {
-        assert_eq!(SomeCV::new(IntCV::new(1)).to_string(), "some( 1)");
-        assert_eq!(SomeCV::new(UIntCV::new(1)).to_string(), "some( u1)");
-        assert_eq!(SomeCV::new(TrueCV::new()).to_string(), "some( true)");
-        assert_eq!(SomeCV::new(FalseCV::new()).to_string(), "some( false)");
+        assert_eq!(SomeCV::new(IntCV::new(1)).to_string(), "(some 1)");
+        assert_eq!(SomeCV::new(UIntCV::new(1)).to_string(), "(some u1)");
+        assert_eq!(SomeCV::new(TrueCV::new()).to_string(), "(some true)");
+        assert_eq!(SomeCV::new(FalseCV::new()).to_string(), "(some false)");
         assert_eq!(NoneCV::new().to_string(), "none");
     }
 }

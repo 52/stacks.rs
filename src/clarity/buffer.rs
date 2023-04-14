@@ -1,6 +1,6 @@
-use crate::clarity::ClarityValue;
 use crate::clarity::DeserializeCV;
 use crate::clarity::Error;
+use crate::clarity::SerializeCV;
 use crate::clarity::CLARITY_TYPE_BUFFER;
 
 #[derive(Clone, PartialEq, Eq)]
@@ -24,7 +24,7 @@ impl std::fmt::Debug for BufferCV {
     }
 }
 
-impl ClarityValue for BufferCV {
+impl SerializeCV for BufferCV {
     type Err = Error;
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
@@ -43,24 +43,21 @@ impl DeserializeCV for BufferCV {
     type Err = Error;
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
-        if bytes.len() < 5 {
-            return Err(Error::DeserializationError);
-        }
-
         if bytes[0] != CLARITY_TYPE_BUFFER {
             return Err(Error::DeserializationError);
         }
 
-        let len = u32::from_be_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]) as usize;
+        let len = u32::from_be_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]);
+        let mut offset = 5;
 
-        if bytes.len() != 5 + len {
-            return Err(Error::DeserializationError);
+        let mut buff = vec![];
+
+        for _ in 0..len {
+            buff.push(bytes[offset]);
+            offset += 1;
         }
 
-        let mut value = vec![0u8; len];
-        value.copy_from_slice(&bytes[5..]);
-
-        Ok(BufferCV::new(&value))
+        Ok(BufferCV::new(&buff))
     }
 }
 

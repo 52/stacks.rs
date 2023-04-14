@@ -1,14 +1,13 @@
 use crate::clarity::ClarityValue;
 use crate::clarity::DeserializeCV;
 use crate::clarity::Error;
+use crate::clarity::SerializeCV;
 use crate::clarity::CLARITY_TYPE_LIST;
 
-use super::ClarityType;
-
-pub struct ListCV(u8, Vec<Box<dyn ClarityValue<Err = Error>>>);
+pub struct ListCV(u8, Vec<Box<dyn SerializeCV<Err = Error>>>);
 
 impl ListCV {
-    pub fn new(values: Vec<Box<dyn ClarityValue<Err = Error>>>) -> ListCV {
+    pub fn new(values: Vec<Box<dyn SerializeCV<Err = Error>>>) -> ListCV {
         ListCV(CLARITY_TYPE_LIST, values)
     }
 }
@@ -40,14 +39,14 @@ impl std::fmt::Debug for ListCV {
 }
 
 impl PartialEq for ListCV {
-    fn eq(&self, other: &Self) -> bool {
-        let own: Vec<Vec<u8>> = self.1.iter().map(|x| x.serialize().unwrap()).collect();
-        let other: Vec<Vec<u8>> = other.1.iter().map(|x| x.serialize().unwrap()).collect();
-        own == other
+    fn eq(&self, other: &ListCV) -> bool {
+        self.1 == other.1
     }
 }
 
-impl ClarityValue for ListCV {
+impl Eq for ListCV {}
+
+impl SerializeCV for ListCV {
     type Err = Error;
 
     fn type_id(&self) -> u8 {
@@ -79,44 +78,45 @@ impl DeserializeCV for ListCV {
         }
 
         let len = u32::from_be_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]);
-        let mut values = vec![];
+
+        let mut buff = vec![];
         let mut offset = 5;
 
         for _ in 0..len {
             let type_id = bytes[offset];
             let slice = &bytes[offset..];
 
-            let value = ClarityType::from_id(type_id, slice)?;
+            let cv = ClarityValue::from_id(type_id, slice)?;
 
-            offset += value.serialize()?.len();
-            values.push(value)
+            offset += cv.serialize()?.len();
+            buff.push(cv)
         }
 
-        Ok(ListCV::new(values))
+        Ok(ListCV::new(buff))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::clarity::bool::FalseCV;
-    use crate::clarity::bool::TrueCV;
-    use crate::clarity::buffer::BufferCV;
-    use crate::clarity::int::IntCV;
-    use crate::clarity::int::UIntCV;
-    use crate::clarity::optional::NoneCV;
-    use crate::clarity::optional::SomeCV;
-    use crate::clarity::principal::ContractPrincipalCV;
-    use crate::clarity::principal::StandardPrincipalCV;
+    use crate::clarity::BufferCV;
+    use crate::clarity::ContractPrincipalCV;
+    use crate::clarity::FalseCV;
+    use crate::clarity::IntCV;
+    use crate::clarity::NoneCV;
+    use crate::clarity::SomeCV;
+    use crate::clarity::StandardPrincipalCV;
+    use crate::clarity::TrueCV;
+    use crate::clarity::UIntCV;
 
     #[test]
     fn test_list_cv() {
         let cv = ListCV::new(vec![
-            Box::new(IntCV::new(1)),
-            Box::new(IntCV::new(2)),
-            Box::new(IntCV::new(3)),
-            Box::new(IntCV::new(-4)),
-            Box::new(UIntCV::new(1)),
+            IntCV::new(1).into(),
+            IntCV::new(2).into(),
+            IntCV::new(3).into(),
+            IntCV::new(-4).into(),
+            UIntCV::new(1).into(),
         ]);
 
         let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
@@ -128,21 +128,16 @@ mod tests {
     #[test]
     fn test_list_cv_deserialize() {
         let cv = ListCV::new(vec![
-            Box::new(IntCV::new(3)),
-            Box::new(IntCV::new(-4)),
-            Box::new(UIntCV::new(1)),
-            Box::new(TrueCV::new()),
-            Box::new(FalseCV::new()),
-            Box::new(StandardPrincipalCV::new(
-                "ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA",
-            )),
-            Box::new(NoneCV::new()),
-            Box::new(ContractPrincipalCV::new(
-                "ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA",
-                "asdf",
-            )),
-            Box::new(SomeCV::new(IntCV::new(1))),
-            Box::new(BufferCV::new(&[1, 2, 3, 4])),
+            IntCV::new(3).into(),
+            IntCV::new(-4).into(),
+            UIntCV::new(1).into(),
+            TrueCV::new().into(),
+            FalseCV::new().into(),
+            StandardPrincipalCV::new("ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA").into(),
+            NoneCV::new().into(),
+            ContractPrincipalCV::new("ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA", "asdf").into(),
+            SomeCV::new(IntCV::new(1)).into(),
+            BufferCV::new(&[0x01, 0x02, 0x03, 0x04]).into(),
         ]);
 
         let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
@@ -167,12 +162,12 @@ mod tests {
     fn test_list_cv_string() {
         assert_eq!(
             ListCV::new(vec![
-                Box::new(IntCV::new(1)),
-                Box::new(IntCV::new(-4)),
-                Box::new(UIntCV::new(1)),
-                Box::new(TrueCV::new()),
-                Box::new(FalseCV::new()),
-                Box::new(BufferCV::new(&[0x00]))
+                IntCV::new(1).into(),
+                IntCV::new(-4).into(),
+                UIntCV::new(1).into(),
+                TrueCV::new().into(),
+                FalseCV::new().into(),
+                BufferCV::new(&[0x00]).into()
             ])
             .to_string(),
             "(list 1 -4 u1 true false 0x00)"
