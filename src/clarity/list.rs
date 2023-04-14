@@ -107,6 +107,7 @@ mod tests {
     use crate::clarity::SomeCV;
     use crate::clarity::StandardPrincipalCV;
     use crate::clarity::TrueCV;
+    use crate::clarity::TupleCV;
     use crate::clarity::UIntCV;
 
     #[test]
@@ -137,6 +138,11 @@ mod tests {
             NoneCV::new().into(),
             ContractPrincipalCV::new("ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA", "asdf").into(),
             SomeCV::new(IntCV::new(1)).into(),
+            TupleCV::new(vec![
+                ("foo".to_string(), IntCV::new(1).into()),
+                ("bar".to_string(), IntCV::new(2).into()),
+            ])
+            .into(),
             BufferCV::new(&[0x01, 0x02, 0x03, 0x04]).into(),
         ]);
 

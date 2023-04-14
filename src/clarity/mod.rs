@@ -11,6 +11,7 @@ use crate::clarity::optional::NoneCV;
 use crate::clarity::optional::SomeCV;
 use crate::clarity::principal::ContractPrincipalCV;
 use crate::clarity::principal::StandardPrincipalCV;
+use crate::clarity::tuple::TupleCV;
 
 pub mod bool;
 pub mod buffer;
@@ -59,6 +60,7 @@ impl ClarityValue {
             CLARITY_TYPE_OPTIONAL_NONE => Ok(NoneCV::deserialize(bytes)?.into()),
             CLARITY_TYPE_OPTIONAL_SOME => Ok(SomeCV::deserialize(bytes)?.into()),
             CLARITY_TYPE_LIST => Ok(ListCV::deserialize(bytes)?.into()),
+            CLARITY_TYPE_TUPLE => Ok(TupleCV::deserialize(bytes)?.into()),
             _ => Err(Error::DeserializationError),
         }
     }
