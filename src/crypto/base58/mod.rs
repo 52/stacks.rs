@@ -158,8 +158,8 @@ pub(crate) fn base58check_decode(
     Ok((data, BitcoinNetworkVersion::from(prefix)))
 }
 
+#[cfg(test)]
 mod tests {
-    #[allow(unused_imports)]
     use super::*;
 
     #[test]

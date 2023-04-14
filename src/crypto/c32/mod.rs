@@ -208,7 +208,10 @@ pub(crate) fn c32_address_decode(address: impl Into<String>) -> Result<(Vec<u8>,
     c32check_decode(&address[1..])
 }
 
+#[cfg(test)]
 mod tests {
+    use crate::crypto::hex::hex_to_bytes;
+    use rand::{thread_rng, Rng, RngCore};
 
     #[test]
     fn test_c32_encode() {
@@ -227,8 +230,6 @@ mod tests {
 
     #[test]
     fn test_c32_check() {
-        use crate::crypto::hex::hex_to_bytes;
-
         let data = hex_to_bytes("8a4d3f2e55c87f964bae8b2963b3a824a2e9c9ab").unwrap();
         let version = 22;
 
@@ -241,7 +242,6 @@ mod tests {
 
     #[test]
     fn test_c32_randomized_input() {
-        use rand::{thread_rng, Rng, RngCore};
         let mut rng = thread_rng();
 
         for _ in 0..100 {
@@ -257,7 +257,6 @@ mod tests {
 
     #[test]
     fn test_c32_check_randomized_input() {
-        use rand::{thread_rng, Rng};
         let mut rng = thread_rng();
 
         for _ in 0..10_000 {

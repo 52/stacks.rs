@@ -33,6 +33,7 @@ impl StacksWallet {
     }
 }
 
+#[cfg(test)]
 mod tests {
 
     #[test]
