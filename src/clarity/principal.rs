@@ -36,7 +36,8 @@ impl SerializeCV for StandardPrincipalCV {
     }
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
-        let (addr, version) = c32_address_decode(&self.1).map_err(|_| Error::SerializationError)?;
+        let (addr, version) =
+            c32_address_decode(&self.1).map_err(|_| Error::InvalidPrincipalAddress)?;
         let mut buff = vec![CLARITY_TYPE_PRINCIPAL_STANDARD, version];
         buff.extend_from_slice(&addr);
         Ok(buff)
@@ -48,10 +49,14 @@ impl DeserializeCV for StandardPrincipalCV {
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
         if bytes[0] != CLARITY_TYPE_PRINCIPAL_STANDARD {
-            return Err(Error::DeserializationError);
+            return Err(Error::InvalidClarityTypeId(
+                CLARITY_TYPE_PRINCIPAL_STANDARD,
+                bytes[0],
+            ));
         }
 
-        let addr = c32_address(&bytes[2..22], bytes[1]).map_err(|_| Error::DeserializationError)?;
+        let addr =
+            c32_address(&bytes[2..22], bytes[1]).map_err(|_| Error::InvalidPrincipalAddress)?;
         Ok(StandardPrincipalCV::new(addr))
     }
 }
@@ -87,12 +92,20 @@ impl SerializeCV for ContractPrincipalCV {
     }
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
-        let (addr, version) = c32_address_decode(&self.1).map_err(|_| Error::SerializationError)?;
+        let (addr, version) =
+            c32_address_decode(&self.1).map_err(|_| Error::InvalidPrincipalAddress)?;
 
         let mut buff = vec![CLARITY_TYPE_PRINCIPAL_CONTRACT, version];
+
+        let name_bytes = self.2.as_bytes();
+
+        if name_bytes.len() > 128 {
+            return Err(Error::InvalidClarityName);
+        }
+
         buff.extend_from_slice(&addr);
         buff.extend_from_slice(&[self.2.len() as u8]);
-        buff.extend_from_slice(&self.2.as_bytes());
+        buff.extend_from_slice(&name_bytes);
 
         Ok(buff)
     }
@@ -103,7 +116,10 @@ impl DeserializeCV for ContractPrincipalCV {
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
         if bytes[0] != CLARITY_TYPE_PRINCIPAL_CONTRACT {
-            return Err(Error::DeserializationError);
+            return Err(Error::InvalidClarityTypeId(
+                CLARITY_TYPE_PRINCIPAL_CONTRACT,
+                bytes[0],
+            ));
         }
 
         let network = bytes[1];
@@ -111,8 +127,9 @@ impl DeserializeCV for ContractPrincipalCV {
         let name_len = bytes[22] as usize;
         let name_bytes = &bytes[23..23 + name_len];
 
-        let c32 = c32_address(address_bytes, network).map_err(|_| Error::DeserializationError)?;
-        let name = std::str::from_utf8(name_bytes).map_err(|_| Error::DeserializationError)?;
+        let c32 =
+            c32_address(address_bytes, network).map_err(|_| Error::InvalidPrincipalAddress)?;
+        let name = std::str::from_utf8(name_bytes).map_err(|_| Error::InvalidClarityName)?;
 
         Ok(ContractPrincipalCV::new(c32, name))
     }

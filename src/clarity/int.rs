@@ -44,7 +44,7 @@ impl DeserializeCV for IntCV {
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
         if bytes[0] != CLARITY_TYPE_INT {
-            return Err(Error::DeserializationError);
+            return Err(Error::InvalidClarityTypeId(CLARITY_TYPE_INT, bytes[0]));
         }
 
         let mut buff = [0u8; 16];
@@ -96,7 +96,7 @@ impl DeserializeCV for UIntCV {
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
         if bytes[0] != CLARITY_TYPE_UINT {
-            return Err(Error::DeserializationError);
+            return Err(Error::InvalidClarityTypeId(CLARITY_TYPE_UINT, bytes[0]));
         }
 
         let mut buff = [0u8; 16];

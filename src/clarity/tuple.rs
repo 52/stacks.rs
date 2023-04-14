@@ -61,8 +61,14 @@ impl SerializeCV for TupleCV {
         buff.extend_from_slice(&(self.1.len() as u32).to_be_bytes());
 
         for (key, value) in self.1.iter() {
+            let key_bytes = key.as_bytes();
+
+            if key_bytes.len() > 128 {
+                return Err(Error::InvalidClarityName);
+            }
+
             buff.extend_from_slice(&[key.len() as u8]);
-            buff.extend_from_slice(&key.as_bytes());
+            buff.extend_from_slice(&key_bytes);
             buff.extend_from_slice(&value.serialize()?)
         }
 
@@ -82,7 +88,7 @@ impl DeserializeCV for TupleCV {
         for _ in 0..len {
             let key_len = bytes[offset] as usize;
             let key = std::str::from_utf8(&bytes[offset + 1..offset + 1 + key_len])
-                .map_err(|_| Error::DeserializationError)?
+                .map_err(|_| Error::InvalidClarityName)?
                 .to_string();
 
             offset += 1 + key_len;

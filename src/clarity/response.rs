@@ -54,7 +54,10 @@ impl DeserializeCV for OkCV {
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
         if bytes[0] != CLARITY_TYPE_RESPONSE_OK {
-            return Err(Error::DeserializationError);
+            return Err(Error::InvalidClarityTypeId(
+                CLARITY_TYPE_RESPONSE_OK,
+                bytes[0],
+            ));
         }
 
         let type_id = bytes[1];
@@ -115,7 +118,10 @@ impl DeserializeCV for ErrCV {
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
         if bytes[0] != CLARITY_TYPE_RESPONSE_ERR {
-            return Err(Error::DeserializationError);
+            return Err(Error::InvalidClarityTypeId(
+                CLARITY_TYPE_RESPONSE_ERR,
+                bytes[0],
+            ));
         }
 
         let type_id = bytes[1];

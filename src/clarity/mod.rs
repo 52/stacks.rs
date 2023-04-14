@@ -40,10 +40,14 @@ pub(crate) const CLARITY_TYPE_TUPLE: u8 = 0x0c;
 
 #[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
 pub enum Error {
-    #[error("Serialization error")]
-    SerializationError,
-    #[error("Deserialization error")]
-    DeserializationError,
+    #[error("Invalid C32 address")]
+    InvalidPrincipalAddress,
+    #[error("Invalid Clarity name")]
+    InvalidClarityName,
+    #[error("Invalid Clarity type")]
+    InvalidClarityType,
+    #[error("Invalid type_id - received: {0}, expected: {1}")]
+    InvalidClarityTypeId(u8, u8),
 }
 
 pub trait SerializeCV: Display + Debug {
@@ -72,7 +76,7 @@ impl dyn SerializeCV<Err = Error> {
             CLARITY_TYPE_OPTIONAL_SOME => Ok(SomeCV::deserialize(bytes)?.into()),
             CLARITY_TYPE_LIST => Ok(ListCV::deserialize(bytes)?.into()),
             CLARITY_TYPE_TUPLE => Ok(TupleCV::deserialize(bytes)?.into()),
-            _ => Err(Error::DeserializationError),
+            _ => Err(Error::InvalidClarityType),
         }
     }
 }

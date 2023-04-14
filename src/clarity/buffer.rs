@@ -44,7 +44,7 @@ impl DeserializeCV for BufferCV {
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
         if bytes[0] != CLARITY_TYPE_BUFFER {
-            return Err(Error::DeserializationError);
+            return Err(Error::InvalidClarityTypeId(CLARITY_TYPE_BUFFER, bytes[0]));
         }
 
         let len = u32::from_be_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]);

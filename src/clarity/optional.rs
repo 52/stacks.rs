@@ -42,7 +42,10 @@ impl DeserializeCV for NoneCV {
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
         if bytes[0] != CLARITY_TYPE_OPTIONAL_NONE {
-            return Err(Error::DeserializationError);
+            return Err(Error::InvalidClarityTypeId(
+                CLARITY_TYPE_OPTIONAL_NONE,
+                bytes[0],
+            ));
         }
 
         Ok(NoneCV::new())
@@ -104,12 +107,11 @@ impl DeserializeCV for SomeCV {
     type Err = Error;
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
-        if bytes.len() < 2 {
-            return Err(Error::DeserializationError);
-        }
-
         if bytes[0] != CLARITY_TYPE_OPTIONAL_SOME {
-            return Err(Error::DeserializationError);
+            return Err(Error::InvalidClarityTypeId(
+                CLARITY_TYPE_OPTIONAL_SOME,
+                bytes[0],
+            ));
         }
 
         let type_id = bytes[1];

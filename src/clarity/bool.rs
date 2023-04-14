@@ -42,7 +42,10 @@ impl DeserializeCV for TrueCV {
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
         if bytes[0] != CLARITY_TYPE_BOOL_TRUE {
-            return Err(Error::DeserializationError);
+            return Err(Error::InvalidClarityTypeId(
+                CLARITY_TYPE_BOOL_TRUE,
+                bytes[0],
+            ));
         }
 
         Ok(TrueCV::new())
@@ -87,7 +90,10 @@ impl DeserializeCV for FalseCV {
 
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
         if bytes[0] != CLARITY_TYPE_BOOL_FALSE {
-            return Err(Error::DeserializationError);
+            return Err(Error::InvalidClarityTypeId(
+                CLARITY_TYPE_BOOL_FALSE,
+                bytes[0],
+            ));
         }
 
         Ok(FalseCV::new())
