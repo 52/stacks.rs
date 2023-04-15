@@ -31,6 +31,9 @@ pub enum Error {
     /// Invalid checksum.
     #[error("Invalid B58 checksum - expected {0}, got {1}")]
     InvalidChecksum(String, String),
+    /// Integer conversion error.
+    #[error(transparent)]
+    IntConversionError(#[from] std::num::TryFromIntError),
 }
 
 /// Encode a byte slice into a `Base58` string.
@@ -52,6 +55,7 @@ pub fn b58_encode(data: &[u8]) -> String {
             let div = cur / 58;
             rem = cur % 58;
             if !temp.is_empty() || div != 0 {
+                #[allow(clippy::cast_possible_truncation)]
                 temp.push(div as u8);
             }
         }
@@ -89,7 +93,7 @@ pub fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Error> {
             return Err(Error::InvalidChar(c));
         }
 
-        let mut carry = index as u32;
+        let mut carry = u32::try_from(index)?;
 
         for byte in buff.iter_mut().rev() {
             carry += u32::from(*byte) * 58;
@@ -135,7 +139,7 @@ pub fn base58check_decode(
 ) -> Result<(Vec<u8>, BitcoinNetworkVersion), Error> {
     let address: String = address.into();
 
-    let buffer = b58_decode(address)?.to_vec();
+    let buffer = b58_decode(address)?;
     let buffer_len = buffer.len();
 
     let checksum = &buffer[buffer_len - 4..];

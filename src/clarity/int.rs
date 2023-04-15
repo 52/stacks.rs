@@ -73,7 +73,7 @@ impl std::fmt::Display for UIntCV {
 
 impl std::fmt::Debug for UIntCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "UIntCV({})", self)
+        write!(f, "UIntCV({self})")
     }
 }
 

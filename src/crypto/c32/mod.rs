@@ -31,8 +31,12 @@ pub enum Error {
     /// Invalid C32 address version.
     #[error("Invalid C32 address version: {0}")]
     InvalidAddressVersion(u8),
+    /// Conversion error, from utf8.
     #[error(transparent)]
     FromUtf8Error(#[from] std::string::FromUtf8Error),
+    /// Integer conversion error.
+    #[error(transparent)]
+    IntConversionError(#[from] std::num::TryFromIntError),
 }
 
 pub fn c32_encode(data: &[u8]) -> Result<String, Error> {
@@ -42,7 +46,7 @@ pub fn c32_encode(data: &[u8]) -> Result<String, Error> {
     let mut bits = 0;
 
     for &byte in data.iter().rev() {
-        buffer |= (byte as u32) << bits;
+        buffer |= (u32::from(byte)) << bits;
         bits += 8;
 
         while bits >= 5 {
@@ -85,14 +89,14 @@ pub fn c32_decode(input: impl Into<String>) -> Result<Vec<u8>, Error> {
     let input = {
         let mut buffer: Vec<u8> = Vec::with_capacity(input.len());
 
-        for i in input.as_bytes().into_iter().rev() {
+        for i in input.as_bytes().iter().rev() {
             let byte = C32_BYTE_MAP.get(*i as usize).unwrap_or(&-1);
 
             if byte.is_negative() {
                 return Err(Error::InvalidChar(*i as char));
             }
 
-            buffer.push(*byte as u8);
+            buffer.push(u8::try_from(*byte)?);
         }
 
         buffer
@@ -103,7 +107,7 @@ pub fn c32_decode(input: impl Into<String>) -> Result<Vec<u8>, Error> {
     let mut carry_bits = 0;
 
     for bits in &input {
-        carry |= (*bits as u16) << carry_bits;
+        carry |= (u16::from(*bits)) << carry_bits;
         carry_bits += 5;
 
         while carry_bits >= 8 {
@@ -114,7 +118,7 @@ pub fn c32_decode(input: impl Into<String>) -> Result<Vec<u8>, Error> {
     }
 
     if carry_bits > 0 {
-        decoded.push(carry as u8);
+        decoded.push(u8::try_from(carry)?);
     }
 
     while let Some(i) = decoded.pop() {

@@ -24,7 +24,7 @@ impl std::fmt::Display for TupleCV {
             if i > 0 {
                 write!(f, " ")?;
             }
-            write!(f, "({} {})", key, value)?;
+            write!(f, "({key} {value})")?;
         }
         write!(f, ")")
     }
@@ -37,7 +37,7 @@ impl std::fmt::Debug for TupleCV {
             if i > 0 {
                 write!(f, ", ")?;
             }
-            write!(f, "{}: {:#?}", key, value)?;
+            write!(f, "{key}: {value:#?}")?;
         }
         write!(f, ")")
     }
@@ -58,18 +58,18 @@ impl SerializeCV for TupleCV {
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_TUPLE];
-        buff.extend_from_slice(&(self.1.len() as u32).to_be_bytes());
+        buff.extend_from_slice(&(u32::try_from(self.1.len())?).to_be_bytes());
 
-        for (key, value) in self.1.iter() {
+        for (key, value) in &self.1 {
             let key_bytes = key.as_bytes();
 
             if key_bytes.len() > 128 {
                 return Err(Error::InvalidClarityName);
             }
 
-            buff.extend_from_slice(&[key.len() as u8]);
-            buff.extend_from_slice(&key_bytes);
-            buff.extend_from_slice(&value.serialize()?)
+            buff.extend_from_slice(&[u8::try_from(key.len())?]);
+            buff.extend_from_slice(key_bytes);
+            buff.extend_from_slice(&value.serialize()?);
         }
 
         Ok(buff)

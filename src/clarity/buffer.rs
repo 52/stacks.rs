@@ -2,6 +2,7 @@ use crate::clarity::DeserializeCV;
 use crate::clarity::Error;
 use crate::clarity::SerializeCV;
 use crate::clarity::CLARITY_TYPE_BUFFER;
+use crate::crypto::hex::bytes_to_hex;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct BufferCV(u8, Vec<u8>);
@@ -14,13 +15,13 @@ impl BufferCV {
 
 impl std::fmt::Display for BufferCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "0x{}", crate::crypto::hex::bytes_to_hex(&self.1))
+        write!(f, "0x{}", bytes_to_hex(&self.1))
     }
 }
 
 impl std::fmt::Debug for BufferCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "BufferCV({})", self)
+        write!(f, "BufferCV({self})")
     }
 }
 
@@ -29,7 +30,7 @@ impl SerializeCV for BufferCV {
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_BUFFER];
-        buff.extend_from_slice(&(self.1.len() as u32).to_be_bytes());
+        buff.extend_from_slice(&(u32::try_from(self.1.len())?).to_be_bytes());
         buff.extend_from_slice(&self.1);
         Ok(buff)
     }
@@ -64,7 +65,6 @@ impl DeserializeCV for BufferCV {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::crypto::hex::bytes_to_hex;
     use crate::crypto::hex::hex_to_bytes;
 
     #[test]

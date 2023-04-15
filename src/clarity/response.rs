@@ -64,7 +64,7 @@ impl DeserializeCV for OkCV {
         let slice = &bytes[1..];
 
         let value = <dyn SerializeCV<Err = Error>>::from_bytes(type_id, slice)?;
-        Ok(OkCV(type_id, value.into()))
+        Ok(OkCV(type_id, value))
     }
 }
 
@@ -128,7 +128,7 @@ impl DeserializeCV for ErrCV {
         let slice = &bytes[1..];
 
         let value = <dyn SerializeCV<Err = Error>>::from_bytes(type_id, slice)?;
-        Ok(ErrCV(type_id, value.into()))
+        Ok(ErrCV(type_id, value))
     }
 }
 

@@ -48,6 +48,8 @@ pub enum Error {
     InvalidClarityType,
     #[error("Invalid type_id - received: {0}, expected: {1}")]
     InvalidClarityTypeId(u8, u8),
+    #[error(transparent)]
+    IntConversion(#[from] std::num::TryFromIntError),
 }
 
 pub trait SerializeCV: Display + Debug {

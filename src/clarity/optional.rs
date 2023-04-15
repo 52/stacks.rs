@@ -65,7 +65,7 @@ impl SomeCV {
 
 impl std::fmt::Display for SomeCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "(some {})", self.1.to_string())
+        write!(f, "(some {})", self.1)
     }
 }
 

@@ -18,7 +18,7 @@ impl std::fmt::Display for ListCV {
             if i > 0 {
                 write!(f, " ")?;
             }
-            write!(f, "{}", value)?;
+            write!(f, "{value}")?;
         }
         write!(f, ")")
     }
@@ -31,7 +31,7 @@ impl std::fmt::Debug for ListCV {
             if i > 0 {
                 write!(f, ", ")?;
             }
-            write!(f, "{:#?}", value)?;
+            write!(f, "{value:#?}")?;
         }
         write!(f, ")")
     }
@@ -57,10 +57,10 @@ impl SerializeCV for ListCV {
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_LIST];
-        buff.extend_from_slice(&(self.1.len() as u32).to_be_bytes());
+        buff.extend_from_slice(&(u32::try_from(self.1.len())?).to_be_bytes());
 
-        for value in self.1.iter() {
-            buff.extend_from_slice(&value.serialize()?)
+        for value in &self.1 {
+            buff.extend_from_slice(&value.serialize()?);
         }
 
         Ok(buff)
@@ -87,7 +87,7 @@ impl DeserializeCV for ListCV {
             let cv = <dyn SerializeCV<Err = Error>>::from_bytes(type_id, slice)?;
 
             offset += cv.serialize()?.len();
-            buff.push(cv)
+            buff.push(cv);
         }
 
         Ok(ListCV::new(buff))

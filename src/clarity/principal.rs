@@ -104,8 +104,8 @@ impl SerializeCV for ContractPrincipalCV {
         }
 
         buff.extend_from_slice(&addr);
-        buff.extend_from_slice(&[self.2.len() as u8]);
-        buff.extend_from_slice(&name_bytes);
+        buff.extend_from_slice(&[u8::try_from(self.2.len())?]);
+        buff.extend_from_slice(name_bytes);
 
         Ok(buff)
     }
