@@ -1,15 +1,16 @@
-use crate::clarity::DeserializeCV;
+use crate::clarity::ClarityValue;
 use crate::clarity::Error;
-use crate::clarity::SerializeCV;
 use crate::clarity::CLARITY_TYPE_INT;
 use crate::clarity::CLARITY_TYPE_UINT;
+use crate::crypto::Deserialize;
+use crate::crypto::Serialize;
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct IntCV(u8, i128);
 
 impl IntCV {
-    pub fn new(value: i128) -> IntCV {
-        IntCV(CLARITY_TYPE_INT, value)
+    pub fn new(value: i128) -> ClarityValue {
+        ClarityValue::Int(IntCV(CLARITY_TYPE_INT, value))
     }
 }
 
@@ -25,12 +26,8 @@ impl std::fmt::Debug for IntCV {
     }
 }
 
-impl SerializeCV for IntCV {
+impl Serialize for IntCV {
     type Err = Error;
-
-    fn type_id(&self) -> u8 {
-        self.0
-    }
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_INT];
@@ -39,10 +36,11 @@ impl SerializeCV for IntCV {
     }
 }
 
-impl DeserializeCV for IntCV {
+impl Deserialize for IntCV {
+    type Output = ClarityValue;
     type Err = Error;
 
-    fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
+    fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_INT {
             return Err(Error::InvalidClarityTypeId(CLARITY_TYPE_INT, bytes[0]));
         }
@@ -56,12 +54,12 @@ impl DeserializeCV for IntCV {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UIntCV(u8, u128);
 
 impl UIntCV {
-    pub fn new(value: u128) -> UIntCV {
-        UIntCV(CLARITY_TYPE_UINT, value)
+    pub fn new(value: u128) -> ClarityValue {
+        ClarityValue::UInt(UIntCV(CLARITY_TYPE_UINT, value))
     }
 }
 
@@ -77,12 +75,8 @@ impl std::fmt::Debug for UIntCV {
     }
 }
 
-impl SerializeCV for UIntCV {
+impl Serialize for UIntCV {
     type Err = Error;
-
-    fn type_id(&self) -> u8 {
-        self.0
-    }
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_UINT];
@@ -91,10 +85,11 @@ impl SerializeCV for UIntCV {
     }
 }
 
-impl DeserializeCV for UIntCV {
+impl Deserialize for UIntCV {
+    type Output = ClarityValue;
     type Err = Error;
 
-    fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
+    fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_UINT {
             return Err(Error::InvalidClarityTypeId(CLARITY_TYPE_UINT, bytes[0]));
         }

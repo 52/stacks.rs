@@ -1,15 +1,16 @@
-use crate::clarity::DeserializeCV;
+use crate::clarity::ClarityValue;
 use crate::clarity::Error;
-use crate::clarity::SerializeCV;
 use crate::clarity::CLARITY_TYPE_OPTIONAL_NONE;
 use crate::clarity::CLARITY_TYPE_OPTIONAL_SOME;
+use crate::crypto::Deserialize;
+use crate::crypto::Serialize;
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NoneCV(u8);
 
 impl NoneCV {
-    pub fn new() -> NoneCV {
-        NoneCV(CLARITY_TYPE_OPTIONAL_NONE)
+    pub fn new() -> ClarityValue {
+        ClarityValue::OptionalNone(NoneCV(CLARITY_TYPE_OPTIONAL_NONE))
     }
 }
 
@@ -25,22 +26,19 @@ impl std::fmt::Debug for NoneCV {
     }
 }
 
-impl SerializeCV for NoneCV {
+impl Serialize for NoneCV {
     type Err = Error;
-
-    fn type_id(&self) -> u8 {
-        CLARITY_TYPE_OPTIONAL_NONE
-    }
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         Ok(vec![CLARITY_TYPE_OPTIONAL_NONE])
     }
 }
 
-impl DeserializeCV for NoneCV {
+impl Deserialize for NoneCV {
+    type Output = ClarityValue;
     type Err = Error;
 
-    fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
+    fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_OPTIONAL_NONE {
             return Err(Error::InvalidClarityTypeId(
                 CLARITY_TYPE_OPTIONAL_NONE,
@@ -52,14 +50,12 @@ impl DeserializeCV for NoneCV {
     }
 }
 
-pub struct SomeCV(u8, Box<dyn SerializeCV<Err = Error>>);
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SomeCV(u8, Box<ClarityValue>);
 
 impl SomeCV {
-    pub fn new<T>(value: T) -> SomeCV
-    where
-        T: SerializeCV<Err = Error> + 'static,
-    {
-        SomeCV(CLARITY_TYPE_OPTIONAL_SOME, value.into())
+    pub fn new(value: ClarityValue) -> ClarityValue {
+        ClarityValue::OptionalSome(SomeCV(CLARITY_TYPE_OPTIONAL_SOME, value.into()))
     }
 }
 
@@ -75,20 +71,8 @@ impl std::fmt::Debug for SomeCV {
     }
 }
 
-impl PartialEq for SomeCV {
-    fn eq(&self, other: &SomeCV) -> bool {
-        self.1.serialize() == other.1.serialize()
-    }
-}
-
-impl Eq for SomeCV {}
-
-impl SerializeCV for SomeCV {
+impl Serialize for SomeCV {
     type Err = Error;
-
-    fn type_id(&self) -> u8 {
-        CLARITY_TYPE_OPTIONAL_SOME
-    }
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_OPTIONAL_SOME];
@@ -97,16 +81,11 @@ impl SerializeCV for SomeCV {
     }
 }
 
-impl From<Box<dyn SerializeCV<Err = Error>>> for SomeCV {
-    fn from(value: Box<dyn SerializeCV<Err = Error>>) -> Self {
-        SomeCV(CLARITY_TYPE_OPTIONAL_SOME, value)
-    }
-}
-
-impl DeserializeCV for SomeCV {
+impl Deserialize for SomeCV {
+    type Output = ClarityValue;
     type Err = Error;
 
-    fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
+    fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_OPTIONAL_SOME {
             return Err(Error::InvalidClarityTypeId(
                 CLARITY_TYPE_OPTIONAL_SOME,
@@ -114,10 +93,7 @@ impl DeserializeCV for SomeCV {
             ));
         }
 
-        let type_id = bytes[1];
-        let slice = &bytes[1..];
-
-        Ok(<dyn SerializeCV<Err = Error>>::from_bytes(type_id, slice)?.into())
+        Ok(SomeCV::new(ClarityValue::deserialize(&bytes[1..])?))
     }
 }
 
@@ -157,28 +133,26 @@ mod tests {
 
     #[test]
     fn test_optional_cv_complex() {
-        let list = ListCV::new(vec![
-            IntCV::new(3).into(),
-            IntCV::new(-4).into(),
-            UIntCV::new(1).into(),
-            TrueCV::new().into(),
-            FalseCV::new().into(),
-            ErrCV::new(IntCV::new(1)).into(),
-            StandardPrincipalCV::new("ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA").into(),
-            NoneCV::new().into(),
-            ContractPrincipalCV::new("ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA", "asdf").into(),
-            OkCV::new(IntCV::new(1)).into(),
-            SomeCV::new(IntCV::new(1)).into(),
-            TupleCV::new(vec![
-                ("foo".to_string(), IntCV::new(1).into()),
-                ("bar".to_string(), IntCV::new(2).into()),
-            ])
-            .into(),
-            BufferCV::new(&[0x01, 0x02, 0x03, 0x04]).into(),
+        let list = ListCV::new(&[
+            IntCV::new(3),
+            IntCV::new(-4),
+            UIntCV::new(1),
+            TrueCV::new(),
+            FalseCV::new(),
+            ErrCV::new(IntCV::new(1)),
+            StandardPrincipalCV::new("ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA"),
+            NoneCV::new(),
+            ContractPrincipalCV::new("ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA", "asdf"),
+            OkCV::new(IntCV::new(1)),
+            SomeCV::new(IntCV::new(1)),
+            TupleCV::new(&[("foo", IntCV::new(1)), ("bar", IntCV::new(2))]),
+            BufferCV::new(&[0x01, 0x02, 0x03, 0x04]),
         ]);
 
         let some = SomeCV::new(list);
-        let some_deserialized = SomeCV::deserialize(&some.serialize().unwrap()).unwrap();
+        let some_serialized = some.serialize().unwrap();
+
+        let some_deserialized = SomeCV::deserialize(&some_serialized).unwrap();
         assert_eq!(some_deserialized, some);
     }
 
