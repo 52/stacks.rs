@@ -1,7 +1,4 @@
-use crate::crypto::hash::DSha256Hash;
-
-pub(crate) mod network;
-pub use network::StacksNetworkVersion;
+use crate::crypto::DSha256Hash;
 
 pub(crate) const C32_ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
@@ -183,9 +180,7 @@ pub fn c32check_decode(input: impl Into<String>) -> Result<(Vec<u8>, u8), Error>
     Ok((bytes.to_vec(), check[0]))
 }
 
-pub fn c32_address(data: &[u8], network: impl Into<StacksNetworkVersion>) -> Result<String, Error> {
-    let version = network.into().version();
-
+pub fn c32_address(data: &[u8], version: u8) -> Result<String, Error> {
     if ![22, 26, 20, 21].contains(&version) {
         return Err(Error::InvalidAddressVersion(version));
     }
@@ -264,12 +259,12 @@ mod tests {
             let bytes = rng.gen::<[u8; 20]>();
             let versions = [22, 26, 20, 21];
 
-            for version in versions.iter() {
-                let encoded = super::c32_address(&bytes, *version).unwrap();
+            for version in versions.into_iter() {
+                let encoded = super::c32_address(&bytes, version).unwrap();
                 let (decoded, decoded_version) = super::c32_address_decode(encoded).unwrap();
 
                 assert_eq!(decoded, bytes);
-                assert_eq!(decoded_version, *version);
+                assert_eq!(decoded_version, version);
             }
         }
     }

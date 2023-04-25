@@ -1,27 +1,16 @@
 use ring::digest::Context;
 use ring::digest::SHA256 as HashSha256;
+use ring::digest::SHA512_256 as HashSha512_256;
 use ripemd::Digest;
 use ripemd::Ripemd160;
 
-macro_rules! impl_hash {
-    ($name:ident, $size:expr) => {
-        impl $name {
-            pub fn as_bytes(&self) -> &[u8] {
-                &self.0
-            }
-
-            pub fn into_bytes(self) -> [u8; $size] {
-                self.0
-            }
-        }
-    };
-}
+use crate::crypto::impl_wrapped_array;
 
 pub(crate) const SHA256_ENCODED_SIZE: usize = 32;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Sha256Hash([u8; SHA256_ENCODED_SIZE]);
-impl_hash!(Sha256Hash, SHA256_ENCODED_SIZE);
+impl_wrapped_array!(Sha256Hash, u8, SHA256_ENCODED_SIZE);
 
 impl Sha256Hash {
     pub fn from_slice(value: &[u8]) -> Self {
@@ -45,9 +34,9 @@ impl Sha256Hash {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DSha256Hash([u8; SHA256_ENCODED_SIZE]);
-impl_hash!(DSha256Hash, SHA256_ENCODED_SIZE);
+impl_wrapped_array!(DSha256Hash, u8, SHA256_ENCODED_SIZE);
 
 impl DSha256Hash {
     pub fn from_slice(value: &[u8]) -> Self {
@@ -71,13 +60,39 @@ impl DSha256Hash {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Sha512_256Hash([u8; SHA256_ENCODED_SIZE]);
+impl_wrapped_array!(Sha512_256Hash, u8, SHA256_ENCODED_SIZE);
+
+impl Sha512_256Hash {
+    pub fn from_slice(value: &[u8]) -> Self {
+        let bytes = {
+            let mut ctx = Context::new(&HashSha512_256);
+            ctx.update(value);
+            let digest = ctx.finish();
+            let mut buff = [0u8; SHA256_ENCODED_SIZE];
+            buff.copy_from_slice(digest.as_ref());
+            buff
+        };
+
+        Sha512_256Hash(bytes)
+    }
+
+    pub fn checksum(&self) -> [u8; 4] {
+        let bytes = self.as_bytes();
+        let mut buff = [0u8; 4];
+        buff.copy_from_slice(&bytes[0..4]);
+        buff
+    }
+}
+
 pub(crate) const HASH160_ENCODED_SIZE: usize = 20;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Ripemd160Hash([u8; HASH160_ENCODED_SIZE]);
-impl_hash!(Ripemd160Hash, HASH160_ENCODED_SIZE);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Hash160(pub [u8; HASH160_ENCODED_SIZE]);
+impl_wrapped_array!(Hash160, u8, HASH160_ENCODED_SIZE);
 
-impl Ripemd160Hash {
+impl Hash160 {
     pub fn from_slice(value: &[u8]) -> Self {
         let mut buff = [0u8; HASH160_ENCODED_SIZE];
 
@@ -87,7 +102,7 @@ impl Ripemd160Hash {
         let ripemd = Ripemd160::digest(bytes);
         buff.copy_from_slice(ripemd.as_slice());
 
-        Ripemd160Hash(buff)
+        Hash160(buff)
     }
 
     pub fn checksum(&self) -> [u8; 4] {

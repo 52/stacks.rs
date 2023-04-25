@@ -3,8 +3,8 @@ use crate::crypto::bip32::Error;
 
 pub(crate) const DERIVATION_PATH_PREFIX: &str = "m";
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub(crate) struct DerivationPath {
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct DerivationPath {
     path: Vec<ChildIndex>,
 }
 
@@ -47,7 +47,7 @@ impl std::str::FromStr for DerivationPath {
     }
 }
 
-pub(crate) trait IntoDerivationPath {
+pub trait IntoDerivationPath {
     fn into_derivation_path(self) -> Result<DerivationPath, Error>;
 }
 
