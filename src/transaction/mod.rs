@@ -15,6 +15,7 @@ pub use crate::transaction::transfer::STXTokenTransferMultiSig;
 pub(crate) mod args;
 pub(crate) mod auth;
 pub(crate) mod base;
+pub(crate) mod call;
 pub(crate) mod condition;
 pub(crate) mod payload;
 pub(crate) mod signer;
