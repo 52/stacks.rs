@@ -1,6 +1,5 @@
 use crate::clarity::ClarityValue;
 use crate::transaction::AnchorMode;
-use crate::transaction::Error;
 use crate::transaction::PostConditionMode;
 use crate::transaction::PostConditions;
 use crate::StacksNetwork;
@@ -67,13 +66,11 @@ pub struct STXTokenTransferOptions {
     pub sponsored: bool,
 }
 
-impl TryFrom<STXTokenTransferOptions> for USTXTokenTransferOptions {
-    type Error = Error;
-
-    fn try_from(args: STXTokenTransferOptions) -> Result<Self, Self::Error> {
+impl From<STXTokenTransferOptions> for USTXTokenTransferOptions {
+    fn from(args: STXTokenTransferOptions) -> Self {
         let public_key = args.sender_key.public_key(&secp256k1::Secp256k1::new());
 
-        Ok(Self::new(
+        Self::new(
             args.recipient,
             public_key,
             args.amount,
@@ -85,7 +82,7 @@ impl TryFrom<STXTokenTransferOptions> for USTXTokenTransferOptions {
             args.post_condition_mode,
             args.post_conditions,
             args.sponsored,
-        ))
+        )
     }
 }
 

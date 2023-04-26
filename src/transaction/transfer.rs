@@ -27,7 +27,7 @@ impl Transaction for STXTokenTransfer {
 
     fn new(args: Self::Args) -> Result<StacksTransaction, Error> {
         let private_key = args.sender_key;
-        let args = USTXTokenTransferOptions::try_from(args)?;
+        let args = USTXTokenTransferOptions::from(args);
         let mut transaction = Self::new_unsigned(args)?;
         let mut signer = TransactionSigner::new(&mut transaction)?;
         signer.sign_origin(&private_key)?;
