@@ -1,8 +1,12 @@
+pub use crate::transaction::args::ContractCallOptions;
+pub use crate::transaction::args::ContractCallOptionsMSig;
 pub use crate::transaction::args::STXTokenTransferOptions;
 pub use crate::transaction::args::STXTokenTransferOptionsMSig;
 pub use crate::transaction::auth::AuthorizationType;
 pub use crate::transaction::base::StacksTransaction;
 pub use crate::transaction::base::TransactionId;
+pub use crate::transaction::call::ContractCall;
+pub use crate::transaction::call::ContractCallMultiSig;
 pub use crate::transaction::condition::AnchorMode;
 pub use crate::transaction::condition::PostConditionMode;
 pub use crate::transaction::condition::PostConditions;
