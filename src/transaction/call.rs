@@ -136,9 +136,11 @@ mod tests {
     use crate::crypto::bytes_to_hex;
     use crate::crypto::hex_to_bytes;
     use crate::crypto::Serialize;
+    use crate::transaction::sponsor_transaction;
     use crate::transaction::AnchorMode;
     use crate::transaction::PostConditionMode;
     use crate::transaction::PostConditions;
+    use crate::transaction::SponsorOptions;
     use crate::StacksNetwork;
     use crate::StacksPrivateKey;
     use crate::StacksPublicKey;
@@ -335,6 +337,49 @@ mod tests {
 
         assert_eq!(tx_hex, expected_tx_hex);
         assert_eq!(tx_id_hex, expected_tx_id_hex);
+    }
+
+    #[test]
+    fn test_sponsor_signed_token_transfer_mainnet() {
+        let mut args = make_signed_single_sig_args(StacksNetwork::mainnet());
+        args.sponsored = true;
+
+        let mut transaction = ContractCall::new(args).unwrap();
+        let serialized = transaction.serialize().unwrap();
+        let tx_id = transaction.tx_id().unwrap().to_bytes();
+
+        let pre_sponsor_tx_hex = bytes_to_hex(&serialized);
+        let pre_sponsor_tx_id_hex = bytes_to_hex(&tx_id);
+
+        let expected_pre_sponsor_tx_hex = "0000000001050015c31b8c1c11c515e244b75806bac48d1399c775000000000000000000000000000000000001e4a52ed0476f1f8d831be94bf4f1afdb111d3c1981b805358a49b7f95af289357ec387699322feef2d8c51422b0be8992b2470a81d173f5f687e24d7a30ae2c8000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000302000000000216df0ba3e79792be7be5e50a370289accfc8c9e032076578616d706c650d66756e6374696f6e2d6e616d6500000000";
+        let expected_pre_sponsor_tx_id =
+            "cd5591ed70ae732434bc0feccd4d5ee0240d4eca3fa94762fe1f28e4196556ae";
+
+        assert_eq!(pre_sponsor_tx_hex, expected_pre_sponsor_tx_hex);
+        assert_eq!(pre_sponsor_tx_id_hex, expected_pre_sponsor_tx_id);
+
+        let sponsor_opts = SponsorOptions::new(
+            &mut transaction,
+            get_sponsor_key(),
+            123,
+            55,
+            SingleHashMode::P2PKH,
+            StacksNetwork::mainnet(),
+        );
+
+        sponsor_transaction(sponsor_opts).unwrap();
+        let post_sponsor_serialized = transaction.serialize().unwrap();
+        let post_sponsor_tx_id = transaction.tx_id().unwrap().to_bytes();
+
+        let post_sponsor_tx_hex = bytes_to_hex(&post_sponsor_serialized);
+        let post_sponsor_tx_id = bytes_to_hex(&post_sponsor_tx_id);
+
+        let expected_post_sponsor_tx_hex = "0000000001050015c31b8c1c11c515e244b75806bac48d1399c775000000000000000000000000000000000001e4a52ed0476f1f8d831be94bf4f1afdb111d3c1981b805358a49b7f95af289357ec387699322feef2d8c51422b0be8992b2470a81d173f5f687e24d7a30ae2c800b5690eaef9874a490af27242c7e105f31287cf480000000000000037000000000000007b0001e14570039f91b3b32f7aead03c9f3a326a9e11b2e4a1d789d42ee2ca4ed29aac0f1f2d7bc2d9445d1b8a3e76939e8298e9dc84947b48631e7c2bb33bd152b17e0302000000000216df0ba3e79792be7be5e50a370289accfc8c9e032076578616d706c650d66756e6374696f6e2d6e616d6500000000";
+        let expected_post_sponsor_tx_id =
+            "e2bac87910a4f77c7edca7b31eb971635e56102e79391e241cce2c1e1ffb8cb9";
+
+        assert_eq!(post_sponsor_tx_hex, expected_post_sponsor_tx_hex);
+        assert_eq!(post_sponsor_tx_id, expected_post_sponsor_tx_id);
     }
 
     #[test]

@@ -381,6 +381,49 @@ mod tests {
     }
 
     #[test]
+    fn test_sponsor_signed_token_transfer_testnet() {
+        let mut args = make_signed_single_sig_args(StacksNetwork::testnet());
+        args.sponsored = true;
+
+        let mut transaction = STXTokenTransfer::new(args).unwrap();
+        let serialized = transaction.serialize().unwrap();
+        let tx_id = transaction.tx_id().unwrap().to_bytes();
+
+        let pre_sponsor_tx_hex = bytes_to_hex(&serialized);
+        let pre_sponsor_tx_id_hex = bytes_to_hex(&tx_id);
+
+        let expected_pre_sponsor_tx_hex = "8080000000050015c31b8c1c11c515e244b75806bac48d1399c77500000000000000000000000000000000000086290eb50c77235545b135b92915a4e385864a8810aefa9ce1c092a68cf52df7008bf777f04eacb3ae560118cb3aef0f4628ca61afcf7925f33aa885c9b31be700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030200000000000516df0ba3e79792be7be5e50a370289accfc8c9e032000000000000303974657374206d656d6f00000000000000000000000000000000000000000000000000";
+        let expected_pre_sponsor_tx_id =
+            "3772ca194fbcf45b1f6a54b0e7cd48ac4adfabda7c1e67aef06feb4abe606099";
+
+        assert_eq!(pre_sponsor_tx_hex, expected_pre_sponsor_tx_hex);
+        assert_eq!(pre_sponsor_tx_id_hex, expected_pre_sponsor_tx_id);
+
+        let sponsor_opts = SponsorOptions::new(
+            &mut transaction,
+            get_sponsor_key(),
+            123,
+            55,
+            SingleHashMode::P2PKH,
+            StacksNetwork::mainnet(),
+        );
+
+        sponsor_transaction(sponsor_opts).unwrap();
+        let post_sponsor_serialized = transaction.serialize().unwrap();
+        let post_sponsor_tx_id = transaction.tx_id().unwrap().to_bytes();
+
+        let post_sponsor_tx_hex = bytes_to_hex(&post_sponsor_serialized);
+        let post_sponsor_tx_id = bytes_to_hex(&post_sponsor_tx_id);
+
+        let expected_post_sponsor_tx_hex = "8080000000050015c31b8c1c11c515e244b75806bac48d1399c77500000000000000000000000000000000000086290eb50c77235545b135b92915a4e385864a8810aefa9ce1c092a68cf52df7008bf777f04eacb3ae560118cb3aef0f4628ca61afcf7925f33aa885c9b31be700b5690eaef9874a490af27242c7e105f31287cf480000000000000037000000000000007b00008eb2968fe894d05e882a7107548a91b496b3968ce34ff8947d6816ffe5693f8e38da3a3d87dfbc6290ce953e1158c7908fdd29e006df67fd97e9787001e65f7e030200000000000516df0ba3e79792be7be5e50a370289accfc8c9e032000000000000303974657374206d656d6f00000000000000000000000000000000000000000000000000";
+        let expected_post_sponsor_tx_id =
+            "41ee4fcc9f009baec0c7c8d875ffc7b62b636641071fe1a2ce2530c6ac18f068";
+
+        assert_eq!(post_sponsor_tx_hex, expected_post_sponsor_tx_hex);
+        assert_eq!(post_sponsor_tx_id, expected_post_sponsor_tx_id);
+    }
+
+    #[test]
     fn test_unsigned_multi_sig_token_transfer_mainnet() {
         let args = make_unsigned_multi_sig_args(StacksNetwork::mainnet());
 
