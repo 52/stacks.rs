@@ -83,12 +83,14 @@ impl ContractCallPayload {
         contract: ClarityValue,
         function_name: impl Into<String>,
         function_args: &[ClarityValue],
-    ) -> Self {
-        Self {
+    ) -> Payload {
+        let payload = Self {
             contract,
             function_name: LengthPrefixedString::new(function_name.into()),
             function_args: FunctionArguments::new(function_args),
-        }
+        };
+
+        Payload::ContractCall(payload)
     }
 }
 
