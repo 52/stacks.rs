@@ -1,4 +1,6 @@
 use crate::clarity::ClarityValue;
+use crate::clarity::ContractPrincipalCV;
+use crate::clarity::StandardPrincipalCV;
 use crate::transaction::AnchorMode;
 use crate::transaction::PostConditionMode;
 use crate::transaction::PostConditions;
@@ -23,7 +25,7 @@ pub struct USTXTokenTransferOptions {
 
 impl USTXTokenTransferOptions {
     pub fn new(
-        recipient: ClarityValue,
+        recipient: impl Into<String>,
         public_key: StacksPublicKey,
         amount: u64,
         fee: u64,
@@ -36,7 +38,7 @@ impl USTXTokenTransferOptions {
         sponsored: bool,
     ) -> Self {
         Self {
-            recipient,
+            recipient: StandardPrincipalCV::new(recipient),
             public_key,
             amount,
             fee,
@@ -71,7 +73,7 @@ impl From<STXTokenTransferOptions> for USTXTokenTransferOptions {
         let public_key = args.sender_key.public_key(&secp256k1::Secp256k1::new());
 
         Self::new(
-            args.recipient,
+            args.recipient.to_string(),
             public_key,
             args.amount,
             args.fee,
@@ -88,7 +90,7 @@ impl From<STXTokenTransferOptions> for USTXTokenTransferOptions {
 
 impl STXTokenTransferOptions {
     pub fn new(
-        recipient: ClarityValue,
+        recipient: impl Into<String>,
         sender_key: StacksPrivateKey,
         amount: u64,
         fee: u64,
@@ -101,7 +103,7 @@ impl STXTokenTransferOptions {
         sponsored: bool,
     ) -> Self {
         Self {
-            recipient,
+            recipient: StandardPrincipalCV::new(recipient),
             sender_key,
             amount,
             fee,
@@ -134,8 +136,8 @@ pub struct USTXTokenTransferOptionsMSig {
 
 impl USTXTokenTransferOptionsMSig {
     pub fn new(
-        recipient: ClarityValue,
-        public_keys: Vec<StacksPublicKey>,
+        recipient: impl Into<String>,
+        public_keys: impl Into<Vec<StacksPublicKey>>,
         signatures: u8,
         amount: u64,
         fee: u64,
@@ -148,8 +150,8 @@ impl USTXTokenTransferOptionsMSig {
         sponsored: bool,
     ) -> Self {
         Self {
-            recipient,
-            public_keys,
+            recipient: StandardPrincipalCV::new(recipient),
+            public_keys: public_keys.into(),
             signatures,
             amount,
             fee,
@@ -184,7 +186,7 @@ pub struct STXTokenTransferOptionsMSig {
 impl From<STXTokenTransferOptionsMSig> for USTXTokenTransferOptionsMSig {
     fn from(args: STXTokenTransferOptionsMSig) -> Self {
         Self::new(
-            args.recipient,
+            args.recipient.to_string(),
             args.public_keys,
             args.signatures,
             args.amount,
@@ -202,9 +204,9 @@ impl From<STXTokenTransferOptionsMSig> for USTXTokenTransferOptionsMSig {
 
 impl STXTokenTransferOptionsMSig {
     pub fn new(
-        recipient: ClarityValue,
-        signer_keys: Vec<StacksPrivateKey>,
-        public_keys: Vec<StacksPublicKey>,
+        recipient: impl Into<String>,
+        signer_keys: impl Into<Vec<StacksPrivateKey>>,
+        public_keys: impl Into<Vec<StacksPublicKey>>,
         signatures: u8,
         amount: u64,
         fee: u64,
@@ -217,9 +219,9 @@ impl STXTokenTransferOptionsMSig {
         sponsored: bool,
     ) -> Self {
         Self {
-            recipient,
-            signer_keys,
-            public_keys,
+            recipient: StandardPrincipalCV::new(recipient),
+            signer_keys: signer_keys.into(),
+            public_keys: public_keys.into(),
             signatures,
             amount,
             fee,
@@ -316,7 +318,8 @@ impl From<ContractCallOptions> for UContractCallOptions {
 
 impl ContractCallOptions {
     pub fn new(
-        contract: ClarityValue,
+        contract: impl Into<String>,
+        contract_name: impl Into<String>,
         function_name: impl Into<String>,
         function_args: impl Into<Vec<ClarityValue>>,
         sender_key: StacksPrivateKey,
@@ -329,7 +332,7 @@ impl ContractCallOptions {
         sponsored: bool,
     ) -> Self {
         Self {
-            contract,
+            contract: ContractPrincipalCV::new(contract, contract_name),
             function_name: function_name.into(),
             function_args: function_args.into(),
             sender_key,
@@ -365,7 +368,7 @@ impl UContractCallOptionsMSig {
         contract: ClarityValue,
         function_name: impl Into<String>,
         function_args: impl Into<Vec<ClarityValue>>,
-        public_keys: Vec<StacksPublicKey>,
+        public_keys: impl Into<Vec<StacksPublicKey>>,
         signatures: u8,
         fee: u64,
         nonce: u64,
@@ -379,7 +382,7 @@ impl UContractCallOptionsMSig {
             contract,
             function_name: function_name.into(),
             function_args: function_args.into(),
-            public_keys,
+            public_keys: public_keys.into(),
             signatures,
             fee,
             nonce,
@@ -430,11 +433,12 @@ impl From<ContractCallOptionsMSig> for UContractCallOptionsMSig {
 
 impl ContractCallOptionsMSig {
     pub fn new(
-        contract: ClarityValue,
+        contract: impl Into<String>,
+        contract_name: impl Into<String>,
         function_name: impl Into<String>,
         function_args: impl Into<Vec<ClarityValue>>,
-        signer_keys: Vec<StacksPrivateKey>,
-        public_keys: Vec<StacksPublicKey>,
+        signer_keys: impl Into<Vec<StacksPrivateKey>>,
+        public_keys: impl Into<Vec<StacksPublicKey>>,
         signatures: u8,
         fee: u64,
         nonce: u64,
@@ -445,11 +449,11 @@ impl ContractCallOptionsMSig {
         sponsored: bool,
     ) -> Self {
         Self {
-            contract,
+            contract: ContractPrincipalCV::new(contract, contract_name),
             function_name: function_name.into(),
             function_args: function_args.into(),
-            signer_keys,
-            public_keys,
+            signer_keys: signer_keys.into(),
+            public_keys: public_keys.into(),
             signatures,
             fee,
             nonce,

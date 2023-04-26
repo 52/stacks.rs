@@ -3,6 +3,8 @@ pub use crate::transaction::args::ContractCallOptionsMSig;
 pub use crate::transaction::args::STXTokenTransferOptions;
 pub use crate::transaction::args::STXTokenTransferOptionsMSig;
 pub use crate::transaction::auth::AuthorizationType;
+pub use crate::transaction::auth::MultiHashMode;
+pub use crate::transaction::auth::SingleHashMode;
 pub use crate::transaction::base::StacksTransaction;
 pub use crate::transaction::base::TransactionId;
 pub use crate::transaction::call::ContractCall;
