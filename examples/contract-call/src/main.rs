@@ -1,4 +1,3 @@
-use stacks_rs::clarity::ContractPrincipalCV;
 use stacks_rs::clarity::IntCV;
 use stacks_rs::clarity::StandardPrincipalCV;
 use stacks_rs::clarity::TupleCV;
@@ -19,10 +18,8 @@ fn main() -> Result<(), Error> {
     let account = wallet.get_account(0)?;
 
     let opts = ContractCallOptions::new(
-        ContractPrincipalCV::new(
-            "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
-            "example-contract",
-        ),
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        "example-contract",
         "example-function",
         [
             IntCV::new(1),

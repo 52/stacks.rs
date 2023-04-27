@@ -1,4 +1,3 @@
-use stacks_rs::clarity::StandardPrincipalCV;
 use stacks_rs::transaction::AnchorMode;
 use stacks_rs::transaction::PostConditionMode;
 use stacks_rs::transaction::PostConditions;
@@ -16,7 +15,7 @@ fn main() -> Result<(), Error> {
     let account = wallet.get_account(0)?;
 
     let opts = STXTokenTransferOptions::new(
-        StandardPrincipalCV::new("SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159"),
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
         account.private_key,
         1337,
         100,
