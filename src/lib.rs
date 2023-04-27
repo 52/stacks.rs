@@ -5,6 +5,7 @@ pub use crate::wallet::StacksAccount;
 pub use crate::wallet::StacksWallet;
 
 pub mod address;
+pub mod api;
 pub mod clarity;
 pub mod crypto;
 pub mod network;
