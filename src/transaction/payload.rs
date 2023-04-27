@@ -194,7 +194,7 @@ mod tests {
             "my-function",
             &[
                 TupleCV::new(&[("a", UIntCV::new(100)), ("b", IntCV::new(-100))]),
-                ListCV::new(&[TrueCV::new(), FalseCV::new(), SomeCV::new(UIntCV::new(100))]),
+                ListCV::new([TrueCV::new(), FalseCV::new(), SomeCV::new(UIntCV::new(100))]),
                 BufferCV::new(b"hello world"),
                 TrueCV::new(),
                 UIntCV::new(100000),

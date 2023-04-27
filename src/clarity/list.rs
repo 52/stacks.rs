@@ -8,8 +8,8 @@ use crate::crypto::Serialize;
 pub struct ListCV(u8, Vec<ClarityValue>);
 
 impl ListCV {
-    pub fn new(values: &[ClarityValue]) -> ClarityValue {
-        ClarityValue::List(ListCV(CLARITY_TYPE_LIST, values.to_vec()))
+    pub fn new(values: impl Into<Vec<ClarityValue>>) -> ClarityValue {
+        ClarityValue::List(ListCV(CLARITY_TYPE_LIST, values.into()))
     }
 }
 
@@ -74,7 +74,7 @@ impl Deserialize for ListCV {
             values.push(cv);
         }
 
-        Ok(ListCV::new(&values))
+        Ok(ListCV::new(values))
     }
 }
 
@@ -96,7 +96,7 @@ mod tests {
 
     #[test]
     fn test_list_cv() {
-        let cv = ListCV::new(&[
+        let cv = ListCV::new([
             IntCV::new(1),
             IntCV::new(2),
             IntCV::new(3),
@@ -112,7 +112,7 @@ mod tests {
 
     #[test]
     fn test_list_cv_deserialize() {
-        let cv = ListCV::new(&[
+        let cv = ListCV::new([
             IntCV::new(3),
             IntCV::new(-4),
             UIntCV::new(1),
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn test_list_cv_deserialize_empty() {
-        let cv = ListCV::new(&[]);
+        let cv = ListCV::new([]);
 
         let hex = crate::crypto::hex::bytes_to_hex(&cv.serialize().unwrap());
         let bytes = crate::crypto::hex::hex_to_bytes(hex).unwrap();
@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn test_list_cv_string() {
         assert_eq!(
-            ListCV::new(&[
+            ListCV::new([
                 IntCV::new(1),
                 IntCV::new(-4),
                 UIntCV::new(1),
@@ -161,6 +161,6 @@ mod tests {
             "(list 1 -4 u1 true false 0x00)"
         );
 
-        assert_eq!(ListCV::new(&[]).to_string(), "(list )");
+        assert_eq!(ListCV::new([]).to_string(), "(list )");
     }
 }

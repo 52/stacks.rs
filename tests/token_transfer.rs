@@ -1,9 +1,18 @@
+use stacks_rs::clarity::ContractPrincipalCV;
+use stacks_rs::clarity::StandardPrincipalCV;
+use stacks_rs::clarity::UIntCV;
 use stacks_rs::crypto::bytes_to_hex;
 use stacks_rs::crypto::Serialize;
 use stacks_rs::transaction::sponsor_transaction;
 use stacks_rs::transaction::AnchorMode;
+use stacks_rs::transaction::AssetInfo;
+use stacks_rs::transaction::FungibleConditionCode;
+use stacks_rs::transaction::FungiblePostCondition;
+use stacks_rs::transaction::NonFungibleConditionCode;
+use stacks_rs::transaction::NonFungiblePostCondition;
 use stacks_rs::transaction::PostConditionMode;
 use stacks_rs::transaction::PostConditions;
+use stacks_rs::transaction::STXPostCondition;
 use stacks_rs::transaction::STXTokenTransfer;
 use stacks_rs::transaction::STXTokenTransferMultiSig;
 use stacks_rs::transaction::STXTokenTransferOptions;
@@ -210,4 +219,212 @@ fn test_signed_multi_sig_token_transfer_testnet() {
 
     assert_eq!(tx_hex, expected_tx_hex);
     assert_eq!(tx_id_hex, expected_txid_hex);
+}
+
+#[test]
+fn test_complex_token_transfer_mainnet() {
+    let mut args = make_signed_single_sig_args(StacksNetwork::mainnet());
+
+    let info = AssetInfo::new(
+        "SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B",
+        "my-contract",
+        "my-asset",
+    );
+
+    args.post_conditions = PostConditions::new([
+        STXPostCondition::new(
+            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+            1000000,
+            FungibleConditionCode::GreaterEqual,
+        ),
+        STXPostCondition::new(
+            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
+            1000000,
+            FungibleConditionCode::Equal,
+        ),
+        NonFungiblePostCondition::new(
+            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+            info.clone(),
+            UIntCV::new(60149),
+            NonFungibleConditionCode::Owns,
+        ),
+        FungiblePostCondition::new(
+            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test"),
+            info,
+            1000000,
+            FungibleConditionCode::LessEqual,
+        ),
+    ]);
+
+    args.post_condition_mode = PostConditionMode::Allow;
+    args.anchor_mode = AnchorMode::OnChain;
+
+    let transaction = STXTokenTransfer::new(args).unwrap();
+    let serialized = transaction.serialize().unwrap();
+    let tx_id = transaction.tx_id().unwrap().to_bytes();
+
+    let tx_hex = bytes_to_hex(&serialized);
+    let tx_id_hex = bytes_to_hex(&tx_id);
+
+    let expected_tx_hex = "0000000001040015c31b8c1c11c515e244b75806bac48d1399c775000000000000000000000000000000000001271391c6bafe5bb465f85904a5e30ff2a356ac270f2ad1a658819aac586fba7e7e4bd620cbaaf924b7fa2b3c4d77fdaa775bf40cde218453234823dd00d9a021010100000004000216a5d9d331000f5b79578ce56bd157f29a9056f0d60300000000000f4240000316a5d9d331000f5b79578ce56bd157f29a9056f0d604617364660100000000000f4240020216a5d9d331000f5b79578ce56bd157f29a9056f0d616a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d6173736574010000000000000000000000000000eaf511010316a5d9d331000f5b79578ce56bd157f29a9056f0d6047465737416a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d61737365740500000000000f4240000516df0ba3e79792be7be5e50a370289accfc8c9e032000000000000303974657374206d656d6f00000000000000000000000000000000000000000000000000";
+    let expected_tx_id = "ee5d718c085011b5b977b057bdb83645b930344ae7d6ffecac0ff7fa96f51c3c";
+
+    assert_eq!(tx_hex, expected_tx_hex);
+    assert_eq!(tx_id_hex, expected_tx_id);
+}
+
+#[test]
+fn test_complex_token_transfer_testnet() {
+    let mut args = make_signed_single_sig_args(StacksNetwork::testnet());
+
+    let info = AssetInfo::new(
+        "SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B",
+        "my-contract",
+        "my-asset",
+    );
+
+    args.post_conditions = PostConditions::new([
+        STXPostCondition::new(
+            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+            1000000,
+            FungibleConditionCode::GreaterEqual,
+        ),
+        STXPostCondition::new(
+            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
+            1000000,
+            FungibleConditionCode::Equal,
+        ),
+        NonFungiblePostCondition::new(
+            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+            info.clone(),
+            UIntCV::new(60149),
+            NonFungibleConditionCode::Owns,
+        ),
+        FungiblePostCondition::new(
+            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test"),
+            info,
+            1000000,
+            FungibleConditionCode::LessEqual,
+        ),
+    ]);
+
+    args.post_condition_mode = PostConditionMode::Allow;
+    args.anchor_mode = AnchorMode::OnChain;
+
+    let transaction = STXTokenTransfer::new(args).unwrap();
+    let serialized = transaction.serialize().unwrap();
+    let tx_id = transaction.tx_id().unwrap().to_bytes();
+
+    let tx_hex = bytes_to_hex(&serialized);
+    let tx_id_hex = bytes_to_hex(&tx_id);
+
+    let expected_tx_hex = "8080000000040015c31b8c1c11c515e244b75806bac48d1399c775000000000000000000000000000000000000a0a246f2071bfcb854a21ad1fefe5d3b5a8a584ee3c3d43682fc67cde82b72a90fc61a208c6f613b41326f365e87166858bec6bc8ebfe09df37b4f5d80d89039010100000004000216a5d9d331000f5b79578ce56bd157f29a9056f0d60300000000000f4240000316a5d9d331000f5b79578ce56bd157f29a9056f0d604617364660100000000000f4240020216a5d9d331000f5b79578ce56bd157f29a9056f0d616a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d6173736574010000000000000000000000000000eaf511010316a5d9d331000f5b79578ce56bd157f29a9056f0d6047465737416a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d61737365740500000000000f4240000516df0ba3e79792be7be5e50a370289accfc8c9e032000000000000303974657374206d656d6f00000000000000000000000000000000000000000000000000";
+    let expected_tx_id = "6403d31bf5132604a4997957f6debfd56101a029c16f4baa17a26dd2853a9020";
+
+    assert_eq!(tx_hex, expected_tx_hex);
+    assert_eq!(tx_id_hex, expected_tx_id);
+}
+
+#[test]
+fn test_complex_multi_sigtoken_transfer_mainnet() {
+    let mut args = make_signed_multi_sig_args(StacksNetwork::mainnet());
+
+    let info = AssetInfo::new(
+        "SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B",
+        "my-contract",
+        "my-asset",
+    );
+
+    args.post_conditions = PostConditions::new([
+        STXPostCondition::new(
+            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+            1000000,
+            FungibleConditionCode::GreaterEqual,
+        ),
+        STXPostCondition::new(
+            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
+            1000000,
+            FungibleConditionCode::Equal,
+        ),
+        NonFungiblePostCondition::new(
+            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+            info.clone(),
+            UIntCV::new(60149),
+            NonFungibleConditionCode::Owns,
+        ),
+        FungiblePostCondition::new(
+            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test"),
+            info,
+            1000000,
+            FungibleConditionCode::LessEqual,
+        ),
+    ]);
+
+    args.post_condition_mode = PostConditionMode::Allow;
+    args.anchor_mode = AnchorMode::OnChain;
+
+    let transaction = STXTokenTransferMultiSig::new(args).unwrap();
+    let serialized = transaction.serialize().unwrap();
+    let tx_id = transaction.tx_id().unwrap().to_bytes();
+
+    let tx_hex = bytes_to_hex(&serialized);
+    let tx_id_hex = bytes_to_hex(&tx_id);
+
+    let expected_tx_hex = "0000000001040104128cacf0764f69b1e291f62d1dcdd8f65be5ab000000000000000000000000000000000000000302005066280be2e723a2dab4dcf7998943518481a3af5ef378b7bd8c40829b0335907fdf2412b958469ace7cd30706048dba38a22bc7c5e4492b186c62de496a9f150200df2624bb1190b93ab8af88b95b7fe344e3ab43afec67e44399e85680f9ca47926624e647c71eeff25b33f1c4f5462f8ee48eb78efd3332529fffb6672062b41002018a1d5a8cc2d362d57cf0d423ec490ed0296ff7eff8cdcef33702dfc70d39acbc0e9482fd3ddbc807f246a553bfb7daf8803a6bc870cb398d7e9e8e1faf7c1c9a0003010100000004000216a5d9d331000f5b79578ce56bd157f29a9056f0d60300000000000f4240000316a5d9d331000f5b79578ce56bd157f29a9056f0d604617364660100000000000f4240020216a5d9d331000f5b79578ce56bd157f29a9056f0d616a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d6173736574010000000000000000000000000000eaf511010316a5d9d331000f5b79578ce56bd157f29a9056f0d6047465737416a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d61737365740500000000000f4240000516df0ba3e79792be7be5e50a370289accfc8c9e032000000000000303974657374206d656d6f00000000000000000000000000000000000000000000000000";
+    let expected_tx_id = "c16a93393b8072f25b6ceac4fcbd9d3c76dbf0e0629a1fcfa28d76d215b7e13d";
+
+    assert_eq!(tx_hex, expected_tx_hex);
+    assert_eq!(tx_id_hex, expected_tx_id);
+}
+
+#[test]
+fn test_complex_multi_sigtoken_transfer_testnet() {
+    let mut args = make_signed_multi_sig_args(StacksNetwork::testnet());
+
+    let info = AssetInfo::new(
+        "SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B",
+        "my-contract",
+        "my-asset",
+    );
+
+    args.post_conditions = PostConditions::new([
+        STXPostCondition::new(
+            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+            1000000,
+            FungibleConditionCode::GreaterEqual,
+        ),
+        STXPostCondition::new(
+            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
+            1000000,
+            FungibleConditionCode::Equal,
+        ),
+        NonFungiblePostCondition::new(
+            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+            info.clone(),
+            UIntCV::new(60149),
+            NonFungibleConditionCode::Owns,
+        ),
+        FungiblePostCondition::new(
+            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test"),
+            info,
+            1000000,
+            FungibleConditionCode::LessEqual,
+        ),
+    ]);
+
+    args.post_condition_mode = PostConditionMode::Allow;
+    args.anchor_mode = AnchorMode::OnChain;
+
+    let transaction = STXTokenTransferMultiSig::new(args).unwrap();
+    let serialized = transaction.serialize().unwrap();
+    let tx_id = transaction.tx_id().unwrap().to_bytes();
+
+    let tx_hex = bytes_to_hex(&serialized);
+    let tx_id_hex = bytes_to_hex(&tx_id);
+
+    let expected_tx_hex = "8080000000040104128cacf0764f69b1e291f62d1dcdd8f65be5ab0000000000000000000000000000000000000003020101cfe95b0d2f7912521f6838cf90e17787d3faa8c39f27327c4e2aa223a8b8bc566ffa889f26e99a0e03fae5ac699527153ab5421d376d694f338702fae241a7020072e01a98ef87aea0ff0ffa3e4763586ff92b7a57b68f02667e3fde2630400ff426596074fb3bbd1d873bf4abd146e212de4f2b242ab2ea718a645da5f84a105f02006989fcc1c93ea470fde963f5c477a838be291cb1d245750071617f9179fbc40c7796aa824b475dd4e1f418531fc1f0cc41799bbc178640d4cefd371a8cd74f120003010100000004000216a5d9d331000f5b79578ce56bd157f29a9056f0d60300000000000f4240000316a5d9d331000f5b79578ce56bd157f29a9056f0d604617364660100000000000f4240020216a5d9d331000f5b79578ce56bd157f29a9056f0d616a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d6173736574010000000000000000000000000000eaf511010316a5d9d331000f5b79578ce56bd157f29a9056f0d6047465737416a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d61737365740500000000000f4240000516df0ba3e79792be7be5e50a370289accfc8c9e032000000000000303974657374206d656d6f00000000000000000000000000000000000000000000000000";
+    let expected_tx_id = "437556a4d31221ad7a73de18a833a39bd6253d9efeae70782ade832e0ae291fd";
+
+    assert_eq!(tx_hex, expected_tx_hex);
+    assert_eq!(tx_id_hex, expected_tx_id);
 }

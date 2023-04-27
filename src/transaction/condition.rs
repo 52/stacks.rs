@@ -1,5 +1,4 @@
 use crate::clarity::impl_display_generic;
-use crate::clarity::BufferCV;
 use crate::clarity::ClarityValue;
 use crate::clarity::LengthPrefixedString;
 use crate::clarity::StandardPrincipalCV;
@@ -142,11 +141,11 @@ impl Serialize for PostCondition {
 pub struct PostConditions(Vec<PostCondition>);
 
 impl PostConditions {
-    pub fn new(values: Vec<PostCondition>) -> PostConditions {
-        PostConditions(values)
+    pub fn new(values: impl Into<Vec<PostCondition>>) -> Self {
+        PostConditions(values.into())
     }
 
-    pub fn empty() -> PostConditions {
+    pub fn empty() -> Self {
         PostConditions(vec![])
     }
 }
@@ -280,13 +279,13 @@ impl NonFungiblePostCondition {
     pub fn new(
         principal: ClarityValue,
         asset_info: AssetInfo,
-        asset_name: impl Into<String>,
+        asset_name: ClarityValue,
         condition_code: NonFungibleConditionCode,
     ) -> PostCondition {
         let condition = Self {
             principal,
             asset_info,
-            asset_name: BufferCV::new(&asset_name.into().into_bytes()),
+            asset_name,
             condition_code,
         };
 
@@ -324,6 +323,7 @@ mod tests {
     use super::*;
     use crate::clarity::ContractPrincipalCV;
     use crate::clarity::StandardPrincipalCV;
+    use crate::clarity::UIntCV;
     use crate::crypto::hex::bytes_to_hex;
 
     #[test]
@@ -334,7 +334,7 @@ mod tests {
             "my-asset",
         );
 
-        let list = PostConditions::new(vec![
+        let list = PostConditions::new([
             STXPostCondition::new(
                 StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
                 1000000,
@@ -348,7 +348,7 @@ mod tests {
             NonFungiblePostCondition::new(
                 StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
                 info.clone(),
-                "my-nft-asset",
+                UIntCV::new(60149),
                 NonFungibleConditionCode::Owns,
             ),
             FungiblePostCondition::new(
@@ -362,7 +362,7 @@ mod tests {
         let serialized = list.serialize().unwrap();
         let hex = bytes_to_hex(&serialized);
 
-        let expected = "00000004000216a5d9d331000f5b79578ce56bd157f29a9056f0d60300000000000f4240000316a5d9d331000f5b79578ce56bd157f29a9056f0d604746573740300000000000f4240020216a5d9d331000f5b79578ce56bd157f29a9056f0d616a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d6173736574020000000c6d792d6e66742d617373657411010316a5d9d331000f5b79578ce56bd157f29a9056f0d6047465737416a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d61737365740300000000000f4240";
+        let expected = "00000004000216a5d9d331000f5b79578ce56bd157f29a9056f0d60300000000000f4240000316a5d9d331000f5b79578ce56bd157f29a9056f0d604746573740300000000000f4240020216a5d9d331000f5b79578ce56bd157f29a9056f0d616a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d6173736574010000000000000000000000000000eaf511010316a5d9d331000f5b79578ce56bd157f29a9056f0d6047465737416a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d61737365740300000000000f4240";
         assert_eq!(hex, expected);
     }
 
@@ -434,7 +434,7 @@ mod tests {
 
     #[test]
     fn test_non_fungible_post_condition() {
-        let nft_asset_name = "my-nft-asset";
+        let nft_asset = UIntCV::new(60419);
 
         let s_cv = StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B");
         let info = AssetInfo::new(
@@ -446,28 +446,24 @@ mod tests {
         let s_pc = NonFungiblePostCondition::new(
             s_cv,
             info.clone(),
-            nft_asset_name,
+            nft_asset.clone(),
             NonFungibleConditionCode::Owns,
         );
 
         let s_pc_ser = s_pc.serialize().unwrap();
         let s_pc_hex = bytes_to_hex(&s_pc_ser);
 
-        let s_pc_expected = "020216a5d9d331000f5b79578ce56bd157f29a9056f0d616a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d6173736574020000000c6d792d6e66742d617373657411";
+        let s_pc_expected = "020216a5d9d331000f5b79578ce56bd157f29a9056f0d616a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d6173736574010000000000000000000000000000ec0311";
         assert_eq!(s_pc_hex, s_pc_expected);
 
         let c_cv = ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test");
-        let c_pc = NonFungiblePostCondition::new(
-            c_cv,
-            info,
-            nft_asset_name,
-            NonFungibleConditionCode::Owns,
-        );
+        let c_pc =
+            NonFungiblePostCondition::new(c_cv, info, nft_asset, NonFungibleConditionCode::Owns);
 
         let c_pc_ser = c_pc.serialize().unwrap();
         let c_pc_hex = bytes_to_hex(&c_pc_ser);
 
-        let c_pc_expected = "020316a5d9d331000f5b79578ce56bd157f29a9056f0d6047465737416a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d6173736574020000000c6d792d6e66742d617373657411";
+        let c_pc_expected = "020316a5d9d331000f5b79578ce56bd157f29a9056f0d6047465737416a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d6173736574010000000000000000000000000000ec0311";
         assert_eq!(c_pc_hex, c_pc_expected)
     }
 }

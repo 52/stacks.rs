@@ -36,8 +36,8 @@ impl LengthPrefixedString {
 pub struct FunctionArguments(Vec<ClarityValue>);
 
 impl FunctionArguments {
-    pub fn new(values: &[ClarityValue]) -> FunctionArguments {
-        FunctionArguments(values.to_vec())
+    pub fn new(values: impl Into<Vec<ClarityValue>>) -> FunctionArguments {
+        FunctionArguments(values.into())
     }
 
     pub fn serialize(&self) -> Result<Vec<u8>, Error> {
@@ -76,13 +76,13 @@ mod tests {
 
     #[test]
     fn test_function_arguments() {
-        let args = FunctionArguments::new(&[
+        let args = FunctionArguments::new([
             IntCV::new(1),
             UIntCV::new(2),
             BufferCV::new(&[3, 4, 5]),
             TrueCV::new(),
             FalseCV::new(),
-            ListCV::new(&[
+            ListCV::new([
                 IntCV::new(1),
                 UIntCV::new(2),
                 BufferCV::new(&[3, 4, 5]),

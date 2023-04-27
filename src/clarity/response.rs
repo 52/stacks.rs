@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn test_response_cv_complex() {
-        let list = ListCV::new(&[
+        let list = ListCV::new([
             IntCV::new(3),
             IntCV::new(-4),
             UIntCV::new(1),

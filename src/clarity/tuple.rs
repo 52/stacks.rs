@@ -135,7 +135,7 @@ mod tests {
             ("h", ContractPrincipalCV::new(address, "test")),
             ("i", OkCV::new(TrueCV::new())),
             ("j", ErrCV::new(FalseCV::new())),
-            ("k", ListCV::new(&[TrueCV::new(), FalseCV::new()])),
+            ("k", ListCV::new([TrueCV::new(), FalseCV::new()])),
             (
                 "l",
                 TupleCV::new(&[("a", TrueCV::new()), ("b", FalseCV::new())]),

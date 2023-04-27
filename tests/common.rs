@@ -2,13 +2,6 @@ use stacks_rs::crypto::hex_to_bytes;
 use stacks_rs::StacksPrivateKey;
 use stacks_rs::StacksPublicKey;
 
-// TODO: add tests for postconditions
-// TODO: add tests for postconditions with multi-sig
-// TODO: add tests for anchormode
-// TODO: add tests for anchormode with multi-sig
-// TODO: add tests for contract arguments
-// TODO: add tests for contract arguments with multi-sig
-
 pub fn get_private_key() -> StacksPrivateKey {
     let pk_hex = "edf9aee84d9b7abc145504dde6726c64f369d37ee34ded868fabd876c26570bc";
     let pk_bytes = hex_to_bytes(pk_hex).unwrap();
