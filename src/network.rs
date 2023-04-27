@@ -1,3 +1,7 @@
+pub const HIRO_MAINNET_DEFAULT: &str = "https://stacks-node-api.mainnet.stacks.co";
+pub const HIRO_TESTNET_DEFAULT: &str = "https://stacks-node-api.testnet.stacks.co";
+pub const HIRO_MOCKNET_DEFAULT: &str = "http://localhost:3999";
+
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TransactionVersion {
@@ -16,6 +20,7 @@ pub enum ChainID {
 pub struct StacksNetwork {
     version: TransactionVersion,
     chain_id: ChainID,
+    base_url: &'static str,
 }
 
 impl From<TransactionVersion> for StacksNetwork {
@@ -29,18 +34,39 @@ impl From<TransactionVersion> for StacksNetwork {
 
 impl StacksNetwork {
     /// Creates a new `StacksNetwork`.
-    pub fn new(chain_id: ChainID, version: TransactionVersion) -> Self {
-        Self { version, chain_id }
+    pub fn new(chain_id: ChainID, version: TransactionVersion, base_url: &'static str) -> Self {
+        Self {
+            version,
+            chain_id,
+            base_url,
+        }
     }
 
     /// Returns the mainnet network.
     pub fn mainnet() -> Self {
-        Self::new(ChainID::Mainnet, TransactionVersion::Mainnet)
+        Self::new(
+            ChainID::Mainnet,
+            TransactionVersion::Mainnet,
+            HIRO_MAINNET_DEFAULT,
+        )
     }
 
     /// Returns the testnet network.
     pub fn testnet() -> Self {
-        Self::new(ChainID::Testnet, TransactionVersion::Testnet)
+        Self::new(
+            ChainID::Testnet,
+            TransactionVersion::Testnet,
+            HIRO_TESTNET_DEFAULT,
+        )
+    }
+
+    /// Returns the mocknet network.
+    pub fn mocknet() -> Self {
+        Self::new(
+            ChainID::Testnet,
+            TransactionVersion::Testnet,
+            HIRO_MOCKNET_DEFAULT,
+        )
     }
 
     /// Returns the transaction version.
