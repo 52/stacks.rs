@@ -57,9 +57,9 @@ pub fn hex_to_bytes(value: impl Into<String>) -> Result<Vec<u8>, Error> {
     let value_len = value.len();
 
     let mut buff = Vec::with_capacity(value_len / 2);
-    let mut iter = HexIterator::new(&value)?;
+    let iter = HexIterator::new(&value)?;
 
-    while let Some(opt) = iter.next() {
+    for opt in iter {
         let byte = opt?;
 
         buff.push(byte);

@@ -1,18 +1,23 @@
-use crate::clarity::DeserializeCV;
+use crate::clarity::ClarityValue;
 use crate::clarity::Error;
-use crate::clarity::SerializeCV;
+use crate::clarity::LengthPrefixedString;
 use crate::clarity::CLARITY_TYPE_PRINCIPAL_CONTRACT;
 use crate::clarity::CLARITY_TYPE_PRINCIPAL_STANDARD;
-use crate::crypto::c32::c32_address;
-use crate::crypto::c32::c32_address_decode;
+use crate::crypto::c32_address;
+use crate::crypto::c32_address_decode;
+use crate::crypto::Deserialize;
+use crate::crypto::Serialize;
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct StandardPrincipalCV(u8, String);
 
 impl StandardPrincipalCV {
-    pub fn new(address: impl Into<String>) -> StandardPrincipalCV {
+    pub fn new(address: impl Into<String>) -> ClarityValue {
         let address = address.into();
-        StandardPrincipalCV(CLARITY_TYPE_PRINCIPAL_STANDARD, address)
+        ClarityValue::StandardP(StandardPrincipalCV(
+            CLARITY_TYPE_PRINCIPAL_STANDARD,
+            address,
+        ))
     }
 }
 
@@ -28,26 +33,22 @@ impl std::fmt::Debug for StandardPrincipalCV {
     }
 }
 
-impl SerializeCV for StandardPrincipalCV {
+impl Serialize for StandardPrincipalCV {
     type Err = Error;
 
-    fn type_id(&self) -> u8 {
-        CLARITY_TYPE_PRINCIPAL_STANDARD
-    }
-
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
-        let (addr, version) =
-            c32_address_decode(&self.1).map_err(|_| Error::InvalidPrincipalAddress)?;
+        let (addr, version) = c32_address_decode(&self.1)?;
         let mut buff = vec![CLARITY_TYPE_PRINCIPAL_STANDARD, version];
         buff.extend_from_slice(&addr);
         Ok(buff)
     }
 }
 
-impl DeserializeCV for StandardPrincipalCV {
+impl Deserialize for StandardPrincipalCV {
+    type Output = ClarityValue;
     type Err = Error;
 
-    fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
+    fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_PRINCIPAL_STANDARD {
             return Err(Error::InvalidClarityTypeId(
                 CLARITY_TYPE_PRINCIPAL_STANDARD,
@@ -55,20 +56,23 @@ impl DeserializeCV for StandardPrincipalCV {
             ));
         }
 
-        let addr =
-            c32_address(&bytes[2..22], bytes[1]).map_err(|_| Error::InvalidPrincipalAddress)?;
+        let addr = c32_address(&bytes[2..22], bytes[1])?;
         Ok(StandardPrincipalCV::new(addr))
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ContractPrincipalCV(u8, String, String);
 
 impl ContractPrincipalCV {
-    pub fn new(address: impl Into<String>, contract: impl Into<String>) -> ContractPrincipalCV {
+    pub fn new(address: impl Into<String>, contract: impl Into<String>) -> ClarityValue {
         let address = address.into();
         let contract = contract.into();
-        ContractPrincipalCV(CLARITY_TYPE_PRINCIPAL_CONTRACT, address, contract)
+        ClarityValue::ContractP(ContractPrincipalCV(
+            CLARITY_TYPE_PRINCIPAL_CONTRACT,
+            address,
+            contract,
+        ))
     }
 }
 
@@ -84,37 +88,26 @@ impl std::fmt::Debug for ContractPrincipalCV {
     }
 }
 
-impl SerializeCV for ContractPrincipalCV {
+impl Serialize for ContractPrincipalCV {
     type Err = Error;
 
-    fn type_id(&self) -> u8 {
-        CLARITY_TYPE_PRINCIPAL_CONTRACT
-    }
-
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
-        let (addr, version) =
-            c32_address_decode(&self.1).map_err(|_| Error::InvalidPrincipalAddress)?;
+        let (addr, version) = c32_address_decode(&self.1)?;
 
         let mut buff = vec![CLARITY_TYPE_PRINCIPAL_CONTRACT, version];
 
-        let name_bytes = self.2.as_bytes();
-
-        if name_bytes.len() > 128 {
-            return Err(Error::InvalidClarityName);
-        }
-
         buff.extend_from_slice(&addr);
-        buff.extend_from_slice(&[u8::try_from(self.2.len())?]);
-        buff.extend_from_slice(name_bytes);
+        buff.extend_from_slice(&LengthPrefixedString::new(&self.2).serialize()?);
 
         Ok(buff)
     }
 }
 
-impl DeserializeCV for ContractPrincipalCV {
+impl Deserialize for ContractPrincipalCV {
+    type Output = ClarityValue;
     type Err = Error;
 
-    fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
+    fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_PRINCIPAL_CONTRACT {
             return Err(Error::InvalidClarityTypeId(
                 CLARITY_TYPE_PRINCIPAL_CONTRACT,
@@ -127,8 +120,7 @@ impl DeserializeCV for ContractPrincipalCV {
         let name_len = bytes[22] as usize;
         let name_bytes = &bytes[23..23 + name_len];
 
-        let c32 =
-            c32_address(address_bytes, network).map_err(|_| Error::InvalidPrincipalAddress)?;
+        let c32 = c32_address(address_bytes, network)?;
         let name = std::str::from_utf8(name_bytes).map_err(|_| Error::InvalidClarityName)?;
 
         Ok(ContractPrincipalCV::new(c32, name))
@@ -142,7 +134,7 @@ mod tests {
 
     #[test]
     fn test_standard_principal_cv() {
-        let address = "STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6";
+        let address = "SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B";
 
         let cv = StandardPrincipalCV::new(address);
 
@@ -151,7 +143,7 @@ mod tests {
         assert_eq!(cv, deserialized);
 
         let hex = bytes_to_hex(&serialized);
-        let expected_hex = "051a164247d6f2b425ac5771423ae6c80c754f7172b0";
+        let expected_hex = "0516a5d9d331000f5b79578ce56bd157f29a9056f0d6";
         assert_eq!(hex, expected_hex);
     }
 

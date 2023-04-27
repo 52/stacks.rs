@@ -1,19 +1,22 @@
-use crate::clarity::DeserializeCV;
+use crate::clarity::ClarityValue;
 use crate::clarity::Error;
-use crate::clarity::SerializeCV;
+use crate::clarity::LengthPrefixedString;
 use crate::clarity::CLARITY_TYPE_TUPLE;
+use crate::crypto::Deserialize;
+use crate::crypto::Serialize;
 
-pub struct TupleCV(u8, Vec<(String, Box<dyn SerializeCV<Err = Error>>)>);
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TupleCV(u8, Vec<(String, ClarityValue)>);
 
 impl TupleCV {
-    pub fn new(values: Vec<(impl Into<String>, Box<dyn SerializeCV<Err = Error>>)>) -> TupleCV {
-        TupleCV(
-            CLARITY_TYPE_TUPLE,
-            values
-                .into_iter()
-                .map(|(key, value)| (key.into(), value))
-                .collect(),
-        )
+    pub fn new(values: &[(impl Into<String> + std::clone::Clone, ClarityValue)]) -> ClarityValue {
+        let values = values
+            .iter()
+            .cloned()
+            .map(|(key, value)| (key.into(), value))
+            .collect();
+
+        ClarityValue::Tuple(TupleCV(CLARITY_TYPE_TUPLE, values))
     }
 }
 
@@ -43,32 +46,15 @@ impl std::fmt::Debug for TupleCV {
     }
 }
 
-impl PartialEq for TupleCV {
-    fn eq(&self, other: &TupleCV) -> bool {
-        self.1 == other.1
-    }
-}
-
-impl SerializeCV for TupleCV {
+impl Serialize for TupleCV {
     type Err = Error;
-
-    fn type_id(&self) -> u8 {
-        self.0
-    }
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_TUPLE];
         buff.extend_from_slice(&(u32::try_from(self.1.len())?).to_be_bytes());
 
         for (key, value) in &self.1 {
-            let key_bytes = key.as_bytes();
-
-            if key_bytes.len() > 128 {
-                return Err(Error::InvalidClarityName);
-            }
-
-            buff.extend_from_slice(&[u8::try_from(key.len())?]);
-            buff.extend_from_slice(key_bytes);
+            buff.extend_from_slice(&LengthPrefixedString::new(key).serialize()?);
             buff.extend_from_slice(&value.serialize()?);
         }
 
@@ -76,13 +62,14 @@ impl SerializeCV for TupleCV {
     }
 }
 
-impl DeserializeCV for TupleCV {
+impl Deserialize for TupleCV {
+    type Output = ClarityValue;
     type Err = Error;
 
-    fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
+    fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         let len = u32::from_be_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]);
 
-        let mut buff = vec![];
+        let mut values = vec![];
         let mut offset = 5;
 
         for _ in 0..len {
@@ -93,13 +80,13 @@ impl DeserializeCV for TupleCV {
 
             offset += 1 + key_len;
 
-            let cv = <dyn SerializeCV<Err = Error>>::from_bytes(bytes[offset], &bytes[offset..])?;
+            let cv = ClarityValue::deserialize(&bytes[offset..])?;
             offset += cv.serialize()?.len();
 
-            buff.push((key, cv));
+            values.push((key, cv));
         }
 
-        Ok(TupleCV::new(buff))
+        Ok(TupleCV::new(&values))
     }
 }
 
@@ -122,10 +109,7 @@ mod tests {
 
     #[test]
     fn test_tuple_cv() {
-        let cv = TupleCV::new(vec![
-            ("baz", NoneCV::new().into()),
-            ("foobar", TrueCV::new().into()),
-        ]);
+        let cv = TupleCV::new(&[("baz", NoneCV::new()), ("foobar", TrueCV::new())]);
 
         let serialized = cv.serialize().unwrap();
 
@@ -140,28 +124,21 @@ mod tests {
     fn test_tuple_cv_string() {
         let address = "ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA";
 
-        let cv = TupleCV::new(vec![
-            ("a", IntCV::new(-1).into()),
-            ("b", UIntCV::new(1).into()),
-            ("c", BufferCV::new(b"test").into()),
-            ("d", TrueCV::new().into()),
-            ("e", SomeCV::new(TrueCV::new()).into()),
-            ("f", NoneCV::new().into()),
-            ("g", StandardPrincipalCV::new(address).into()),
-            ("h", ContractPrincipalCV::new(address, "test").into()),
-            ("i", OkCV::new(TrueCV::new()).into()),
-            ("j", ErrCV::new(FalseCV::new()).into()),
-            (
-                "k",
-                ListCV::new(vec![TrueCV::new().into(), FalseCV::new().into()]).into(),
-            ),
+        let cv = TupleCV::new(&[
+            ("a", IntCV::new(-1)),
+            ("b", UIntCV::new(1)),
+            ("c", BufferCV::new(b"test")),
+            ("d", TrueCV::new()),
+            ("e", SomeCV::new(TrueCV::new())),
+            ("f", NoneCV::new()),
+            ("g", StandardPrincipalCV::new(address)),
+            ("h", ContractPrincipalCV::new(address, "test")),
+            ("i", OkCV::new(TrueCV::new())),
+            ("j", ErrCV::new(FalseCV::new())),
+            ("k", ListCV::new([TrueCV::new(), FalseCV::new()])),
             (
                 "l",
-                TupleCV::new(vec![
-                    ("a", TrueCV::new().into()),
-                    ("b", FalseCV::new().into()),
-                ])
-                .into(),
+                TupleCV::new(&[("a", TrueCV::new()), ("b", FalseCV::new())]),
             ),
         ]);
 

@@ -1,15 +1,16 @@
-use crate::clarity::DeserializeCV;
+use crate::clarity::ClarityValue;
 use crate::clarity::Error;
-use crate::clarity::SerializeCV;
 use crate::clarity::CLARITY_TYPE_BUFFER;
 use crate::crypto::hex::bytes_to_hex;
+use crate::crypto::Deserialize;
+use crate::crypto::Serialize;
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BufferCV(u8, Vec<u8>);
 
 impl BufferCV {
-    pub fn new(value: &[u8]) -> BufferCV {
-        BufferCV(CLARITY_TYPE_BUFFER, value.to_vec())
+    pub fn new(value: &[u8]) -> ClarityValue {
+        ClarityValue::Buffer(BufferCV(CLARITY_TYPE_BUFFER, value.to_vec()))
     }
 }
 
@@ -25,7 +26,7 @@ impl std::fmt::Debug for BufferCV {
     }
 }
 
-impl SerializeCV for BufferCV {
+impl Serialize for BufferCV {
     type Err = Error;
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
@@ -34,16 +35,13 @@ impl SerializeCV for BufferCV {
         buff.extend_from_slice(&self.1);
         Ok(buff)
     }
-
-    fn type_id(&self) -> u8 {
-        self.0
-    }
 }
 
-impl DeserializeCV for BufferCV {
+impl Deserialize for BufferCV {
+    type Output = ClarityValue;
     type Err = Error;
 
-    fn deserialize(bytes: &[u8]) -> Result<Self, Self::Err> {
+    fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_BUFFER {
             return Err(Error::InvalidClarityTypeId(CLARITY_TYPE_BUFFER, bytes[0]));
         }
@@ -68,7 +66,7 @@ mod tests {
     use crate::crypto::hex::hex_to_bytes;
 
     #[test]
-    fn test_buffer() {
+    fn test_buffer_cv() {
         let buffer = BufferCV::new(&[0xde, 0xad, 0xbe, 0xef]);
         let serialized = buffer.serialize().unwrap();
 
@@ -80,7 +78,7 @@ mod tests {
     }
 
     #[test]
-    fn test_buffer_string() {
+    fn test_buffer_cv_string() {
         let buffer = BufferCV::new(&hex_to_bytes("00").unwrap());
         assert_eq!(buffer.to_string(), "0x00");
 

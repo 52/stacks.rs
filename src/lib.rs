@@ -1,5 +1,39 @@
-pub mod account;
+pub use crate::address::AddressVersion;
+pub use crate::address::StacksAddress;
+pub use crate::network::StacksNetwork;
+pub use crate::wallet::StacksAccount;
+pub use crate::wallet::StacksWallet;
+
 pub mod address;
 pub mod clarity;
 pub mod crypto;
+pub mod network;
+pub mod transaction;
 pub mod wallet;
+
+#[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
+pub enum Error {
+    #[error("Invalid public key count, expected {0}")]
+    InvalidPublicKeyCount(u8),
+    #[error("Invalid signature count, expected {0}")]
+    InvalidSignatureCount(u8),
+    #[error(transparent)]
+    Bip32(#[from] crypto::bip32::Error),
+    #[error(transparent)]
+    Bip39(#[from] bip39::Error),
+    #[error(transparent)]
+    Base58(#[from] crypto::base58::Error),
+    #[error(transparent)]
+    C32(#[from] crypto::c32::Error),
+    #[error(transparent)]
+    Hex(#[from] crypto::hex::Error),
+    #[error(transparent)]
+    Clarity(#[from] clarity::Error),
+    #[error(transparent)]
+    Transaction(#[from] transaction::Error),
+    #[error(transparent)]
+    IntConversionError(#[from] std::num::TryFromIntError),
+}
+
+pub type StacksPublicKey = secp256k1::PublicKey;
+pub type StacksPrivateKey = secp256k1::SecretKey;

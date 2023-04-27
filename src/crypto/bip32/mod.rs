@@ -5,27 +5,27 @@ use secp256k1::PublicKey;
 use secp256k1::Secp256k1;
 use secp256k1::SecretKey;
 
-pub(crate) mod child_index;
-pub(crate) mod derivation_path;
-
 use crate::crypto::bip32::child_index::ChildIndex;
 use crate::crypto::bip32::derivation_path::IntoDerivationPath;
+
+pub mod child_index;
+pub mod derivation_path;
 
 pub(crate) const KEY_BYTE_SIZE: usize = 32;
 pub(crate) const MASTER_SEED: &[u8; 12] = b"Bitcoin seed";
 
 /// Error variants for BIP32.
 #[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
-pub(crate) enum Error {
+pub enum Error {
     /// Invalid seed length.
     /// Expected bytes are of length 16, 32, or 64.
-    #[error("Invalid seed length - expected 16, 32, or 64 bytes, received {0}")]
+    #[error("Invalid seed length - expected 16, 32, or 64 - received {0}")]
     InvalidSeedLength(usize),
     /// Invalid derivation path.
     #[error("Invalid derivation path")]
     InvalidDerivationPath,
     /// Invalid child index.
-    #[error("Invalid child index - expected 0 <= index < 2^31, received {0}")]
+    #[error("Invalid child index - expected 0 <= index < 2^31 - received {0}")]
     InvalidChildIndex(u32),
     /// Invalid child index string.
     #[error("Parse error, invalid child index string")]
@@ -38,7 +38,7 @@ pub(crate) enum Error {
     Secp256k1(#[from] secp256k1::Error),
 }
 
-pub(crate) type ChainCode = [u8; KEY_BYTE_SIZE];
+pub type ChainCode = [u8; KEY_BYTE_SIZE];
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct ExtendedPrivateKey {
@@ -48,7 +48,7 @@ pub struct ExtendedPrivateKey {
 }
 
 impl ExtendedPrivateKey {
-    pub(crate) fn from_seed<S>(seed: S) -> Result<Self, Error>
+    pub fn from_seed<S>(seed: S) -> Result<Self, Error>
     where
         S: AsRef<[u8]>,
     {
@@ -80,7 +80,7 @@ impl ExtendedPrivateKey {
         Ok(key)
     }
 
-    pub(crate) fn derive<P>(&self, path: P) -> Result<Self, Error>
+    pub fn derive<P>(&self, path: P) -> Result<Self, Error>
     where
         P: IntoDerivationPath,
     {
@@ -93,7 +93,7 @@ impl ExtendedPrivateKey {
         Ok(key)
     }
 
-    pub(crate) fn child(&self, index: ChildIndex) -> Result<Self, Error> {
+    pub fn child(&self, index: ChildIndex) -> Result<Self, Error> {
         let depth = self.depth.checked_add(1).ok_or(Error::DepthOverflow)?;
 
         let sig_result = {
@@ -128,7 +128,7 @@ impl ExtendedPrivateKey {
         })
     }
 
-    pub(crate) fn public_key(&self) -> PublicKey {
+    pub fn public_key(&self) -> PublicKey {
         self.private_key.public_key(&Secp256k1::new())
     }
 }

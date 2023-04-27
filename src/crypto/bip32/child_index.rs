@@ -2,14 +2,14 @@ use crate::crypto::bip32::Error;
 
 pub(crate) const HARDENED_OFFSET: u32 = 0x8000_0000;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub(crate) enum ChildIndex {
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ChildIndex {
     Normal { index: u32 },
     Hardened { index: u32 },
 }
 
 impl ChildIndex {
-    pub(crate) fn from_normal(i: u32) -> Result<Self, Error> {
+    pub fn from_normal(i: u32) -> Result<Self, Error> {
         if i >= HARDENED_OFFSET {
             return Err(Error::InvalidChildIndex(i));
         }
@@ -17,7 +17,7 @@ impl ChildIndex {
         Ok(ChildIndex::Normal { index: i })
     }
 
-    pub(crate) fn from_hardened(i: u32) -> Result<Self, Error> {
+    pub fn from_hardened(i: u32) -> Result<Self, Error> {
         if i >= HARDENED_OFFSET {
             return Err(Error::InvalidChildIndex(i));
         }
@@ -27,13 +27,13 @@ impl ChildIndex {
         })
     }
 
-    pub(crate) fn raw(self) -> u32 {
+    pub fn raw(self) -> u32 {
         match self {
             ChildIndex::Hardened { index } | ChildIndex::Normal { index } => index,
         }
     }
 
-    pub(crate) fn is_hardened(self) -> bool {
+    pub fn is_hardened(self) -> bool {
         match self {
             ChildIndex::Normal { .. } => false,
             ChildIndex::Hardened { .. } => true,

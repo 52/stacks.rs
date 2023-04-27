@@ -1,7 +1,4 @@
-use crate::crypto::hash::DSha256Hash;
-
-pub(crate) mod network;
-pub use network::BitcoinNetworkVersion;
+use crate::crypto::DSha256Hash;
 
 /// `Base58` alphabet, used for encoding/decoding.
 pub(crate) const B58_ALPHABET: &[u8; 58] =
@@ -31,9 +28,32 @@ pub enum Error {
     /// Invalid checksum.
     #[error("Invalid B58 checksum - expected {0}, got {1}")]
     InvalidChecksum(String, String),
+    /// Invalid B58 address version.
+    #[error("Invalid B58 address version: {0}")]
+    InvalidAddressVersion(u8),
     /// Integer conversion error.
     #[error(transparent)]
     IntConversionError(#[from] std::num::TryFromIntError),
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum BitcoinAddressVersion {
+    MainnetP2PKH = 0,
+    MainnetP2SH = 5,
+    TestnetP2PKH = 111,
+    TestnetP2SH = 196,
+}
+
+impl BitcoinAddressVersion {
+    pub fn from_u8(v: u8) -> Result<Self, Error> {
+        match v {
+            0 => Ok(BitcoinAddressVersion::MainnetP2PKH),
+            5 => Ok(BitcoinAddressVersion::MainnetP2SH),
+            111 => Ok(BitcoinAddressVersion::TestnetP2PKH),
+            196 => Ok(BitcoinAddressVersion::TestnetP2SH),
+            _ => Err(Error::InvalidAddressVersion(v)),
+        }
+    }
 }
 
 /// Encode a byte slice into a `Base58` string.
@@ -113,8 +133,8 @@ pub fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Error> {
 }
 
 /// Encode a byte slice into a `Base58Check` encoded string.
-pub fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkVersion>) -> String {
-    let version = network.into().version();
+pub fn base58check_encode(hash: &[u8], version: BitcoinAddressVersion) -> String {
+    let version = version as u8;
 
     let mut payload = Vec::with_capacity(21);
     payload.push(version);
@@ -136,7 +156,7 @@ pub fn base58check_encode(hash: &[u8], network: impl Into<BitcoinNetworkVersion>
 /// Decode a `Base58Check` encoded string into a byte vector.
 pub fn base58check_decode(
     address: impl Into<String>,
-) -> Result<(Vec<u8>, BitcoinNetworkVersion), Error> {
+) -> Result<(Vec<u8>, BitcoinAddressVersion), Error> {
     let address: String = address.into();
 
     let buffer = b58_decode(address)?;
@@ -157,9 +177,7 @@ pub fn base58check_decode(
         }
     }
 
-    let prefix = buffer[0];
-
-    Ok((data, BitcoinNetworkVersion::from(prefix)))
+    Ok((data, BitcoinAddressVersion::from_u8(buffer[0])?))
 }
 
 #[cfg(test)]
@@ -202,7 +220,7 @@ mod tests {
     fn test_b58_check() {
         let dummy = vec![
             (
-                BitcoinNetworkVersion::MainnetP2PKH,
+                BitcoinAddressVersion::MainnetP2PKH,
                 vec![
                     "1FzTxL9Mxnm2fdmnQEArfhzJHevwbvcH6d",
                     "1111111111111111111114oLvT2",
@@ -212,7 +230,7 @@ mod tests {
                 ],
             ),
             (
-                BitcoinNetworkVersion::MainnetP2SH,
+                BitcoinAddressVersion::MainnetP2SH,
                 vec![
                     "3GgUssdoWh5QkoUDXKqT6LMESBDf8aqp2y",
                     "31h1vYVSYuKP6AhS86fbRdMw9XHieotbST",
@@ -222,7 +240,7 @@ mod tests {
                 ],
             ),
             (
-                BitcoinNetworkVersion::TestnetP2PKH,
+                BitcoinAddressVersion::TestnetP2PKH,
                 vec![
                     "mvWRFPELmpCHSkFQ7o9EVdCd9eXeUTa9T8",
                     "mfWxJ45yp2SFn7UciZyNpvDKrzbhyfKrY8",
@@ -232,7 +250,7 @@ mod tests {
                 ],
             ),
             (
-                BitcoinNetworkVersion::TestnetP2SH,
+                BitcoinAddressVersion::TestnetP2SH,
                 vec![
                     "2N8EgwcZq89akxb6mCTTKiHLVeXRpxjuy98",
                     "2MsFDzHRUAMpjHxKyoEHU3aMCMsVtMqs1PV",

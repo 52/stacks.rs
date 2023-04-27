@@ -1,4 +1,13 @@
 [tasks.clippy]
 install_crate = "clippy"
 command = "cargo"
-args = ["clippy", "--", "-D", "warnings", "-D", "clippy::pedantic", "-A", "clippy::must_use_candidate", "-A", "clippy::module_name_repetitions", "-A", "clippy::new_without_default"]
+args = [
+"clippy", "--",
+"-D", "warnings",
+"-D", "clippy::pedantic",
+"-A", "clippy::must_use_candidate",
+"-A", "clippy::module_name_repetitions",
+"-A", "clippy::new_ret_no_self",
+"-A", "clippy::missing_errors_doc",
+"-A", "clippy::too_many_arguments"
+]

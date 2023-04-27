@@ -1,0 +1,8 @@
+[package]
+name = "contract-call"
+version = "0.1.0"
+edition = "2021"
+authors = ["Max Karou <max@trustmachines.co>"]
+
+[dependencies]
+stacks-rs = {path = "../../", version = "0.1.0"}
