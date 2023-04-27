@@ -23,15 +23,6 @@ pub struct StacksNetwork {
     base_url: &'static str,
 }
 
-impl From<TransactionVersion> for StacksNetwork {
-    fn from(version: TransactionVersion) -> Self {
-        match version {
-            TransactionVersion::Mainnet => Self::mainnet(),
-            TransactionVersion::Testnet => Self::testnet(),
-        }
-    }
-}
-
 impl StacksNetwork {
     /// Creates a new `StacksNetwork`.
     pub fn new(chain_id: ChainID, version: TransactionVersion, base_url: &'static str) -> Self {
