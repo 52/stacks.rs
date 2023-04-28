@@ -12,8 +12,8 @@ use crate::transaction::auth::PUBLIC_KEY_ENCODING;
 use crate::transaction::condition::AnchorMode;
 use crate::transaction::condition::PostConditionMode;
 use crate::transaction::condition::PostConditions;
-use crate::transaction::payload::Payload;
 use crate::transaction::Error;
+use crate::transaction::Payload;
 use crate::StacksPrivateKey;
 use crate::StacksPublicKey;
 
@@ -158,6 +158,10 @@ impl StacksTransaction {
     pub fn set_nonce(&mut self, nonce: u64) {
         self.auth.set_nonce(nonce);
     }
+
+    pub fn byte_length(&self) -> Result<u64, Error> {
+        Ok(self.serialize()?.len() as u64)
+    }
 }
 
 impl Serialize for StacksTransaction {
@@ -177,15 +181,3 @@ impl Serialize for StacksTransaction {
         Ok(buffer)
     }
 }
-
-macro_rules! impl_wrapped_transaction {
-    ($type:ident, $error:ident) => {
-        impl From<$type> for StacksTransaction {
-            fn from(tx: $type) -> Self {
-                tx.0
-            }
-        }
-    };
-}
-
-pub(crate) use impl_wrapped_transaction;

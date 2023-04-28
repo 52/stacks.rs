@@ -16,57 +16,102 @@ pub enum ChainID {
     Mainnet = 0x0000_0001,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct StacksNetwork {
-    version: TransactionVersion,
-    chain_id: ChainID,
-    base_url: &'static str,
+macro_rules! impl_default_network {
+    ($type:ty, $version:expr, $chain_id:expr) => {
+        impl Default for $type {
+            fn default() -> Self {
+                Self::new()
+            }
+        }
+
+        impl AsRef<$type> for $type {
+            fn as_ref(&self) -> &Self {
+                self
+            }
+        }
+
+        impl $type {
+            pub fn new() -> Self {
+                Self {
+                    version: $version,
+                    chain_id: $chain_id,
+                }
+            }
+        }
+    };
 }
 
-impl StacksNetwork {
-    /// Creates a new `StacksNetwork`.
-    pub fn new(chain_id: ChainID, version: TransactionVersion, base_url: &'static str) -> Self {
-        Self {
-            version,
-            chain_id,
-            base_url,
-        }
-    }
-
-    /// Returns the mainnet network.
-    pub fn mainnet() -> Self {
-        Self::new(
-            ChainID::Mainnet,
-            TransactionVersion::Mainnet,
-            HIRO_MAINNET_DEFAULT,
-        )
-    }
-
-    /// Returns the testnet network.
-    pub fn testnet() -> Self {
-        Self::new(
-            ChainID::Testnet,
-            TransactionVersion::Testnet,
-            HIRO_TESTNET_DEFAULT,
-        )
-    }
-
-    /// Returns the mocknet network.
-    pub fn mocknet() -> Self {
-        Self::new(
-            ChainID::Testnet,
-            TransactionVersion::Testnet,
-            HIRO_MOCKNET_DEFAULT,
-        )
-    }
-
+pub trait Network: std::fmt::Debug + Clone {
     /// Returns the transaction version.
-    pub fn version(self) -> TransactionVersion {
+    fn version(&self) -> TransactionVersion;
+    /// Returns the chain ID.
+    fn chain_id(&self) -> ChainID;
+    /// Returns the API base URL.
+    fn base_url(&self) -> String;
+}
+
+/// The mainnet network.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct StacksMainnet {
+    version: TransactionVersion,
+    chain_id: ChainID,
+}
+
+impl_default_network!(StacksMainnet, TransactionVersion::Mainnet, ChainID::Mainnet);
+impl Network for StacksMainnet {
+    fn version(&self) -> TransactionVersion {
         self.version
     }
 
-    /// Returns the chain ID.
-    pub fn chain_id(self) -> ChainID {
+    fn chain_id(&self) -> ChainID {
         self.chain_id
+    }
+
+    fn base_url(&self) -> String {
+        HIRO_MAINNET_DEFAULT.into()
+    }
+}
+
+/// The testnet network.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct StacksTestnet {
+    version: TransactionVersion,
+    chain_id: ChainID,
+}
+
+impl_default_network!(StacksTestnet, TransactionVersion::Testnet, ChainID::Testnet);
+impl Network for StacksTestnet {
+    fn version(&self) -> TransactionVersion {
+        self.version
+    }
+
+    fn chain_id(&self) -> ChainID {
+        self.chain_id
+    }
+
+    fn base_url(&self) -> String {
+        HIRO_TESTNET_DEFAULT.into()
+    }
+}
+
+/// The mocknet network.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct StacksMocknet {
+    version: TransactionVersion,
+    chain_id: ChainID,
+}
+
+impl_default_network!(StacksMocknet, TransactionVersion::Testnet, ChainID::Testnet);
+impl Network for StacksMocknet {
+    fn version(&self) -> TransactionVersion {
+        self.version
+    }
+
+    fn chain_id(&self) -> ChainID {
+        self.chain_id
+    }
+
+    fn base_url(&self) -> String {
+        HIRO_MOCKNET_DEFAULT.into()
     }
 }

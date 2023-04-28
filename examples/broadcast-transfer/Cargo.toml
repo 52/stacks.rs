@@ -1,5 +1,5 @@
 [package]
-name = "stx-transfer"
+name = "broadcast-transfer"
 version = "0.1.0"
 edition = "2021"
 authors = ["Max Karou <max@trustmachines.co>"]

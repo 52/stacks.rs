@@ -1,88 +1,203 @@
-use crate::clarity::impl_display_generic;
-use crate::transaction::args::UContractCallOptions;
-use crate::transaction::args::UContractCallOptionsMSig;
+use crate::clarity::ClarityValue;
+use crate::clarity::ContractPrincipalCV;
 use crate::transaction::auth::Authorization;
 use crate::transaction::auth::MultiHashMode;
 use crate::transaction::auth::MultiSpendingCondition;
 use crate::transaction::auth::SingleHashMode;
 use crate::transaction::auth::SingleSpendingCondition;
-use crate::transaction::base::impl_wrapped_transaction;
-use crate::transaction::payload::ContractCallPayload;
-use crate::transaction::ContractCallOptions;
-use crate::transaction::ContractCallOptionsMSig;
+use crate::transaction::AnchorMode;
+use crate::transaction::ContractCallPayload;
 use crate::transaction::Error;
+use crate::transaction::PostConditionMode;
+use crate::transaction::PostConditions;
 use crate::transaction::StacksTransaction;
-use crate::transaction::Transaction;
 use crate::transaction::TransactionSigner;
+use crate::Network;
+use crate::StacksPrivateKey;
+use crate::StacksPublicKey;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ContractCall(StacksTransaction);
+/// A single-sig contract-call builder.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct STXContractCall {
+    /// The underlying stacks transaction.
+    transaction: StacksTransaction,
+    /// The private key of the signer.
+    sender_key: StacksPrivateKey,
+}
 
-impl_display_generic!(ContractCall);
-impl_wrapped_transaction!(ContractCall, Error);
+impl STXContractCall {
+    /// Creates a new contract-call builder.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract` - The contract address.
+    /// * `contract_name` - The contract name.
+    /// * `function_name` - The function name.
+    /// * `function_args` - The function arguments.
+    /// * `sender_key` - The private key of the sender.
+    /// * `fee` - The fee to pay for the transaction.
+    /// * `nonce` - The nonce of the transaction.
+    /// * `network` - The network to broadcast the transaction to.
+    /// * `anchor_mode` - The anchor mode to use for the transaction.
+    /// * `post_condition_mode` - The post condition mode to use for the transaction.
+    /// * `post_conditions` - The post conditions to use for the transaction.
+    /// * `sponsored` - Whether or not the transaction is sponsored.
+    pub fn new<T: Network>(
+        contract: impl Into<String>,
+        contract_name: impl Into<String>,
+        function_name: impl Into<String>,
+        function_args: impl Into<Vec<ClarityValue>>,
+        sender_key: StacksPrivateKey,
+        fee: u64,
+        nonce: u64,
+        network: impl AsRef<T>,
+        anchor_mode: AnchorMode,
+        post_condition_mode: PostConditionMode,
+        post_conditions: PostConditions,
+        sponsored: bool,
+    ) -> Result<Self, Error> {
+        let network = network.as_ref();
+        let public_key = sender_key.public_key(&secp256k1::Secp256k1::new());
 
-impl Transaction for ContractCall {
-    type Args = ContractCallOptions;
-    type UArgs = UContractCallOptions;
+        let contract = ContractPrincipalCV::new(contract, contract_name);
+        let payload = ContractCallPayload::new(contract, function_name, &function_args.into());
+        let condition = SingleSpendingCondition::new(fee, nonce, public_key, SingleHashMode::P2PKH);
 
-    fn new(args: Self::Args) -> Result<StacksTransaction, Error> {
-        let private_key = args.sender_key;
-        let args = UContractCallOptions::from(args);
-        let mut transaction = Self::new_unsigned(args)?;
-        let mut signer = TransactionSigner::new(&mut transaction)?;
-        signer.sign_origin(&private_key)?;
-        Ok(transaction)
-    }
-
-    fn new_unsigned(args: Self::UArgs) -> Result<StacksTransaction, Error> {
-        let payload =
-            ContractCallPayload::new(args.contract, args.function_name, &args.function_args);
-
-        let condition = SingleSpendingCondition::new(
-            args.fee,
-            args.nonce,
-            args.public_key,
-            SingleHashMode::P2PKH,
-        );
-
-        let auth = if args.sponsored {
+        let auth = if sponsored {
             Authorization::Sponsored(condition, SingleSpendingCondition::new_empty())
         } else {
             Authorization::Standard(condition)
         };
 
         let transaction = StacksTransaction::new(
-            args.network.version(),
-            args.network.chain_id(),
+            network.version(),
+            network.chain_id(),
             auth,
-            args.anchor_mode,
-            args.post_condition_mode,
-            args.post_conditions,
+            anchor_mode,
+            post_condition_mode,
+            post_conditions,
             payload,
         );
 
-        Ok(transaction)
+        Ok(Self {
+            transaction,
+            sender_key,
+        })
+    }
+
+    /// Signs the transaction with the provided private key.
+    /// Returns the signed transaction.
+    pub fn sign(mut self) -> Result<StacksTransaction, Error> {
+        let mut signer = TransactionSigner::new(&mut self.transaction)?;
+        signer.sign_origin(&self.sender_key)?;
+        Ok(self.transaction)
+    }
+
+    /// Sets the fee of the transaction.
+    pub fn set_fee(&mut self, fee: u64) {
+        self.transaction.set_fee(fee);
+    }
+
+    /// Sets the nonce of the transaction.
+    pub fn set_nonce(&mut self, nonce: u64) {
+        self.transaction.set_nonce(nonce);
+    }
+
+    /// Gets the byte length of the transaction.
+    pub fn byte_length(&self) -> Result<u64, Error> {
+        self.transaction.clone().byte_length()
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ContractCallMultiSig(StacksTransaction);
+/// A multi-sig contract-call builder.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct STXContractCallMultiSig {
+    /// The underlying stacks transaction.
+    transaction: StacksTransaction,
+    /// The private keys of the signers.
+    signer_keys: Vec<StacksPrivateKey>,
+    /// The public keys of the signers.
+    public_keys: Vec<StacksPublicKey>,
+    /// The number of signatures required to authorize the transaction.
+    signatures: u8,
+}
 
-impl_display_generic!(ContractCallMultiSig);
-impl_wrapped_transaction!(ContractCallMultiSig, Error);
+impl STXContractCallMultiSig {
+    /// Creates a new contract-call builder.
+    ///
+    /// # Arguments
+    ///
+    /// * `contract` - The contract address.
+    /// * `contract_name` - The contract name.
+    /// * `function_name` - The function name.
+    /// * `function_args` - The function arguments.
+    /// * `signer_keys` - The private keys of the signers.
+    /// * `public_keys` - The public keys of the signers.
+    /// * `signatures` - The number of signatures required to authorize the transaction.
+    /// * `fee` - The fee to pay for the transaction.
+    /// * `nonce` - The nonce of the transaction.
+    /// * `network` - The network to broadcast the transaction to.
+    /// * `anchor_mode` - The anchor mode to use for the transaction.
+    /// * `post_condition_mode` - The post condition mode to use for the transaction.
+    /// * `post_conditions` - The post conditions to use for the transaction.
+    /// * `sponsored` - Whether or not the transaction is sponsored.
+    pub fn new<T: Network>(
+        contract: impl Into<String>,
+        contract_name: impl Into<String>,
+        function_name: impl Into<String>,
+        function_args: impl Into<Vec<ClarityValue>>,
+        signer_keys: impl Into<Vec<StacksPrivateKey>>,
+        public_keys: impl Into<Vec<StacksPublicKey>>,
+        signatures: u8,
+        fee: u64,
+        nonce: u64,
+        network: impl AsRef<T>,
+        anchor_mode: AnchorMode,
+        post_condition_mode: PostConditionMode,
+        post_conditions: PostConditions,
+        sponsored: bool,
+    ) -> Result<Self, Error> {
+        let network = network.as_ref();
+        let signer_keys = signer_keys.into();
+        let public_keys = public_keys.into();
 
-impl Transaction for ContractCallMultiSig {
-    type Args = ContractCallOptionsMSig;
-    type UArgs = UContractCallOptionsMSig;
+        let contract = ContractPrincipalCV::new(contract, contract_name);
+        let payload = ContractCallPayload::new(contract, function_name, &function_args.into());
+        let condition =
+            MultiSpendingCondition::new(nonce, fee, &public_keys, signatures, MultiHashMode::P2SH);
 
-    fn new(args: Self::Args) -> Result<StacksTransaction, Error> {
+        let auth = if sponsored {
+            Authorization::Sponsored(condition, SingleSpendingCondition::new_empty())
+        } else {
+            Authorization::Standard(condition)
+        };
+
+        let transaction = StacksTransaction::new(
+            network.version(),
+            network.chain_id(),
+            auth,
+            anchor_mode,
+            post_condition_mode,
+            post_conditions,
+            payload,
+        );
+
+        Ok(Self {
+            transaction,
+            signer_keys,
+            public_keys,
+            signatures,
+        })
+    }
+
+    /// Sign the transaction with the provided private keys.
+    /// Returns the signed transaction.
+    pub fn sign(mut self) -> Result<StacksTransaction, Error> {
         let secp = secp256k1::Secp256k1::new();
-        let private_keys = args.signer_keys.clone();
-        let mut public_keys = args.public_keys.clone();
+        let private_keys = self.signer_keys;
+        let mut public_keys = self.public_keys.clone();
 
-        let args = args.into();
-        let mut transaction = Self::new_unsigned(args)?;
-        let mut signer = TransactionSigner::new(&mut transaction)?;
+        let mut signer = TransactionSigner::new(&mut self.transaction)?;
 
         for key in private_keys {
             let public_key = key.public_key(&secp);
@@ -94,179 +209,21 @@ impl Transaction for ContractCallMultiSig {
             signer.append_origin(&key)?;
         }
 
-        Ok(transaction)
+        Ok(self.transaction)
     }
 
-    fn new_unsigned(args: Self::UArgs) -> Result<StacksTransaction, Error> {
-        let payload =
-            ContractCallPayload::new(args.contract, args.function_name, &args.function_args);
-
-        let condition = MultiSpendingCondition::new(
-            args.nonce,
-            args.fee,
-            &args.public_keys,
-            args.signatures,
-            MultiHashMode::P2SH,
-        );
-
-        let auth = if args.sponsored {
-            Authorization::Sponsored(condition, SingleSpendingCondition::new_empty())
-        } else {
-            Authorization::Standard(condition)
-        };
-
-        let transaction = StacksTransaction::new(
-            args.network.version(),
-            args.network.chain_id(),
-            auth,
-            args.anchor_mode,
-            args.post_condition_mode,
-            args.post_conditions,
-            payload,
-        );
-
-        Ok(transaction)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::clarity::ContractPrincipalCV;
-    use crate::crypto::bytes_to_hex;
-    use crate::crypto::hex_to_bytes;
-    use crate::crypto::Serialize;
-    use crate::transaction::AnchorMode;
-    use crate::transaction::PostConditionMode;
-    use crate::transaction::PostConditions;
-    use crate::StacksNetwork;
-    use crate::StacksPublicKey;
-
-    fn get_public_key() -> StacksPublicKey {
-        let pk_hex = "03ef788b3830c00abe8f64f62dc32fc863bc0b2cafeb073b6c8e1c7657d9c2c3ab";
-        let pk_bytes = hex_to_bytes(pk_hex).unwrap();
-        StacksPublicKey::from_slice(&pk_bytes).unwrap()
+    /// Set the fee for the transaction.
+    pub fn set_fee(&mut self, fee: u64) {
+        self.transaction.set_fee(fee);
     }
 
-    #[test]
-    fn test_unsigned_contract_call_mainnet() {
-        let args = UContractCallOptions::new(
-            ContractPrincipalCV::new("SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159", "example"),
-            "function-name",
-            [],
-            get_public_key(),
-            0,
-            0,
-            StacksNetwork::mainnet(),
-            AnchorMode::Any,
-            PostConditionMode::Deny,
-            PostConditions::empty(),
-            false,
-        );
-
-        let transaction = ContractCall::new_unsigned(args).unwrap();
-        let serialized = transaction.serialize().unwrap();
-        let tx_id = transaction.tx_id().unwrap().to_bytes();
-
-        let tx_hex = bytes_to_hex(&serialized);
-        let tx_id_hex = bytes_to_hex(&tx_id);
-
-        let expected_tx_hex = "0000000001040015c31b8c1c11c515e244b75806bac48d1399c775000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000302000000000216df0ba3e79792be7be5e50a370289accfc8c9e032076578616d706c650d66756e6374696f6e2d6e616d6500000000";
-        let expected_tx_id_hex = "5b3a3dd712d8b4906ea5529ae118d42f9d2499e6283dec162dba69484ef0ff67";
-
-        assert_eq!(tx_hex, expected_tx_hex);
-        assert_eq!(tx_id_hex, expected_tx_id_hex);
+    /// Set the nonce for the transaction.
+    pub fn set_nonce(&mut self, nonce: u64) {
+        self.transaction.set_nonce(nonce);
     }
 
-    #[test]
-    fn test_unsigned_contract_call_testnet() {
-        let args = UContractCallOptions::new(
-            ContractPrincipalCV::new("SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159", "example"),
-            "function-name",
-            [],
-            get_public_key(),
-            0,
-            0,
-            StacksNetwork::testnet(),
-            AnchorMode::Any,
-            PostConditionMode::Deny,
-            PostConditions::empty(),
-            false,
-        );
-
-        let transaction = ContractCall::new_unsigned(args).unwrap();
-        let serialized = transaction.serialize().unwrap();
-        let tx_id = transaction.tx_id().unwrap().to_bytes();
-
-        let tx_hex = bytes_to_hex(&serialized);
-        let tx_id_hex = bytes_to_hex(&tx_id);
-
-        let expected_tx_hex = "8080000000040015c31b8c1c11c515e244b75806bac48d1399c775000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000302000000000216df0ba3e79792be7be5e50a370289accfc8c9e032076578616d706c650d66756e6374696f6e2d6e616d6500000000";
-        let expected_tx_id_hex = "032962aaac8d7ac9b1086e26952ba7cd1b16736efe019c961c1459a0fe44309d";
-
-        assert_eq!(tx_hex, expected_tx_hex);
-        assert_eq!(tx_id_hex, expected_tx_id_hex);
-    }
-
-    #[test]
-    fn test_unsigned_multi_sig_contract_call_mainnet() {
-        let args = UContractCallOptionsMSig::new(
-            ContractPrincipalCV::new("SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159", "example"),
-            "function-name",
-            [],
-            [get_public_key(), get_public_key()],
-            2,
-            0,
-            0,
-            StacksNetwork::mainnet(),
-            AnchorMode::Any,
-            PostConditionMode::Deny,
-            PostConditions::empty(),
-            false,
-        );
-
-        let transaction = ContractCallMultiSig::new_unsigned(args).unwrap();
-        let serialized = transaction.serialize().unwrap();
-        let tx_id = transaction.tx_id().unwrap().to_bytes();
-
-        let tx_hex = bytes_to_hex(&serialized);
-        let tx_id_hex = bytes_to_hex(&tx_id);
-
-        let expected_tx_hex = "00000000010401b10bb6d6ff7a8b4de86614fadcc58c35808f1176000000000000000000000000000000000000000000020302000000000216df0ba3e79792be7be5e50a370289accfc8c9e032076578616d706c650d66756e6374696f6e2d6e616d6500000000";
-        let expected_tx_id_hex = "8b61f2c5b90fcfabb8c0858ecca8518e6a90fa1700f6e046210807eb35ea2c45";
-
-        assert_eq!(tx_hex, expected_tx_hex);
-        assert_eq!(tx_id_hex, expected_tx_id_hex);
-    }
-
-    #[test]
-    fn test_unsigned_multi_sig_contract_call_testnet() {
-        let args = UContractCallOptionsMSig::new(
-            ContractPrincipalCV::new("SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159", "example"),
-            "function-name",
-            [],
-            [get_public_key(), get_public_key()],
-            2,
-            0,
-            0,
-            StacksNetwork::testnet(),
-            AnchorMode::Any,
-            PostConditionMode::Deny,
-            PostConditions::empty(),
-            false,
-        );
-
-        let transaction = ContractCallMultiSig::new_unsigned(args).unwrap();
-        let serialized = transaction.serialize().unwrap();
-        let tx_id = transaction.tx_id().unwrap().to_bytes();
-
-        let tx_hex = bytes_to_hex(&serialized);
-        let tx_id_hex = bytes_to_hex(&tx_id);
-
-        let expected_tx_hex = "80800000000401b10bb6d6ff7a8b4de86614fadcc58c35808f1176000000000000000000000000000000000000000000020302000000000216df0ba3e79792be7be5e50a370289accfc8c9e032076578616d706c650d66756e6374696f6e2d6e616d6500000000";
-        let expected_tx_id_hex = "0b10d23dd61f83a5edb9e128835fcbd746a518d6da2ba2766f63246c0fb48a2d";
-
-        assert_eq!(tx_hex, expected_tx_hex);
-        assert_eq!(tx_id_hex, expected_tx_id_hex);
+    /// Gets the byte length of the transaction.
+    pub fn byte_length(&self) -> Result<u64, Error> {
+        self.transaction.clone().byte_length()
     }
 }
