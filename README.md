@@ -109,7 +109,6 @@ use stacks_rs::StacksTestnet;
 use stacks_rs::StacksWallet;
 
 #[tokio::main]
-#[allow(unused_variables)]
 async fn main() -> Result<(), Error> {
     let mut wallet = StacksWallet::from_secret_key(SECRET_KEY)?;
 
