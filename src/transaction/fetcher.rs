@@ -6,8 +6,7 @@ use crate::transaction::Error;
 use crate::transaction::StacksTransaction;
 use crate::Network;
 
-/// Estimate the transaction fee for a given transaction.
-/// Returns the fee in microstacks.
+/// Estimate the transaction fee for a given transaction & returns the fee in microstacks.
 ///
 /// # Arguments
 ///
@@ -30,8 +29,7 @@ pub async fn estimate_transaction_fee(
     Ok(fee)
 }
 
-/// Broadcast a transaction to the network.
-/// Returns `TxBroadcastOk`.
+/// Broadcast a transaction to the network, & returns the transaction id.
 ///
 /// # Arguments
 ///
@@ -59,8 +57,7 @@ pub async fn broadcast_transaction(
     Err(Error::BadRequest(response))
 }
 
-/// Get the next nonce for a given address.
-/// Returns the nonce as a `u64`.
+/// Get the next nonce for a given address, & returns the nonce as u64.
 ///
 /// # Arguments
 ///

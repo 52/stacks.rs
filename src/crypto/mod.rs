@@ -27,23 +27,29 @@ pub mod hex;
 
 pub(crate) mod bip32;
 
+/// Trait for serializing data to bytes.
 pub trait Serialize {
+    /// The error type returned by the serializer.
     type Err;
 
+    /// Serialize the data to bytes.
     fn serialize(&self) -> Result<Vec<u8>, Self::Err>;
-
+    /// Get the byte length of the serialized data.
     fn byte_length(&self) -> Result<u64, Self::Err> {
-        Ok(self.serialize()?.len() as u64)
+        let serialized = self.serialize()?;
+        Ok(serialized.len() as u64)
     }
 }
 
-pub trait Deserialize {
+/// Trait for deserializing data from bytes.
+pub trait Deserialize: Sized {
+    /// The output type returned by the deserializer.
     type Output;
+    /// The error type returned by the deserializer.
     type Err;
 
-    fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err>
-    where
-        Self: Sized;
+    /// Deserialize the data from bytes.
+    fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err>;
 }
 
 macro_rules! impl_wrapped_array {

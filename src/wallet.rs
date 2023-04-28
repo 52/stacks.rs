@@ -10,6 +10,7 @@ pub(crate) const STX_DERIVATION_PATH: &str = "m/44'/5757'/0'/0";
 
 pub type StacksAccounts = std::collections::HashMap<u32, StacksAccount>;
 
+/// A `StacksAccount` instance, which contains a public key, a private key, and a derivation index.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct StacksAccount {
     pub index: u32,
@@ -43,6 +44,7 @@ impl StacksAccount {
     }
 }
 
+/// A parent `StacksWallet`, which contains a root key and a map of derived accounts.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StacksWallet {
     root_key: ExtendedPrivateKey,

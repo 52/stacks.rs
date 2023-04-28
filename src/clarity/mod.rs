@@ -1,6 +1,3 @@
-use crate::crypto::Deserialize;
-use crate::crypto::Serialize;
-
 pub use crate::clarity::bool::FalseCV;
 pub use crate::clarity::bool::TrueCV;
 pub use crate::clarity::buffer::BufferCV;
@@ -17,6 +14,9 @@ pub use crate::clarity::principal::StandardPrincipalCV;
 pub use crate::clarity::response::ErrCV;
 pub use crate::clarity::response::OkCV;
 pub use crate::clarity::tuple::TupleCV;
+
+use crate::crypto::Deserialize;
+use crate::crypto::Serialize;
 
 pub(crate) mod bool;
 pub(crate) mod buffer;
