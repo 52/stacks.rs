@@ -1,4 +1,3 @@
-use crate::clarity::impl_display_generic;
 use crate::crypto::hash::Sha512_256Hash;
 use crate::crypto::impl_wrapped_array;
 use crate::crypto::Serialize;
@@ -104,8 +103,6 @@ pub struct StacksTransaction {
     pub payload: Payload,
 }
 
-impl_display_generic!(StacksTransaction);
-
 impl StacksTransaction {
     pub fn new(
         version: TransactionVersion,
@@ -157,10 +154,6 @@ impl StacksTransaction {
 
     pub fn set_nonce(&mut self, nonce: u64) {
         self.auth.set_nonce(nonce);
-    }
-
-    pub fn byte_length(&self) -> Result<u64, Error> {
-        Ok(self.serialize()?.len() as u64)
     }
 }
 

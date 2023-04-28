@@ -1,4 +1,3 @@
-use crate::clarity::impl_display_generic;
 use crate::clarity::ClarityValue;
 use crate::clarity::LengthPrefixedString;
 use crate::clarity::StandardPrincipalCV;
@@ -88,8 +87,6 @@ pub struct AssetInfo {
     asset_name: LengthPrefixedString,
 }
 
-impl_display_generic!(AssetInfo);
-
 impl AssetInfo {
     pub fn new(
         address: impl Into<String>,
@@ -122,8 +119,6 @@ pub enum PostCondition {
     Fungible(FungiblePostCondition),
     NonFungible(NonFungiblePostCondition),
 }
-
-impl_display_generic!(PostCondition);
 
 impl Serialize for PostCondition {
     type Err = Error;
@@ -169,8 +164,6 @@ pub struct STXPostCondition {
     amount: u64,
     condition_code: FungibleConditionCode,
 }
-
-impl_display_generic!(STXPostCondition);
 
 impl STXPostCondition {
     pub fn new(
@@ -219,8 +212,6 @@ pub struct FungiblePostCondition {
     pub amount: u64,
     pub condition_code: FungibleConditionCode,
 }
-
-impl_display_generic!(FungiblePostCondition);
 
 impl FungiblePostCondition {
     pub fn new(
@@ -272,8 +263,6 @@ pub struct NonFungiblePostCondition {
     pub asset_name: ClarityValue,
     pub condition_code: NonFungibleConditionCode,
 }
-
-impl_display_generic!(NonFungiblePostCondition);
 
 impl NonFungiblePostCondition {
     pub fn new(

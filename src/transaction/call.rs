@@ -1,5 +1,6 @@
 use crate::clarity::ClarityValue;
 use crate::clarity::ContractPrincipalCV;
+use crate::crypto::Serialize;
 use crate::transaction::auth::Authorization;
 use crate::transaction::auth::MultiHashMode;
 use crate::transaction::auth::MultiSpendingCondition;

@@ -5,7 +5,6 @@ use crate::address::hash_p2pkh;
 use crate::address::hash_p2sh;
 use crate::address::hash_p2wpkh;
 use crate::address::hash_p2wsh;
-use crate::clarity::impl_display_generic;
 use crate::crypto::bytes_to_hex;
 use crate::crypto::impl_wrapped_array;
 use crate::crypto::Hash160;
@@ -52,8 +51,6 @@ pub enum Authorization {
     Standard(SpendingCondition),
     Sponsored(SpendingCondition, SpendingCondition),
 }
-
-impl_display_generic!(Authorization);
 
 impl Authorization {
     pub fn verify(&self, sighash: TransactionId) -> Result<(), Error> {
@@ -190,8 +187,6 @@ pub enum SpendingCondition {
     MultiSig(MultiSpendingCondition),
 }
 
-impl_display_generic!(SpendingCondition);
-
 impl SpendingCondition {
     pub fn verify(
         &self,
@@ -325,8 +320,6 @@ pub struct SingleSpendingCondition {
     signature: MessageSignature,
 }
 
-impl_display_generic!(SingleSpendingCondition);
-
 impl SingleSpendingCondition {
     pub fn new(
         tx_fee: u64,
@@ -434,8 +427,6 @@ pub struct MultiSpendingCondition {
     auth_fields: Vec<TransactionAuthField>,
     required_sigs: u8,
 }
-
-impl_display_generic!(MultiSpendingCondition);
 
 impl MultiSpendingCondition {
     pub fn new(

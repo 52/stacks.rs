@@ -1,4 +1,3 @@
-use crate::clarity::impl_display_generic;
 use crate::clarity::ClarityValue;
 use crate::clarity::ContractPrincipalCV;
 use crate::clarity::FunctionArguments;
@@ -21,8 +20,6 @@ pub enum Payload {
     ContractCall(ContractCallPayload),
 }
 
-impl_display_generic!(Payload);
-
 impl Serialize for Payload {
     type Err = Error;
 
@@ -40,8 +37,6 @@ pub struct TokenTransferPayload {
     pub amount: u64,
     pub memo: MemoString,
 }
-
-impl_display_generic!(TokenTransferPayload);
 
 impl TokenTransferPayload {
     pub fn new(
@@ -89,8 +84,6 @@ pub struct ContractCallPayload {
     function_name: LengthPrefixedString,
     function_args: FunctionArguments,
 }
-
-impl_display_generic!(ContractCallPayload);
 
 impl ContractCallPayload {
     pub fn new(

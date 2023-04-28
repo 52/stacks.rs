@@ -27,13 +27,17 @@ pub mod hex;
 
 pub(crate) mod bip32;
 
-pub trait Serialize: std::fmt::Display + std::fmt::Debug {
+pub trait Serialize {
     type Err;
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err>;
+
+    fn byte_length(&self) -> Result<u64, Self::Err> {
+        Ok(self.serialize()?.len() as u64)
+    }
 }
 
-pub trait Deserialize: std::fmt::Display + std::fmt::Debug {
+pub trait Deserialize {
     type Output;
     type Err;
 
