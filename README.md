@@ -9,63 +9,63 @@ This project is inspired by [micro-stacks][micro-stacks][^micro-stacks] & [Stack
 
 ## Usage
 
-Build a token-transfer transaction:
+### Build a token-transfer transaction:
 ```rust
 use stacks_rs::transaction::AnchorMode;
 use stacks_rs::transaction::PostConditionMode;
 use stacks_rs::transaction::PostConditions;
 use stacks_rs::transaction::STXTokenTransfer;
-use stacks_rs::transaction::STXTokenTransferOptions;
-use stacks_rs::transaction::Transaction;
+use stacks_rs::AddressVersion;
 use stacks_rs::Error;
-use stacks_rs::StacksNetwork;
+use stacks_rs::StacksTestnet;
 use stacks_rs::StacksWallet;
 
-fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     let mut wallet = StacksWallet::from_secret_key(SECRET_KEY)?;
-    let account = wallet.get_account(0)?;
 
-    let opts = STXTokenTransferOptions::new(
-        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+    let account = wallet.get_account(0)?;
+    let address = account.get_address(AddressVersion::TestnetP2PKH)?;
+
+    let tx = STXTokenTransfer::new(
+        "ST2G0KVR849MZHJ6YB4DCN8K5TRDVXF92A664PHXT",
         account.private_key,
         1337,
-        100,
         0,
-        StacksNetwork::mainnet(),
+        0,
+        StacksTestnet::new(),
         AnchorMode::Any,
-        "example memo",
+        "test memo",
         PostConditionMode::Deny,
         PostConditions::empty(),
         false,
-    );
+    )?;
 
-    let tx = STXTokenTransfer::new(opts)?;
-    tx.verify()?;
+    let signed_tx = tx.sign()?;
+
     Ok(())
 }
-
 ```
 
-Build a contract-call transaction:
+### Build a contract-call transaction:
 ```rust
 use stacks_rs::clarity::IntCV;
 use stacks_rs::clarity::StandardPrincipalCV;
 use stacks_rs::clarity::TupleCV;
 use stacks_rs::transaction::AnchorMode;
-use stacks_rs::transaction::ContractCall;
-use stacks_rs::transaction::ContractCallOptions;
 use stacks_rs::transaction::PostConditionMode;
 use stacks_rs::transaction::PostConditions;
-use stacks_rs::transaction::Transaction;
+use stacks_rs::transaction::STXContractCall;
 use stacks_rs::Error;
-use stacks_rs::StacksNetwork;
+use stacks_rs::StacksMainnet;
 use stacks_rs::StacksWallet;
 
-fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     let mut wallet = StacksWallet::from_secret_key(SECRET_KEY)?;
     let account = wallet.get_account(0)?;
 
-    let opts = ContractCallOptions::new(
+    let tx = STXContractCall::new(
         "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
         "example-contract",
         "example-function",
@@ -79,17 +79,69 @@ fn main() -> Result<(), Error> {
             ]),
         ],
         account.private_key,
-        100,
         0,
-        StacksNetwork::mainnet(),
+        0,
+        StacksMainnet::new(),
         AnchorMode::Any,
         PostConditionMode::Deny,
         PostConditions::empty(),
         false,
-    );
+    )?;
 
-    let tx = ContractCall::new(opts)?;
-    tx.verify()?;
+    let signed_tx = tx.sign()?;
+
+    Ok(())
+}
+```
+
+### Set nonce + fee & broadcast transfer:
+```rust
+use stacks_rs::transaction::broadcast_transaction;
+use stacks_rs::transaction::estimate_transaction_fee;
+use stacks_rs::transaction::get_nonce;
+use stacks_rs::transaction::AnchorMode;
+use stacks_rs::transaction::PostConditionMode;
+use stacks_rs::transaction::PostConditions;
+use stacks_rs::transaction::STXTokenTransfer;
+use stacks_rs::AddressVersion;
+use stacks_rs::Error;
+use stacks_rs::StacksTestnet;
+use stacks_rs::StacksWallet;
+
+#[tokio::main]
+#[allow(unused_variables)]
+async fn main() -> Result<(), Error> {
+    let mut wallet = StacksWallet::from_secret_key(SECRET_KEY)?;
+
+    let account = wallet.get_account(0)?;
+    let address = account.get_address(AddressVersion::TestnetP2PKH)?;
+    let network = StacksTestnet::new();
+
+    let mut tx = STXTokenTransfer::new(
+        "ST21HQTGHGJ3DDWM8BC1E00TYZPD3DF31NSK0Y1JS",
+        account.private_key,
+        1337,
+        0,
+        0,
+        network,
+        AnchorMode::Any,
+        "test memo",
+        PostConditionMode::Deny,
+        PostConditions::empty(),
+        false,
+    )?;
+
+    let bytes = tx.byte_length()?;
+    let nonce = get_nonce(&address, network).await?;
+    let fee = estimate_transaction_fee(bytes, network).await?;
+
+    tx.set_nonce(nonce);
+    tx.set_fee(fee);
+
+    let signed_tx = tx.sign()?;
+    let tx_id = broadcast_transaction(&signed_tx, network).await?;
+
+    Ok(())
 }
 ```
 
