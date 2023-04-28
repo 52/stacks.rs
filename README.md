@@ -1,11 +1,7 @@
 ## Stacks.rs - IN DEVELOPMENT
 
-A Rust port of existing Javascript/Typescript tooling to interact with the [Stacks blockchain](https://www.stacks.co/what-is-stacks).</br>
+A Rust port of existing JS/TS tooling to interact with the [Stacks Blockchain](https://www.stacks.co/what-is-stacks).</br>
 **Disclaimer**: Not ready for production use - breaking changes expected.
-
-This project is inspired by [micro-stacks][micro-stacks][^micro-stacks] & [Stacks.js][stacks.js][^stacks.js]
-[^stacks.js]: [Stacks.js] – JavaScript libraries for identity, auth, storage and transactions on the Stacks blockchain.
-[^micro-stacks]: [Micro-Stacks] – All-in-one TypeScript SDK for interacting with the Stacks ecosystem.
 
 ## Usage
 
@@ -144,5 +140,4 @@ async fn main() -> Result<(), Error> {
 }
 ```
 
-[stacks.js]: https://github.com/hirosystems/stacks.js
-[micro-stacks]: https://github.com/fungible-systems/micro-stacks
+This project is inspired by [micro-stacks](https://github.com/fungible-systems/micro-stacks) & [Stacks.js](https://github.com/hirosystems/stacks.js).
