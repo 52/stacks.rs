@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Max Karou <max@trustmachines.co>"]
 repository = "https://github.com/mxnnn/stacks.rs"
+description = "A rust toolkit to interact with the stacks blockchain."
+license = "MIT"
 
 [dependencies]
 bip39 = "2.0.0"
