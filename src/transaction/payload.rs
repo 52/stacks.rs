@@ -1,8 +1,10 @@
 use crate::clarity::impl_display_generic;
 use crate::clarity::ClarityValue;
+use crate::clarity::ContractPrincipalCV;
 use crate::clarity::FunctionArguments;
 use crate::clarity::LengthPrefixedString;
 use crate::clarity::MemoString;
+use crate::clarity::StandardPrincipalCV;
 use crate::crypto::Serialize;
 use crate::transaction::Error;
 
@@ -43,10 +45,22 @@ impl_display_generic!(TokenTransferPayload);
 
 impl TokenTransferPayload {
     pub fn new(
-        recipient: ClarityValue,
+        recipient: impl Into<String>,
         amount: u64,
         memo: impl Into<String>,
     ) -> Result<Payload, Error> {
+        let recipient_str: String = recipient.into();
+
+        let recipient = if recipient_str.contains('.') {
+            let (address, contract) = recipient_str
+                .split_once('.')
+                .ok_or(Error::InvalidPrincipal)?;
+
+            ContractPrincipalCV::new(address, contract)
+        } else {
+            StandardPrincipalCV::new(recipient_str)
+        };
+
         let payload = Self {
             recipient,
             amount,
@@ -110,12 +124,10 @@ impl Serialize for ContractCallPayload {
 mod tests {
     use super::*;
     use crate::clarity::BufferCV;
-    use crate::clarity::ContractPrincipalCV;
     use crate::clarity::FalseCV;
     use crate::clarity::IntCV;
     use crate::clarity::ListCV;
     use crate::clarity::SomeCV;
-    use crate::clarity::StandardPrincipalCV;
     use crate::clarity::TrueCV;
     use crate::clarity::TupleCV;
     use crate::clarity::UIntCV;
@@ -124,7 +136,7 @@ mod tests {
     #[test]
     fn test_token_transfer_payload() {
         let s_payload = TokenTransferPayload::new(
-            StandardPrincipalCV::new("STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6"),
+            "STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6",
             100000,
             "Hello, world!",
         )
@@ -137,7 +149,7 @@ mod tests {
         assert_eq!(s_hex, s_expected);
 
         let c_payload = TokenTransferPayload::new(
-            ContractPrincipalCV::new("STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6", "my-contract"),
+            "STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6.my-contract",
             100000,
             "Hello, world!",
         )
@@ -149,12 +161,9 @@ mod tests {
         let c_expected = "00061a164247d6f2b425ac5771423ae6c80c754f7172b00b6d792d636f6e747261637400000000000186a048656c6c6f2c20776f726c6421000000000000000000000000000000000000000000";
         assert_eq!(c_hex, c_expected);
 
-        let empty_memo_payload = TokenTransferPayload::new(
-            StandardPrincipalCV::new("STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6"),
-            100000,
-            "",
-        )
-        .unwrap();
+        let empty_memo_payload =
+            TokenTransferPayload::new("STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6", 100000, "")
+                .unwrap();
 
         let empty_memo_serialized = empty_memo_payload.serialize().unwrap();
         let empty_memo_hex = bytes_to_hex(&empty_memo_serialized);

@@ -1,3 +1,6 @@
+use stacks_rs::transaction::broadcast_transaction;
+use stacks_rs::transaction::estimate_transaction_fee;
+use stacks_rs::transaction::get_nonce;
 use stacks_rs::transaction::AnchorMode;
 use stacks_rs::transaction::PostConditionMode;
 use stacks_rs::transaction::PostConditions;
@@ -16,14 +19,15 @@ async fn main() -> Result<(), Error> {
 
     let account = wallet.get_account(0)?;
     let address = account.get_address(AddressVersion::TestnetP2PKH)?;
+    let network = StacksTestnet::new();
 
-    let tx = STXTokenTransfer::new(
-        "ST2G0KVR849MZHJ6YB4DCN8K5TRDVXF92A664PHXT",
+    let mut tx = STXTokenTransfer::new(
+        "ST21HQTGHGJ3DDWM8BC1E00TYZPD3DF31NSK0Y1JS",
         account.private_key,
         1337,
         0,
         0,
-        StacksTestnet::new(),
+        network,
         AnchorMode::Any,
         "test memo",
         PostConditionMode::Deny,
@@ -31,7 +35,15 @@ async fn main() -> Result<(), Error> {
         false,
     )?;
 
+    let bytes = tx.byte_length()?;
+    let nonce = get_nonce(&address, network).await?;
+    let fee = estimate_transaction_fee(bytes, network).await?;
+
+    tx.set_nonce(nonce);
+    tx.set_fee(fee);
+
     let signed_tx = tx.sign()?;
+    let tx_id = broadcast_transaction(&signed_tx, network).await?;
 
     Ok(())
 }

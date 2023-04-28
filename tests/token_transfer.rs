@@ -15,12 +15,9 @@ use stacks_rs::transaction::PostConditions;
 use stacks_rs::transaction::STXPostCondition;
 use stacks_rs::transaction::STXTokenTransfer;
 use stacks_rs::transaction::STXTokenTransferMultiSig;
-use stacks_rs::transaction::STXTokenTransferOptions;
-use stacks_rs::transaction::STXTokenTransferOptionsMSig;
 use stacks_rs::transaction::SingleHashMode;
-use stacks_rs::transaction::SponsorOptions;
-use stacks_rs::transaction::Transaction;
-use stacks_rs::StacksNetwork;
+use stacks_rs::StacksMainnet;
+use stacks_rs::StacksTestnet;
 
 use crate::common::get_multi_sig_keys;
 use crate::common::get_private_key;
@@ -28,46 +25,25 @@ use crate::common::get_sponsor_key;
 
 mod common;
 
-fn make_signed_single_sig_args(network: StacksNetwork) -> STXTokenTransferOptions {
-    STXTokenTransferOptions::new(
+#[test]
+fn test_signed_token_transfer_mainnet() {
+    let transaction = STXTokenTransfer::new(
         "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
         get_private_key(),
         12345,
         0,
         0,
-        network,
+        StacksMainnet::new(),
         AnchorMode::Any,
         "test memo",
         PostConditionMode::Deny,
         PostConditions::empty(),
         false,
     )
-}
+    .unwrap()
+    .sign()
+    .unwrap();
 
-fn make_signed_multi_sig_args(network: StacksNetwork) -> STXTokenTransferOptionsMSig {
-    let (signer_keys, public_keys) = get_multi_sig_keys();
-    STXTokenTransferOptionsMSig::new(
-        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
-        signer_keys,
-        public_keys,
-        3,
-        12345,
-        0,
-        0,
-        network,
-        AnchorMode::Any,
-        "test memo",
-        PostConditionMode::Deny,
-        PostConditions::empty(),
-        false,
-    )
-}
-
-#[test]
-fn test_signed_token_transfer_mainnet() {
-    let args = make_signed_single_sig_args(StacksNetwork::mainnet());
-
-    let transaction = STXTokenTransfer::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -83,9 +59,23 @@ fn test_signed_token_transfer_mainnet() {
 
 #[test]
 fn test_signed_token_transfer_testnet() {
-    let args = make_signed_single_sig_args(StacksNetwork::testnet());
+    let transaction = STXTokenTransfer::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        get_private_key(),
+        12345,
+        0,
+        0,
+        StacksTestnet::new(),
+        AnchorMode::Any,
+        "test memo",
+        PostConditionMode::Deny,
+        PostConditions::empty(),
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    let transaction = STXTokenTransfer::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -101,10 +91,23 @@ fn test_signed_token_transfer_testnet() {
 
 #[test]
 fn test_sponsor_signed_token_transfer_mainnet() {
-    let mut args = make_signed_single_sig_args(StacksNetwork::mainnet());
-    args.sponsored = true;
+    let mut transaction = STXTokenTransfer::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        get_private_key(),
+        12345,
+        0,
+        0,
+        StacksMainnet::new(),
+        AnchorMode::Any,
+        "test memo",
+        PostConditionMode::Deny,
+        PostConditions::empty(),
+        true,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    let mut transaction = STXTokenTransfer::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -118,16 +121,15 @@ fn test_sponsor_signed_token_transfer_mainnet() {
     assert_eq!(pre_sponsor_tx_hex, expected_pre_sponsor_tx_hex);
     assert_eq!(pre_sponsor_tx_id_hex, expected_pre_sponsor_tx_id);
 
-    let sponsor_opts = SponsorOptions::new(
+    sponsor_transaction(
         &mut transaction,
         get_sponsor_key(),
         123,
         55,
         SingleHashMode::P2PKH,
-        StacksNetwork::mainnet(),
-    );
+    )
+    .unwrap();
 
-    sponsor_transaction(sponsor_opts).unwrap();
     let post_sponsor_serialized = transaction.serialize().unwrap();
     let post_sponsor_tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -144,10 +146,23 @@ fn test_sponsor_signed_token_transfer_mainnet() {
 
 #[test]
 fn test_sponsor_signed_token_transfer_testnet() {
-    let mut args = make_signed_single_sig_args(StacksNetwork::testnet());
-    args.sponsored = true;
+    let mut transaction = STXTokenTransfer::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        get_private_key(),
+        12345,
+        0,
+        0,
+        StacksTestnet::new(),
+        AnchorMode::Any,
+        "test memo",
+        PostConditionMode::Deny,
+        PostConditions::empty(),
+        true,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    let mut transaction = STXTokenTransfer::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -161,16 +176,15 @@ fn test_sponsor_signed_token_transfer_testnet() {
     assert_eq!(pre_sponsor_tx_hex, expected_pre_sponsor_tx_hex);
     assert_eq!(pre_sponsor_tx_id_hex, expected_pre_sponsor_tx_id);
 
-    let sponsor_opts = SponsorOptions::new(
+    sponsor_transaction(
         &mut transaction,
         get_sponsor_key(),
         123,
         55,
         SingleHashMode::P2PKH,
-        StacksNetwork::mainnet(),
-    );
+    )
+    .unwrap();
 
-    sponsor_transaction(sponsor_opts).unwrap();
     let post_sponsor_serialized = transaction.serialize().unwrap();
     let post_sponsor_tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -187,9 +201,27 @@ fn test_sponsor_signed_token_transfer_testnet() {
 
 #[test]
 fn test_signed_multi_sig_token_transfer_mainnet() {
-    let args = make_signed_multi_sig_args(StacksNetwork::mainnet());
+    let (signer_keys, public_keys) = get_multi_sig_keys();
 
-    let transaction = STXTokenTransferMultiSig::new(args).unwrap();
+    let transaction = STXTokenTransferMultiSig::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        signer_keys,
+        public_keys,
+        3,
+        12345,
+        0,
+        0,
+        StacksMainnet::new(),
+        AnchorMode::Any,
+        "test memo",
+        PostConditionMode::Deny,
+        PostConditions::empty(),
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
+
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -205,9 +237,27 @@ fn test_signed_multi_sig_token_transfer_mainnet() {
 
 #[test]
 fn test_signed_multi_sig_token_transfer_testnet() {
-    let args = make_signed_multi_sig_args(StacksNetwork::testnet());
+    let (signer_keys, public_keys) = get_multi_sig_keys();
 
-    let transaction = STXTokenTransferMultiSig::new(args).unwrap();
+    let transaction = STXTokenTransferMultiSig::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        signer_keys,
+        public_keys,
+        3,
+        12345,
+        0,
+        0,
+        StacksTestnet::new(),
+        AnchorMode::Any,
+        "test memo",
+        PostConditionMode::Deny,
+        PostConditions::empty(),
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
+
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -223,43 +273,52 @@ fn test_signed_multi_sig_token_transfer_testnet() {
 
 #[test]
 fn test_complex_token_transfer_mainnet() {
-    let mut args = make_signed_single_sig_args(StacksNetwork::mainnet());
-
     let info = AssetInfo::new(
         "SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B",
         "my-contract",
         "my-asset",
     );
 
-    args.post_conditions = PostConditions::new([
-        STXPostCondition::new(
-            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-            1000000,
-            FungibleConditionCode::GreaterEqual,
-        ),
-        STXPostCondition::new(
-            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
-            1000000,
-            FungibleConditionCode::Equal,
-        ),
-        NonFungiblePostCondition::new(
-            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-            info.clone(),
-            UIntCV::new(60149),
-            NonFungibleConditionCode::Owns,
-        ),
-        FungiblePostCondition::new(
-            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test"),
-            info,
-            1000000,
-            FungibleConditionCode::LessEqual,
-        ),
-    ]);
+    let transaction = STXTokenTransfer::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        get_private_key(),
+        12345,
+        0,
+        0,
+        StacksMainnet::new(),
+        AnchorMode::OnChain,
+        "test memo",
+        PostConditionMode::Allow,
+        PostConditions::new([
+            STXPostCondition::new(
+                StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+                1000000,
+                FungibleConditionCode::GreaterEqual,
+            ),
+            STXPostCondition::new(
+                ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
+                1000000,
+                FungibleConditionCode::Equal,
+            ),
+            NonFungiblePostCondition::new(
+                StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+                info.clone(),
+                UIntCV::new(60149),
+                NonFungibleConditionCode::Owns,
+            ),
+            FungiblePostCondition::new(
+                ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test"),
+                info,
+                1000000,
+                FungibleConditionCode::LessEqual,
+            ),
+        ]),
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    args.post_condition_mode = PostConditionMode::Allow;
-    args.anchor_mode = AnchorMode::OnChain;
-
-    let transaction = STXTokenTransfer::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -275,43 +334,52 @@ fn test_complex_token_transfer_mainnet() {
 
 #[test]
 fn test_complex_token_transfer_testnet() {
-    let mut args = make_signed_single_sig_args(StacksNetwork::testnet());
-
     let info = AssetInfo::new(
         "SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B",
         "my-contract",
         "my-asset",
     );
 
-    args.post_conditions = PostConditions::new([
-        STXPostCondition::new(
-            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-            1000000,
-            FungibleConditionCode::GreaterEqual,
-        ),
-        STXPostCondition::new(
-            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
-            1000000,
-            FungibleConditionCode::Equal,
-        ),
-        NonFungiblePostCondition::new(
-            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-            info.clone(),
-            UIntCV::new(60149),
-            NonFungibleConditionCode::Owns,
-        ),
-        FungiblePostCondition::new(
-            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test"),
-            info,
-            1000000,
-            FungibleConditionCode::LessEqual,
-        ),
-    ]);
+    let transaction = STXTokenTransfer::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        get_private_key(),
+        12345,
+        0,
+        0,
+        StacksTestnet::new(),
+        AnchorMode::OnChain,
+        "test memo",
+        PostConditionMode::Allow,
+        PostConditions::new([
+            STXPostCondition::new(
+                StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+                1000000,
+                FungibleConditionCode::GreaterEqual,
+            ),
+            STXPostCondition::new(
+                ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
+                1000000,
+                FungibleConditionCode::Equal,
+            ),
+            NonFungiblePostCondition::new(
+                StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+                info.clone(),
+                UIntCV::new(60149),
+                NonFungibleConditionCode::Owns,
+            ),
+            FungiblePostCondition::new(
+                ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test"),
+                info,
+                1000000,
+                FungibleConditionCode::LessEqual,
+            ),
+        ]),
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    args.post_condition_mode = PostConditionMode::Allow;
-    args.anchor_mode = AnchorMode::OnChain;
-
-    let transaction = STXTokenTransfer::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -327,7 +395,7 @@ fn test_complex_token_transfer_testnet() {
 
 #[test]
 fn test_complex_multi_sigtoken_transfer_mainnet() {
-    let mut args = make_signed_multi_sig_args(StacksNetwork::mainnet());
+    let (signer_keys, public_keys) = get_multi_sig_keys();
 
     let info = AssetInfo::new(
         "SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B",
@@ -335,35 +403,48 @@ fn test_complex_multi_sigtoken_transfer_mainnet() {
         "my-asset",
     );
 
-    args.post_conditions = PostConditions::new([
-        STXPostCondition::new(
-            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-            1000000,
-            FungibleConditionCode::GreaterEqual,
-        ),
-        STXPostCondition::new(
-            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
-            1000000,
-            FungibleConditionCode::Equal,
-        ),
-        NonFungiblePostCondition::new(
-            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-            info.clone(),
-            UIntCV::new(60149),
-            NonFungibleConditionCode::Owns,
-        ),
-        FungiblePostCondition::new(
-            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test"),
-            info,
-            1000000,
-            FungibleConditionCode::LessEqual,
-        ),
-    ]);
+    let transaction = STXTokenTransferMultiSig::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        signer_keys,
+        public_keys,
+        3,
+        12345,
+        0,
+        0,
+        StacksMainnet::new(),
+        AnchorMode::OnChain,
+        "test memo",
+        PostConditionMode::Allow,
+        PostConditions::new([
+            STXPostCondition::new(
+                StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+                1000000,
+                FungibleConditionCode::GreaterEqual,
+            ),
+            STXPostCondition::new(
+                ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
+                1000000,
+                FungibleConditionCode::Equal,
+            ),
+            NonFungiblePostCondition::new(
+                StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+                info.clone(),
+                UIntCV::new(60149),
+                NonFungibleConditionCode::Owns,
+            ),
+            FungiblePostCondition::new(
+                ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test"),
+                info,
+                1000000,
+                FungibleConditionCode::LessEqual,
+            ),
+        ]),
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    args.post_condition_mode = PostConditionMode::Allow;
-    args.anchor_mode = AnchorMode::OnChain;
-
-    let transaction = STXTokenTransferMultiSig::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -379,7 +460,7 @@ fn test_complex_multi_sigtoken_transfer_mainnet() {
 
 #[test]
 fn test_complex_multi_sigtoken_transfer_testnet() {
-    let mut args = make_signed_multi_sig_args(StacksNetwork::testnet());
+    let (signer_keys, public_keys) = get_multi_sig_keys();
 
     let info = AssetInfo::new(
         "SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B",
@@ -387,35 +468,48 @@ fn test_complex_multi_sigtoken_transfer_testnet() {
         "my-asset",
     );
 
-    args.post_conditions = PostConditions::new([
-        STXPostCondition::new(
-            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-            1000000,
-            FungibleConditionCode::GreaterEqual,
-        ),
-        STXPostCondition::new(
-            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
-            1000000,
-            FungibleConditionCode::Equal,
-        ),
-        NonFungiblePostCondition::new(
-            StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-            info.clone(),
-            UIntCV::new(60149),
-            NonFungibleConditionCode::Owns,
-        ),
-        FungiblePostCondition::new(
-            ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test"),
-            info,
-            1000000,
-            FungibleConditionCode::LessEqual,
-        ),
-    ]);
+    let transaction = STXTokenTransferMultiSig::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        signer_keys,
+        public_keys,
+        3,
+        12345,
+        0,
+        0,
+        StacksTestnet::new(),
+        AnchorMode::OnChain,
+        "test memo",
+        PostConditionMode::Allow,
+        PostConditions::new([
+            STXPostCondition::new(
+                StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+                1000000,
+                FungibleConditionCode::GreaterEqual,
+            ),
+            STXPostCondition::new(
+                ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
+                1000000,
+                FungibleConditionCode::Equal,
+            ),
+            NonFungiblePostCondition::new(
+                StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+                info.clone(),
+                UIntCV::new(60149),
+                NonFungibleConditionCode::Owns,
+            ),
+            FungiblePostCondition::new(
+                ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "test"),
+                info,
+                1000000,
+                FungibleConditionCode::LessEqual,
+            ),
+        ]),
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    args.post_condition_mode = PostConditionMode::Allow;
-    args.anchor_mode = AnchorMode::OnChain;
-
-    let transaction = STXTokenTransferMultiSig::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 

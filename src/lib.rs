@@ -1,6 +1,9 @@
 pub use crate::address::AddressVersion;
 pub use crate::address::StacksAddress;
-pub use crate::network::StacksNetwork;
+pub use crate::network::Network;
+pub use crate::network::StacksMainnet;
+pub use crate::network::StacksMocknet;
+pub use crate::network::StacksTestnet;
 pub use crate::wallet::StacksAccount;
 pub use crate::wallet::StacksWallet;
 
@@ -11,7 +14,7 @@ pub mod network;
 pub mod transaction;
 pub mod wallet;
 
-#[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Invalid public key count, expected {0}")]
     InvalidPublicKeyCount(u8),

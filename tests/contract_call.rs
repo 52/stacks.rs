@@ -14,18 +14,15 @@ use stacks_rs::crypto::bytes_to_hex;
 use stacks_rs::crypto::Serialize;
 use stacks_rs::transaction::sponsor_transaction;
 use stacks_rs::transaction::AnchorMode;
-use stacks_rs::transaction::ContractCall;
-use stacks_rs::transaction::ContractCallMultiSig;
-use stacks_rs::transaction::ContractCallOptions;
-use stacks_rs::transaction::ContractCallOptionsMSig;
 use stacks_rs::transaction::FungibleConditionCode;
 use stacks_rs::transaction::PostConditionMode;
 use stacks_rs::transaction::PostConditions;
+use stacks_rs::transaction::STXContractCall;
+use stacks_rs::transaction::STXContractCallMultiSig;
 use stacks_rs::transaction::STXPostCondition;
 use stacks_rs::transaction::SingleHashMode;
-use stacks_rs::transaction::SponsorOptions;
-use stacks_rs::transaction::Transaction;
-use stacks_rs::StacksNetwork;
+use stacks_rs::StacksMainnet;
+use stacks_rs::StacksTestnet;
 
 use crate::common::get_multi_sig_keys;
 use crate::common::get_private_key;
@@ -33,8 +30,9 @@ use crate::common::get_sponsor_key;
 
 mod common;
 
-fn make_signed_single_sig_args(network: StacksNetwork) -> ContractCallOptions {
-    ContractCallOptions::new(
+#[test]
+fn test_signed_contract_call_mainnet() {
+    let transaction = STXContractCall::new(
         "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
         "example",
         "function-name",
@@ -42,39 +40,16 @@ fn make_signed_single_sig_args(network: StacksNetwork) -> ContractCallOptions {
         get_private_key(),
         0,
         0,
-        network,
+        StacksMainnet::new(),
         AnchorMode::Any,
         PostConditionMode::Deny,
         PostConditions::empty(),
         false,
     )
-}
+    .unwrap()
+    .sign()
+    .unwrap();
 
-fn make_signed_multi_sig_args(network: StacksNetwork) -> ContractCallOptionsMSig {
-    let (signer_keys, public_keys) = get_multi_sig_keys();
-    ContractCallOptionsMSig::new(
-        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
-        "example",
-        "function-name",
-        [],
-        signer_keys,
-        public_keys,
-        3,
-        0,
-        0,
-        network,
-        AnchorMode::Any,
-        PostConditionMode::Deny,
-        PostConditions::empty(),
-        false,
-    )
-}
-
-#[test]
-fn test_signed_contract_call_mainnet() {
-    let args = make_signed_single_sig_args(StacksNetwork::mainnet());
-
-    let transaction = ContractCall::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -90,9 +65,24 @@ fn test_signed_contract_call_mainnet() {
 
 #[test]
 fn test_signed_contract_call_testnet() {
-    let args = make_signed_single_sig_args(StacksNetwork::testnet());
+    let transaction = STXContractCall::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        "example",
+        "function-name",
+        [],
+        get_private_key(),
+        0,
+        0,
+        StacksTestnet::new(),
+        AnchorMode::Any,
+        PostConditionMode::Deny,
+        PostConditions::empty(),
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    let transaction = ContractCall::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -108,10 +98,24 @@ fn test_signed_contract_call_testnet() {
 
 #[test]
 fn test_sponsor_signed_token_transfer_mainnet() {
-    let mut args = make_signed_single_sig_args(StacksNetwork::mainnet());
-    args.sponsored = true;
+    let mut transaction = STXContractCall::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        "example",
+        "function-name",
+        [],
+        get_private_key(),
+        0,
+        0,
+        StacksMainnet::new(),
+        AnchorMode::Any,
+        PostConditionMode::Deny,
+        PostConditions::empty(),
+        true,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    let mut transaction = ContractCall::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -125,16 +129,15 @@ fn test_sponsor_signed_token_transfer_mainnet() {
     assert_eq!(pre_sponsor_tx_hex, expected_pre_sponsor_tx_hex);
     assert_eq!(pre_sponsor_tx_id_hex, expected_pre_sponsor_tx_id);
 
-    let sponsor_opts = SponsorOptions::new(
+    sponsor_transaction(
         &mut transaction,
         get_sponsor_key(),
         123,
         55,
         SingleHashMode::P2PKH,
-        StacksNetwork::mainnet(),
-    );
+    )
+    .unwrap();
 
-    sponsor_transaction(sponsor_opts).unwrap();
     let post_sponsor_serialized = transaction.serialize().unwrap();
     let post_sponsor_tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -151,10 +154,24 @@ fn test_sponsor_signed_token_transfer_mainnet() {
 
 #[test]
 fn test_sponsor_signed_token_transfer_testnet() {
-    let mut args = make_signed_single_sig_args(StacksNetwork::testnet());
-    args.sponsored = true;
+    let mut transaction = STXContractCall::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        "example",
+        "function-name",
+        [],
+        get_private_key(),
+        0,
+        0,
+        StacksTestnet::new(),
+        AnchorMode::Any,
+        PostConditionMode::Deny,
+        PostConditions::empty(),
+        true,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    let mut transaction = ContractCall::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -168,16 +185,15 @@ fn test_sponsor_signed_token_transfer_testnet() {
     assert_eq!(pre_sponsor_tx_hex, expected_pre_sponsor_tx_hex);
     assert_eq!(pre_sponsor_tx_id_hex, expected_pre_sponsor_tx_id);
 
-    let sponsor_opts = SponsorOptions::new(
+    sponsor_transaction(
         &mut transaction,
         get_sponsor_key(),
         123,
         55,
         SingleHashMode::P2PKH,
-        StacksNetwork::testnet(),
-    );
+    )
+    .unwrap();
 
-    sponsor_transaction(sponsor_opts).unwrap();
     let post_sponsor_serialized = transaction.serialize().unwrap();
     let post_sponsor_tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -194,9 +210,28 @@ fn test_sponsor_signed_token_transfer_testnet() {
 
 #[test]
 fn test_signed_multi_sig_contract_call_mainnet() {
-    let args = make_signed_multi_sig_args(StacksNetwork::mainnet());
+    let (signer_keys, public_keys) = get_multi_sig_keys();
 
-    let transaction = ContractCallMultiSig::new(args).unwrap();
+    let transaction = STXContractCallMultiSig::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        "example",
+        "function-name",
+        [],
+        signer_keys,
+        public_keys,
+        3,
+        0,
+        0,
+        StacksMainnet::new(),
+        AnchorMode::Any,
+        PostConditionMode::Deny,
+        PostConditions::empty(),
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
+
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -212,9 +247,28 @@ fn test_signed_multi_sig_contract_call_mainnet() {
 
 #[test]
 fn test_signed_multi_sig_contract_call_testnet() {
-    let args = make_signed_multi_sig_args(StacksNetwork::testnet());
+    let (signer_keys, public_keys) = get_multi_sig_keys();
 
-    let transaction = ContractCallMultiSig::new(args).unwrap();
+    let transaction = STXContractCallMultiSig::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        "example",
+        "function-name",
+        [],
+        signer_keys,
+        public_keys,
+        3,
+        0,
+        0,
+        StacksTestnet::new(),
+        AnchorMode::Any,
+        PostConditionMode::Deny,
+        PostConditions::empty(),
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
+
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -230,40 +284,50 @@ fn test_signed_multi_sig_contract_call_testnet() {
 
 #[test]
 fn test_complex_contract_call_mainnet() {
-    let mut args = make_signed_single_sig_args(StacksNetwork::mainnet());
-    args.post_conditions = PostConditions::new([
-        STXPostCondition::new(
+    let transaction = STXContractCall::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        "example",
+        "function-name",
+        vec![
+            IntCV::new(1),
+            UIntCV::new(2),
+            ListCV::new([TrueCV::new(), FalseCV::new()]),
             StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-            1000000,
-            FungibleConditionCode::GreaterEqual,
-        ),
-        STXPostCondition::new(
+            NoneCV::new(),
             ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
-            1000000,
-            FungibleConditionCode::Equal,
-        ),
-    ]);
-
-    args.post_condition_mode = PostConditionMode::Allow;
-    args.anchor_mode = AnchorMode::OnChain;
-    args.function_args = vec![
-        IntCV::new(1),
-        UIntCV::new(2),
-        ListCV::new([TrueCV::new(), FalseCV::new()]),
-        StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-        NoneCV::new(),
-        ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
-        OkCV::new(IntCV::new(3)),
-        SomeCV::new(IntCV::new(4)),
-        TupleCV::new(&[
-            ("a", IntCV::new(5)),
-            ("b", IntCV::new(6)),
-            ("c", IntCV::new(7)),
+            OkCV::new(IntCV::new(3)),
+            SomeCV::new(IntCV::new(4)),
+            TupleCV::new(&[
+                ("a", IntCV::new(5)),
+                ("b", IntCV::new(6)),
+                ("c", IntCV::new(7)),
+            ]),
+            BufferCV::new(b"hello world"),
+        ],
+        get_private_key(),
+        0,
+        0,
+        StacksMainnet::new(),
+        AnchorMode::OnChain,
+        PostConditionMode::Allow,
+        PostConditions::new([
+            STXPostCondition::new(
+                StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+                1000000,
+                FungibleConditionCode::GreaterEqual,
+            ),
+            STXPostCondition::new(
+                ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
+                1000000,
+                FungibleConditionCode::Equal,
+            ),
         ]),
-        BufferCV::new(b"hello world"),
-    ];
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    let transaction = ContractCall::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -279,40 +343,50 @@ fn test_complex_contract_call_mainnet() {
 
 #[test]
 fn test_complex_contract_call_testnet() {
-    let mut args = make_signed_single_sig_args(StacksNetwork::testnet());
-    args.post_conditions = PostConditions::new([
-        STXPostCondition::new(
+    let transaction = STXContractCall::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        "example",
+        "function-name",
+        vec![
+            IntCV::new(1),
+            UIntCV::new(2),
+            ListCV::new([TrueCV::new(), FalseCV::new()]),
             StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-            1000000,
-            FungibleConditionCode::GreaterEqual,
-        ),
-        STXPostCondition::new(
+            NoneCV::new(),
             ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
-            1000000,
-            FungibleConditionCode::Equal,
-        ),
-    ]);
-
-    args.post_condition_mode = PostConditionMode::Allow;
-    args.anchor_mode = AnchorMode::OnChain;
-    args.function_args = vec![
-        IntCV::new(1),
-        UIntCV::new(2),
-        ListCV::new([TrueCV::new(), FalseCV::new()]),
-        StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-        NoneCV::new(),
-        ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
-        OkCV::new(IntCV::new(3)),
-        SomeCV::new(IntCV::new(4)),
-        TupleCV::new(&[
-            ("a", IntCV::new(5)),
-            ("b", IntCV::new(6)),
-            ("c", IntCV::new(7)),
+            OkCV::new(IntCV::new(3)),
+            SomeCV::new(IntCV::new(4)),
+            TupleCV::new(&[
+                ("a", IntCV::new(5)),
+                ("b", IntCV::new(6)),
+                ("c", IntCV::new(7)),
+            ]),
+            BufferCV::new(b"hello world"),
+        ],
+        get_private_key(),
+        0,
+        0,
+        StacksTestnet::new(),
+        AnchorMode::OnChain,
+        PostConditionMode::Allow,
+        PostConditions::new([
+            STXPostCondition::new(
+                StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+                1000000,
+                FungibleConditionCode::GreaterEqual,
+            ),
+            STXPostCondition::new(
+                ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
+                1000000,
+                FungibleConditionCode::Equal,
+            ),
         ]),
-        BufferCV::new(b"hello world"),
-    ];
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    let transaction = ContractCall::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -328,40 +402,54 @@ fn test_complex_contract_call_testnet() {
 
 #[test]
 fn test_complex_multi_sig_contract_call_mainnet() {
-    let mut args = make_signed_multi_sig_args(StacksNetwork::mainnet());
-    args.post_conditions = PostConditions::new([
-        STXPostCondition::new(
+    let (signer_keys, public_keys) = get_multi_sig_keys();
+
+    let transaction = STXContractCallMultiSig::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        "example",
+        "function-name",
+        vec![
+            IntCV::new(1),
+            UIntCV::new(2),
+            ListCV::new([TrueCV::new(), FalseCV::new()]),
             StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-            1000000,
-            FungibleConditionCode::GreaterEqual,
-        ),
-        STXPostCondition::new(
+            NoneCV::new(),
             ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
-            1000000,
-            FungibleConditionCode::Equal,
-        ),
-    ]);
-
-    args.post_condition_mode = PostConditionMode::Allow;
-    args.anchor_mode = AnchorMode::OnChain;
-    args.function_args = vec![
-        IntCV::new(1),
-        UIntCV::new(2),
-        ListCV::new([TrueCV::new(), FalseCV::new()]),
-        StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-        NoneCV::new(),
-        ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
-        OkCV::new(IntCV::new(3)),
-        SomeCV::new(IntCV::new(4)),
-        TupleCV::new(&[
-            ("a", IntCV::new(5)),
-            ("b", IntCV::new(6)),
-            ("c", IntCV::new(7)),
+            OkCV::new(IntCV::new(3)),
+            SomeCV::new(IntCV::new(4)),
+            TupleCV::new(&[
+                ("a", IntCV::new(5)),
+                ("b", IntCV::new(6)),
+                ("c", IntCV::new(7)),
+            ]),
+            BufferCV::new(b"hello world"),
+        ],
+        signer_keys,
+        public_keys,
+        3,
+        0,
+        0,
+        StacksMainnet::new(),
+        AnchorMode::OnChain,
+        PostConditionMode::Allow,
+        PostConditions::new([
+            STXPostCondition::new(
+                StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+                1000000,
+                FungibleConditionCode::GreaterEqual,
+            ),
+            STXPostCondition::new(
+                ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
+                1000000,
+                FungibleConditionCode::Equal,
+            ),
         ]),
-        BufferCV::new(b"hello world"),
-    ];
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    let transaction = ContractCallMultiSig::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
@@ -377,40 +465,54 @@ fn test_complex_multi_sig_contract_call_mainnet() {
 
 #[test]
 fn test_complex_multi_sig_contract_call_testnet() {
-    let mut args = make_signed_multi_sig_args(StacksNetwork::testnet());
-    args.post_conditions = PostConditions::new([
-        STXPostCondition::new(
+    let (signer_keys, public_keys) = get_multi_sig_keys();
+
+    let transaction = STXContractCallMultiSig::new(
+        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+        "example",
+        "function-name",
+        vec![
+            IntCV::new(1),
+            UIntCV::new(2),
+            ListCV::new([TrueCV::new(), FalseCV::new()]),
             StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-            1000000,
-            FungibleConditionCode::GreaterEqual,
-        ),
-        STXPostCondition::new(
+            NoneCV::new(),
             ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
-            1000000,
-            FungibleConditionCode::Equal,
-        ),
-    ]);
-
-    args.post_condition_mode = PostConditionMode::Allow;
-    args.anchor_mode = AnchorMode::OnChain;
-    args.function_args = vec![
-        IntCV::new(1),
-        UIntCV::new(2),
-        ListCV::new([TrueCV::new(), FalseCV::new()]),
-        StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
-        NoneCV::new(),
-        ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
-        OkCV::new(IntCV::new(3)),
-        SomeCV::new(IntCV::new(4)),
-        TupleCV::new(&[
-            ("a", IntCV::new(5)),
-            ("b", IntCV::new(6)),
-            ("c", IntCV::new(7)),
+            OkCV::new(IntCV::new(3)),
+            SomeCV::new(IntCV::new(4)),
+            TupleCV::new(&[
+                ("a", IntCV::new(5)),
+                ("b", IntCV::new(6)),
+                ("c", IntCV::new(7)),
+            ]),
+            BufferCV::new(b"hello world"),
+        ],
+        signer_keys,
+        public_keys,
+        3,
+        0,
+        0,
+        StacksTestnet::new(),
+        AnchorMode::OnChain,
+        PostConditionMode::Allow,
+        PostConditions::new([
+            STXPostCondition::new(
+                StandardPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B"),
+                1000000,
+                FungibleConditionCode::GreaterEqual,
+            ),
+            STXPostCondition::new(
+                ContractPrincipalCV::new("SP2JXKMSH007NPYAQHKJPQMAQYAD90NQGTVJVQ02B", "asdf"),
+                1000000,
+                FungibleConditionCode::Equal,
+            ),
         ]),
-        BufferCV::new(b"hello world"),
-    ];
+        false,
+    )
+    .unwrap()
+    .sign()
+    .unwrap();
 
-    let transaction = ContractCallMultiSig::new(args).unwrap();
     let serialized = transaction.serialize().unwrap();
     let tx_id = transaction.tx_id().unwrap().to_bytes();
 
