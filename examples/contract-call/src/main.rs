@@ -38,7 +38,7 @@ async fn main() -> Result<(), Error> {
         PostConditionMode::Deny,
         PostConditions::empty(),
         false,
-    )?;
+    );
 
     let signed_tx = tx.sign()?;
 

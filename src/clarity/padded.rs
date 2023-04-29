@@ -6,18 +6,18 @@ const MEMO_MAX_LENGTH: usize = 34;
 pub struct MemoString(Vec<u8>);
 
 impl MemoString {
-    pub fn new(memo: impl Into<String>) -> Result<Self, Error> {
+    pub fn new(memo: impl Into<String>) -> Self {
         let bytes = memo.into().into_bytes();
-
-        if bytes.len() > MEMO_MAX_LENGTH {
-            return Err(Error::InvalidMemoLength(bytes.len()));
-        }
-
-        Ok(Self(bytes))
+        Self(bytes)
     }
 
     pub fn serialize(&self) -> Result<Vec<u8>, Error> {
         let mut buff = vec![0; MEMO_MAX_LENGTH];
+        let byte_length = self.0.len();
+
+        if byte_length > MEMO_MAX_LENGTH {
+            return Err(Error::InvalidMemoLength(byte_length));
+        }
 
         for (i, byte) in self.0.iter().enumerate() {
             buff[i] = *byte;
@@ -40,7 +40,7 @@ mod tests {
 
     #[test]
     fn test_memo_string() {
-        let memo = MemoString::new("Hello, world!").unwrap();
+        let memo = MemoString::new("Hello, world!");
         let serialized = memo.serialize().unwrap();
         let hex = bytes_to_hex(&serialized);
 

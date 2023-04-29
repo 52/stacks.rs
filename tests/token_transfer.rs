@@ -40,7 +40,6 @@ fn test_signed_token_transfer_mainnet() {
         PostConditions::empty(),
         false,
     )
-    .unwrap()
     .sign()
     .unwrap();
 
@@ -72,7 +71,6 @@ fn test_signed_token_transfer_testnet() {
         PostConditions::empty(),
         false,
     )
-    .unwrap()
     .sign()
     .unwrap();
 
@@ -104,7 +102,6 @@ fn test_sponsor_signed_token_transfer_mainnet() {
         PostConditions::empty(),
         true,
     )
-    .unwrap()
     .sign()
     .unwrap();
 
@@ -159,7 +156,6 @@ fn test_sponsor_signed_token_transfer_testnet() {
         PostConditions::empty(),
         true,
     )
-    .unwrap()
     .sign()
     .unwrap();
 
@@ -218,7 +214,6 @@ fn test_signed_multi_sig_token_transfer_mainnet() {
         PostConditions::empty(),
         false,
     )
-    .unwrap()
     .sign()
     .unwrap();
 
@@ -254,7 +249,6 @@ fn test_signed_multi_sig_token_transfer_testnet() {
         PostConditions::empty(),
         false,
     )
-    .unwrap()
     .sign()
     .unwrap();
 
@@ -315,7 +309,6 @@ fn test_complex_token_transfer_mainnet() {
         ]),
         false,
     )
-    .unwrap()
     .sign()
     .unwrap();
 
@@ -376,7 +369,6 @@ fn test_complex_token_transfer_testnet() {
         ]),
         false,
     )
-    .unwrap()
     .sign()
     .unwrap();
 
@@ -441,7 +433,6 @@ fn test_complex_multi_sigtoken_transfer_mainnet() {
         ]),
         false,
     )
-    .unwrap()
     .sign()
     .unwrap();
 
@@ -506,7 +497,6 @@ fn test_complex_multi_sigtoken_transfer_testnet() {
         ]),
         false,
     )
-    .unwrap()
     .sign()
     .unwrap();
 

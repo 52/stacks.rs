@@ -48,7 +48,7 @@ use crate::StacksPublicKey;
 ///       PostConditionMode::Deny,
 ///       PostConditions::empty(),
 ///       true,
-/// ).unwrap();
+/// );
 ///
 /// let mut signed_tx = tx.sign().unwrap();
 ///

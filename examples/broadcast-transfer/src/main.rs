@@ -33,7 +33,7 @@ async fn main() -> Result<(), Error> {
         PostConditionMode::Deny,
         PostConditions::empty(),
         false,
-    )?;
+    );
 
     let bytes = tx.byte_length()?;
     let nonce = get_nonce(&address, network).await?;

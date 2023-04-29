@@ -27,7 +27,7 @@ pub struct STXContractCall {
 }
 
 impl STXContractCall {
-    /// Creates a new contract-call builder.
+    /// Creates a new contract-call builder, which wraps an unsigned single-sig transaction.
     ///
     /// # Arguments
     ///
@@ -56,7 +56,7 @@ impl STXContractCall {
         post_condition_mode: PostConditionMode,
         post_conditions: PostConditions,
         sponsored: bool,
-    ) -> Result<Self, Error> {
+    ) -> Self {
         let network = network.as_ref();
         let public_key = sender_key.public_key(&secp256k1::Secp256k1::new());
 
@@ -80,10 +80,10 @@ impl STXContractCall {
             payload,
         );
 
-        Ok(Self {
+        Self {
             transaction,
             sender_key,
-        })
+        }
     }
 
     /// Signs the transaction with the provided private key.
@@ -124,7 +124,7 @@ pub struct STXContractCallMultiSig {
 }
 
 impl STXContractCallMultiSig {
-    /// Creates a new contract-call builder.
+    /// Creates a new contract-call builder, which wraps an unsigned multi-sig transaction.
     ///
     /// # Arguments
     ///
@@ -157,7 +157,7 @@ impl STXContractCallMultiSig {
         post_condition_mode: PostConditionMode,
         post_conditions: PostConditions,
         sponsored: bool,
-    ) -> Result<Self, Error> {
+    ) -> Self {
         let network = network.as_ref();
         let signer_keys = signer_keys.into();
         let public_keys = public_keys.into();
@@ -183,12 +183,12 @@ impl STXContractCallMultiSig {
             payload,
         );
 
-        Ok(Self {
+        Self {
             transaction,
             signer_keys,
             public_keys,
             signatures,
-        })
+        }
     }
 
     /// Sign the transaction with the provided private keys.
