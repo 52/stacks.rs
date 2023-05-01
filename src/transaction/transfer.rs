@@ -101,7 +101,7 @@ impl STXTokenTransfer {
 
     /// Gets the byte length of the transaction.
     pub fn byte_length(&self) -> Result<u64, Error> {
-        self.transaction.clone().byte_length()
+        self.transaction.byte_length()
     }
 }
 
@@ -217,6 +217,6 @@ impl STXTokenTransferMultiSig {
 
     /// Gets the byte length of the transaction.
     pub fn byte_length(&self) -> Result<u64, Error> {
-        self.transaction.clone().byte_length()
+        self.transaction.byte_length()
     }
 }
