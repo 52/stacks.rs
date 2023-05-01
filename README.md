@@ -6,6 +6,7 @@ A Rust port of existing JS/TS tooling to interact with the [Stacks Blockchain](h
 ## Usage
 
 ### Build a token-transfer transaction:
+
 ```rust
 use stacks_rs::transaction::AnchorMode;
 use stacks_rs::transaction::PostConditionMode;
@@ -35,7 +36,7 @@ async fn main() -> Result<(), Error> {
         PostConditionMode::Deny,
         PostConditions::empty(),
         false,
-    )?;
+    );
 
     let signed_tx = tx.sign()?;
 
@@ -44,6 +45,7 @@ async fn main() -> Result<(), Error> {
 ```
 
 ### Build a contract-call transaction:
+
 ```rust
 use stacks_rs::clarity::IntCV;
 use stacks_rs::clarity::StandardPrincipalCV;
@@ -82,7 +84,7 @@ async fn main() -> Result<(), Error> {
         PostConditionMode::Deny,
         PostConditions::empty(),
         false,
-    )?;
+    );
 
     let signed_tx = tx.sign()?;
 
@@ -91,6 +93,7 @@ async fn main() -> Result<(), Error> {
 ```
 
 ### Set nonce + fee & broadcast transfer:
+
 ```rust
 use stacks_rs::transaction::broadcast_transaction;
 use stacks_rs::transaction::estimate_transaction_fee;
@@ -124,7 +127,7 @@ async fn main() -> Result<(), Error> {
         PostConditionMode::Deny,
         PostConditions::empty(),
         false,
-    )?;
+    );
 
     let bytes = tx.byte_length()?;
     let nonce = get_nonce(&address, network).await?;

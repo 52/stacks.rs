@@ -25,7 +25,7 @@ pub struct STXTokenTransfer {
 }
 
 impl STXTokenTransfer {
-    /// Creates a new STX token transfer builder.
+    /// Creates a new STX token transfer builder, which wraps an unsigned single-sig transaction.
     ///
     /// # Arguments
     ///
@@ -52,11 +52,11 @@ impl STXTokenTransfer {
         post_condition_mode: PostConditionMode,
         post_conditions: PostConditions,
         sponsored: bool,
-    ) -> Result<Self, Error> {
+    ) -> Self {
         let network = network.as_ref();
         let public_key = sender_key.public_key(&secp256k1::Secp256k1::new());
 
-        let payload = TokenTransferPayload::new(recipient, amount, memo)?;
+        let payload = TokenTransferPayload::new(recipient, amount, memo);
         let condition = SingleSpendingCondition::new(fee, nonce, public_key, SingleHashMode::P2PKH);
 
         let auth = if sponsored {
@@ -75,10 +75,10 @@ impl STXTokenTransfer {
             payload,
         );
 
-        Ok(Self {
+        Self {
             transaction,
             sender_key,
-        })
+        }
     }
 
     /// Signs the transaction with the provided private key.
@@ -101,7 +101,7 @@ impl STXTokenTransfer {
 
     /// Gets the byte length of the transaction.
     pub fn byte_length(&self) -> Result<u64, Error> {
-        self.transaction.clone().byte_length()
+        self.transaction.byte_length()
     }
 }
 
@@ -119,7 +119,7 @@ pub struct STXTokenTransferMultiSig {
 }
 
 impl STXTokenTransferMultiSig {
-    /// Create a new STX token transfer transaction with multiple signatures.
+    /// Creates a new STX token transfer builder, which wraps an unsigned multi-sig transaction.
     ///
     /// # Arguments
     ///
@@ -150,12 +150,12 @@ impl STXTokenTransferMultiSig {
         post_condition_mode: PostConditionMode,
         post_conditions: PostConditions,
         sponsored: bool,
-    ) -> Result<Self, Error> {
+    ) -> Self {
         let network = network.as_ref();
         let signer_keys = signer_keys.into();
         let public_keys = public_keys.into();
 
-        let payload = TokenTransferPayload::new(recipient, amount, memo)?;
+        let payload = TokenTransferPayload::new(recipient, amount, memo);
         let condition =
             MultiSpendingCondition::new(nonce, fee, &public_keys, signatures, MultiHashMode::P2SH);
 
@@ -175,12 +175,12 @@ impl STXTokenTransferMultiSig {
             payload,
         );
 
-        Ok(Self {
+        Self {
             transaction,
             signer_keys,
             public_keys,
             signatures,
-        })
+        }
     }
 
     /// Sign the transaction with the provided private keys.
@@ -217,6 +217,6 @@ impl STXTokenTransferMultiSig {
 
     /// Gets the byte length of the transaction.
     pub fn byte_length(&self) -> Result<u64, Error> {
-        self.transaction.clone().byte_length()
+        self.transaction.byte_length()
     }
 }

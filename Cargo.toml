@@ -1,11 +1,12 @@
 [package]
 name = "stacks-rs"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
+license = "MIT"
 authors = ["Max Karou <max@trustmachines.co>"]
 repository = "https://github.com/mxnnn/stacks.rs"
-description = "A rust toolkit to interact with the stacks blockchain."
-license = "MIT"
+description = "Rust toolkit to interact with the Stacks Blockchain."
+keywords = ["stacks", "blockchain", "bitcoin"]
 
 [dependencies]
 bip39 = "2.0.0"

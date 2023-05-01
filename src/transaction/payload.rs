@@ -39,18 +39,11 @@ pub struct TokenTransferPayload {
 }
 
 impl TokenTransferPayload {
-    pub fn new(
-        recipient: impl Into<String>,
-        amount: u64,
-        memo: impl Into<String>,
-    ) -> Result<Payload, Error> {
-        let recipient_str: String = recipient.into();
+    pub fn new(recipient: impl Into<String>, amount: u64, memo: impl Into<String>) -> Payload {
+        let recipient_str = recipient.into();
+        let memo_str = memo.into();
 
-        let recipient = if recipient_str.contains('.') {
-            let (address, contract) = recipient_str
-                .split_once('.')
-                .ok_or(Error::InvalidPrincipal)?;
-
+        let recipient = if let Some((address, contract)) = recipient_str.split_once('.') {
             ContractPrincipalCV::new(address, contract)
         } else {
             StandardPrincipalCV::new(recipient_str)
@@ -59,10 +52,10 @@ impl TokenTransferPayload {
         let payload = Self {
             recipient,
             amount,
-            memo: MemoString::new(memo.into())?,
+            memo: MemoString::new(memo_str),
         };
 
-        Ok(Payload::TokenTransfer(payload))
+        Payload::TokenTransfer(payload)
     }
 }
 
@@ -132,8 +125,7 @@ mod tests {
             "STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6",
             100000,
             "Hello, world!",
-        )
-        .unwrap();
+        );
 
         let s_serialized = s_payload.serialize().unwrap();
         let s_hex = bytes_to_hex(&s_serialized);
@@ -145,8 +137,7 @@ mod tests {
             "STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6.my-contract",
             100000,
             "Hello, world!",
-        )
-        .unwrap();
+        );
 
         let c_serialized = c_payload.serialize().unwrap();
         let c_hex = bytes_to_hex(&c_serialized);
@@ -155,8 +146,7 @@ mod tests {
         assert_eq!(c_hex, c_expected);
 
         let empty_memo_payload =
-            TokenTransferPayload::new("STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6", 100000, "")
-                .unwrap();
+            TokenTransferPayload::new("STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6", 100000, "");
 
         let empty_memo_serialized = empty_memo_payload.serialize().unwrap();
         let empty_memo_hex = bytes_to_hex(&empty_memo_serialized);
