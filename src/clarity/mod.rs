@@ -13,6 +13,8 @@ pub use crate::clarity::principal::ContractPrincipalCV;
 pub use crate::clarity::principal::StandardPrincipalCV;
 pub use crate::clarity::response::ErrCV;
 pub use crate::clarity::response::OkCV;
+pub use crate::clarity::string::StringAsciiCV;
+pub use crate::clarity::string::StringUtf8CV;
 pub use crate::clarity::tuple::TupleCV;
 
 use crate::crypto::Deserialize;
@@ -27,6 +29,7 @@ pub(crate) mod padded;
 pub(crate) mod prefixed;
 pub(crate) mod principal;
 pub(crate) mod response;
+pub(crate) mod string;
 pub(crate) mod tuple;
 
 #[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
@@ -39,6 +42,8 @@ pub enum Error {
     InvalidClarityTypeId(u8, u8),
     #[error("Invalid memo length - received: {0}, max. 34")]
     InvalidMemoLength(usize),
+    #[error("Invalid ascii string - received: {0}")]
+    InvalidASCII(String),
     #[error(transparent)]
     IntConversionError(#[from] std::num::TryFromIntError),
     #[error(transparent)]
@@ -58,6 +63,8 @@ pub(crate) const CLARITY_TYPE_OPTIONAL_NONE: u8 = 0x09;
 pub(crate) const CLARITY_TYPE_OPTIONAL_SOME: u8 = 0x0a;
 pub(crate) const CLARITY_TYPE_LIST: u8 = 0x0b;
 pub(crate) const CLARITY_TYPE_TUPLE: u8 = 0x0c;
+pub(crate) const CLARITY_TYPE_STRING_UTF8: u8 = 0x0e;
+pub(crate) const CLARITY_TYPE_STRING_ASCII: u8 = 0x0d;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ClarityValue {
@@ -74,6 +81,8 @@ pub enum ClarityValue {
     OptionalSome(SomeCV),
     List(ListCV),
     Tuple(TupleCV),
+    StringUTF8(StringUtf8CV),
+    StringASCII(StringAsciiCV),
 }
 
 impl ClarityValue {
@@ -92,6 +101,8 @@ impl ClarityValue {
             ClarityValue::OptionalSome(_) => CLARITY_TYPE_OPTIONAL_SOME,
             ClarityValue::List(_) => CLARITY_TYPE_LIST,
             ClarityValue::Tuple(_) => CLARITY_TYPE_TUPLE,
+            ClarityValue::StringUTF8(_) => CLARITY_TYPE_STRING_UTF8,
+            ClarityValue::StringASCII(_) => CLARITY_TYPE_STRING_ASCII,
         }
     }
 }
@@ -112,6 +123,8 @@ impl std::fmt::Display for ClarityValue {
             ClarityValue::OptionalSome(some_cv) => write!(f, "{some_cv}"),
             ClarityValue::List(list_cv) => write!(f, "{list_cv}"),
             ClarityValue::Tuple(tuple_cv) => write!(f, "{tuple_cv}"),
+            ClarityValue::StringUTF8(string_cv) => write!(f, "{string_cv}"),
+            ClarityValue::StringASCII(string_cv) => write!(f, "{string_cv}"),
         }
     }
 }
@@ -132,6 +145,8 @@ impl std::fmt::Debug for ClarityValue {
             ClarityValue::OptionalSome(some_cv) => write!(f, "{some_cv:?}"),
             ClarityValue::List(list_cv) => write!(f, "{list_cv:?}"),
             ClarityValue::Tuple(tuple_cv) => write!(f, "{tuple_cv:?}"),
+            ClarityValue::StringUTF8(string_cv) => write!(f, "{string_cv:?}"),
+            ClarityValue::StringASCII(string_cv) => write!(f, "{string_cv:?}"),
         }
     }
 }
@@ -154,7 +169,33 @@ impl Serialize for ClarityValue {
             ClarityValue::OptionalSome(some_cv) => some_cv.serialize(),
             ClarityValue::List(list_cv) => list_cv.serialize(),
             ClarityValue::Tuple(tuple_cv) => tuple_cv.serialize(),
+            ClarityValue::StringUTF8(string_cv) => string_cv.serialize(),
+            ClarityValue::StringASCII(string_cv) => string_cv.serialize(),
         }
+    }
+
+    fn to_hex(&self) -> Result<String, Self::Err> {
+        match self {
+            ClarityValue::Int(int) => int.to_hex(),
+            ClarityValue::UInt(uint) => uint.to_hex(),
+            ClarityValue::Buffer(buff) => buff.to_hex(),
+            ClarityValue::BoolTrue(true_cv) => true_cv.to_hex(),
+            ClarityValue::BoolFalse(false_cv) => false_cv.to_hex(),
+            ClarityValue::StandardP(principal) => principal.to_hex(),
+            ClarityValue::ContractP(principal) => principal.to_hex(),
+            ClarityValue::ResponseOk(ok_cv) => ok_cv.to_hex(),
+            ClarityValue::ResponseErr(err_cv) => err_cv.to_hex(),
+            ClarityValue::OptionalNone(none_cv) => none_cv.to_hex(),
+            ClarityValue::OptionalSome(some_cv) => some_cv.to_hex(),
+            ClarityValue::List(list_cv) => list_cv.to_hex(),
+            ClarityValue::Tuple(tuple_cv) => tuple_cv.to_hex(),
+            ClarityValue::StringUTF8(string_cv) => string_cv.to_hex(),
+            ClarityValue::StringASCII(string_cv) => string_cv.to_hex(),
+        }
+    }
+
+    fn to_hex_prefixed(&self) -> Result<String, Self::Err> {
+        Ok(format!("0x{}", self.to_hex()?))
     }
 }
 
@@ -177,6 +218,8 @@ impl Deserialize for ClarityValue {
             CLARITY_TYPE_OPTIONAL_SOME => SomeCV::deserialize(bytes),
             CLARITY_TYPE_LIST => ListCV::deserialize(bytes),
             CLARITY_TYPE_TUPLE => TupleCV::deserialize(bytes),
+            CLARITY_TYPE_STRING_UTF8 => StringUtf8CV::deserialize(bytes),
+            CLARITY_TYPE_STRING_ASCII => StringAsciiCV::deserialize(bytes),
             _ => Err(Error::InvalidClarityType),
         }
     }

@@ -39,6 +39,15 @@ pub trait Serialize {
         let serialized = self.serialize()?;
         Ok(serialized.len() as u64)
     }
+    /// Get the hex representation of the serialized data.
+    fn to_hex(&self) -> Result<String, Self::Err> {
+        let serialized = self.serialize()?;
+        Ok(bytes_to_hex(&serialized))
+    }
+    /// Get the hex representation of the serialized data with a `0x` prefix.
+    fn to_hex_prefixed(&self) -> Result<String, Self::Err> {
+        Ok(format!("0x{}", self.to_hex()?))
+    }
 }
 
 /// Trait for deserializing data from bytes.
