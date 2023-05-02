@@ -14,9 +14,6 @@ pub use crate::transaction::condition::NonFungiblePostCondition;
 pub use crate::transaction::condition::PostConditionMode;
 pub use crate::transaction::condition::PostConditions;
 pub use crate::transaction::condition::STXPostCondition;
-pub use crate::transaction::fetcher::broadcast_transaction;
-pub use crate::transaction::fetcher::estimate_transaction_fee;
-pub use crate::transaction::fetcher::get_nonce;
 pub use crate::transaction::payload::ContractCallPayload;
 pub use crate::transaction::payload::Payload;
 pub use crate::transaction::payload::PayloadType;
@@ -30,7 +27,6 @@ pub(crate) mod auth;
 pub(crate) mod base;
 pub(crate) mod call;
 pub(crate) mod condition;
-pub(crate) mod fetcher;
 pub(crate) mod payload;
 pub(crate) mod signer;
 pub(crate) mod sponsor;
@@ -62,10 +58,6 @@ pub enum Error {
     VerifyBadSigner(String, String),
     #[error("Invalid signature count, expected {0} - got: {1}")]
     VerifyBadSignatureCount(u8, u8),
-    #[error("Bad request, message: {0}")]
-    BadRequest(String),
-    #[error("Invalid json response, received: {0}")]
-    InvalidJsonResponse(String),
     #[error(transparent)]
     Clarity(#[from] crate::clarity::Error),
     #[error(transparent)]
@@ -73,9 +65,5 @@ pub enum Error {
     #[error(transparent)]
     Secp256k1(#[from] secp256k1::Error),
     #[error(transparent)]
-    Reqwest(#[from] reqwest::Error),
-    #[error(transparent)]
     IntConversionError(#[from] std::num::TryFromIntError),
-    #[error(transparent)]
-    ParseIntError(#[from] std::num::ParseIntError),
 }
