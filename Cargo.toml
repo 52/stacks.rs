@@ -25,5 +25,6 @@ members = [
     "./",
     "./examples/contract-call",
     "./examples/stx-transfer",
-    "./examples/broadcast-transfer"
+    "./examples/broadcast-transfer",
+    "./examples/call-read-only"
 ]
