@@ -90,6 +90,8 @@ mod tests {
     use crate::clarity::OkCV;
     use crate::clarity::SomeCV;
     use crate::clarity::StandardPrincipalCV;
+    use crate::clarity::StringAsciiCV;
+    use crate::clarity::StringUtf8CV;
     use crate::clarity::TrueCV;
     use crate::clarity::TupleCV;
     use crate::clarity::UIntCV;
@@ -124,6 +126,8 @@ mod tests {
             ContractPrincipalCV::new("ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA", "asdf"),
             OkCV::new(IntCV::new(1)),
             SomeCV::new(IntCV::new(1)),
+            StringAsciiCV::new("asdf"),
+            StringUtf8CV::new("asdf 🌾"),
             TupleCV::new(&[("foo", IntCV::new(1)), ("bar", IntCV::new(2))]),
             BufferCV::new(&[0x01, 0x02, 0x03, 0x04]),
         ]);

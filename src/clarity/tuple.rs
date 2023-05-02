@@ -103,6 +103,8 @@ mod tests {
     use crate::clarity::OkCV;
     use crate::clarity::SomeCV;
     use crate::clarity::StandardPrincipalCV;
+    use crate::clarity::StringAsciiCV;
+    use crate::clarity::StringUtf8CV;
     use crate::clarity::TrueCV;
     use crate::clarity::UIntCV;
     use crate::crypto::hex::bytes_to_hex;
@@ -140,9 +142,11 @@ mod tests {
                 "l",
                 TupleCV::new(&[("a", TrueCV::new()), ("b", FalseCV::new())]),
             ),
+            ("m", StringAsciiCV::new("hello world")),
+            ("n", StringUtf8CV::new("hello \u{1234}")),
         ]);
 
-        let expected = "(tuple (a -1) (b u1) (c 0x74657374) (d true) (e (some true)) (f none) (g ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA) (h ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA.test) (i (ok true)) (j (err false)) (k (list true false)) (l (tuple (a true) (b false))))";
+        let expected = "(tuple (a -1) (b u1) (c 0x74657374) (d true) (e (some true)) (f none) (g ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA) (h ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA.test) (i (ok true)) (j (err false)) (k (list true false)) (l (tuple (a true) (b false))) (m \"hello world\") (n u\"hello ሴ\"))";
 
         assert_eq!(cv.to_string(), expected);
     }
