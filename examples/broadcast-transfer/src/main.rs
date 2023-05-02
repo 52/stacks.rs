@@ -37,9 +37,9 @@ async fn main() -> Result<(), Error> {
         false,
     );
 
-    let bytes = tx.byte_length()?;
+    let byte_len = tx.byte_length()?;
     let nonce = account_api.fetch_account_nonce(address).await?;
-    let fee = tx_api.estimate_tx_fee(bytes).await?;
+    let fee = tx_api.estimate_tx_fee(byte_len).await?;
     tx.set_nonce(nonce);
     tx.set_fee(fee);
 
