@@ -8,6 +8,7 @@ pub use crate::wallet::StacksAccount;
 pub use crate::wallet::StacksWallet;
 
 pub mod address;
+pub mod api;
 pub mod clarity;
 pub mod crypto;
 pub mod network;
@@ -34,6 +35,8 @@ pub enum Error {
     Clarity(#[from] clarity::Error),
     #[error(transparent)]
     Transaction(#[from] transaction::Error),
+    #[error(transparent)]
+    API(#[from] api::Error),
     #[error(transparent)]
     IntConversionError(#[from] std::num::TryFromIntError),
 }
