@@ -20,6 +20,9 @@ async fn main() -> Result<(), Error> {
     let address = account.get_address(AddressVersion::TestnetP2PKH)?;
     let network = StacksTestnet::new();
 
+    let tx_api = TransactionsApi::new(network);
+    let account_api = AccountsApi::new(network);
+
     let mut tx = STXTokenTransfer::new(
         "ST21HQTGHGJ3DDWM8BC1E00TYZPD3DF31NSK0Y1JS",
         account.private_key,
@@ -33,9 +36,6 @@ async fn main() -> Result<(), Error> {
         PostConditions::empty(),
         false,
     );
-
-    let tx_api = TransactionsApi::new(network);
-    let account_api = AccountsApi::new(network);
 
     let bytes = tx.byte_length()?;
     let nonce = account_api.fetch_account_nonce(address).await?;
