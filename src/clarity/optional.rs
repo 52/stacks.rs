@@ -57,6 +57,10 @@ impl SomeCV {
     pub fn new(value: ClarityValue) -> ClarityValue {
         ClarityValue::OptionalSome(SomeCV(CLARITY_TYPE_OPTIONAL_SOME, value.into()))
     }
+
+    pub fn into_inner(self) -> ClarityValue {
+        *self.1
+    }
 }
 
 impl std::fmt::Display for SomeCV {

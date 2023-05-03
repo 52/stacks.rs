@@ -18,6 +18,27 @@ impl TupleCV {
 
         ClarityValue::Tuple(TupleCV(CLARITY_TYPE_TUPLE, values))
     }
+
+    pub fn into_inner(self) -> Vec<(String, ClarityValue)> {
+        self.1
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<(String, ClarityValue)> {
+        self.1.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> std::slice::IterMut<(String, ClarityValue)> {
+        self.1.iter_mut()
+    }
+}
+
+impl IntoIterator for TupleCV {
+    type Item = (String, ClarityValue);
+    type IntoIter = std::vec::IntoIter<(String, ClarityValue)>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.1.into_iter()
+    }
 }
 
 impl std::fmt::Display for TupleCV {

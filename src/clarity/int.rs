@@ -12,6 +12,10 @@ impl IntCV {
     pub fn new(value: i128) -> ClarityValue {
         ClarityValue::Int(IntCV(CLARITY_TYPE_INT, value))
     }
+
+    pub fn into_inner(self) -> i128 {
+        self.1
+    }
 }
 
 impl std::fmt::Display for IntCV {
@@ -60,6 +64,10 @@ pub struct UIntCV(u8, u128);
 impl UIntCV {
     pub fn new(value: u128) -> ClarityValue {
         ClarityValue::UInt(UIntCV(CLARITY_TYPE_UINT, value))
+    }
+
+    pub fn into_inner(self) -> u128 {
+        self.1
     }
 }
 

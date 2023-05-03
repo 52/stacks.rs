@@ -12,6 +12,10 @@ impl OkCV {
     pub fn new(value: ClarityValue) -> ClarityValue {
         ClarityValue::ResponseOk(OkCV(CLARITY_TYPE_RESPONSE_OK, value.into()))
     }
+
+    pub fn into_inner(self) -> ClarityValue {
+        *self.1
+    }
 }
 
 impl std::fmt::Display for OkCV {
@@ -59,6 +63,10 @@ pub struct ErrCV(u8, Box<ClarityValue>);
 impl ErrCV {
     pub fn new(value: ClarityValue) -> ClarityValue {
         ClarityValue::ResponseErr(ErrCV(CLARITY_TYPE_RESPONSE_ERR, value.into()))
+    }
+
+    pub fn into_inner(self) -> ClarityValue {
+        *self.1
     }
 }
 
