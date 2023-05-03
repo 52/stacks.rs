@@ -121,6 +121,14 @@ async fn main() -> Result<(), Error> {
         )
         .await?;
 
+    if let ClarityValue::ResponseOk(response) = value {
+        if let ClarityValue::Tuple(tuple) = response.into_inner() {
+            for (key, value) in tuple.iter() {
+                println!("{}: {}", key, value);
+            }
+        }
+    }
+
     Ok(())
 }
 ```

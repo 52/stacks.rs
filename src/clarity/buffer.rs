@@ -12,6 +12,10 @@ impl BufferCV {
     pub fn new(value: &[u8]) -> ClarityValue {
         ClarityValue::Buffer(BufferCV(CLARITY_TYPE_BUFFER, value.to_vec()))
     }
+
+    pub fn into_inner(self) -> Vec<u8> {
+        self.1
+    }
 }
 
 impl std::fmt::Display for BufferCV {

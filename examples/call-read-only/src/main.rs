@@ -1,4 +1,5 @@
 use stacks_rs::api::ContractsApi;
+use stacks_rs::clarity::ClarityValue;
 use stacks_rs::AddressVersion;
 use stacks_rs::Error;
 use stacks_rs::StacksTestnet;
@@ -26,6 +27,14 @@ async fn main() -> Result<(), Error> {
             Some(address),
         )
         .await?;
+
+    if let ClarityValue::ResponseOk(response) = value {
+        if let ClarityValue::Tuple(tuple) = response.into_inner() {
+            for (key, value) in tuple.iter() {
+                println!("{}: {}", key, value);
+            }
+        }
+    }
 
     Ok(())
 }

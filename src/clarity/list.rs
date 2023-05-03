@@ -11,6 +11,27 @@ impl ListCV {
     pub fn new(values: impl Into<Vec<ClarityValue>>) -> ClarityValue {
         ClarityValue::List(ListCV(CLARITY_TYPE_LIST, values.into()))
     }
+
+    pub fn into_inner(self) -> Vec<ClarityValue> {
+        self.1
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<ClarityValue> {
+        self.1.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> std::slice::IterMut<ClarityValue> {
+        self.1.iter_mut()
+    }
+}
+
+impl IntoIterator for ListCV {
+    type Item = ClarityValue;
+    type IntoIter = std::vec::IntoIter<ClarityValue>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.1.into_iter()
+    }
 }
 
 impl std::fmt::Display for ListCV {
