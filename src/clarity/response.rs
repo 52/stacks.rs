@@ -5,28 +5,41 @@ use crate::clarity::CLARITY_TYPE_RESPONSE_OK;
 use crate::crypto::Deserialize;
 use crate::crypto::Serialize;
 
+/// A Clarity Value representing an `Ok` value, which wraps another `ClarityValue`.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct OkCV(u8, Box<ClarityValue>);
+pub struct OkCV(Box<ClarityValue>);
 
 impl OkCV {
+    /// Create a new `OkCV` instance from a `ClarityVaue`.
     pub fn new(value: ClarityValue) -> ClarityValue {
-        ClarityValue::ResponseOk(OkCV(CLARITY_TYPE_RESPONSE_OK, value.into()))
+        ClarityValue::ResponseOk(Self(value.into()))
     }
 
-    pub fn into_inner(self) -> ClarityValue {
-        *self.1
+    /// Gets the underlying value from a `OkCV` instance.
+    pub fn into_value(self) -> ClarityValue {
+        *self.0
+    }
+
+    /// Gets a mutable reference to the underlying value from a `OkCV` instance.
+    pub fn as_mut_value(&mut self) -> &mut ClarityValue {
+        &mut self.0
+    }
+
+    /// Gets an immutable reference to the underlying value from a `OkCV` instance.
+    pub fn as_ref_value(&self) -> &ClarityValue {
+        &self.0
     }
 }
 
 impl std::fmt::Display for OkCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "(ok {})", self.1)
+        write!(f, "(ok {})", self.0)
     }
 }
 
 impl std::fmt::Debug for OkCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "OkCV({:#?})", self.1)
+        write!(f, "OkCV({:#?})", self.0)
     }
 }
 
@@ -35,7 +48,7 @@ impl Serialize for OkCV {
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_RESPONSE_OK];
-        buff.extend_from_slice(&self.1.serialize()?);
+        buff.extend_from_slice(&self.0.serialize()?);
         Ok(buff)
     }
 }
@@ -53,32 +66,45 @@ impl Deserialize for OkCV {
         }
 
         let cv = ClarityValue::deserialize(&bytes[1..])?;
-        Ok(OkCV::new(cv))
+        Ok(Self::new(cv))
     }
 }
 
+/// A Clarity Value representing an `Err` value, which wraps another `ClarityValue`.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ErrCV(u8, Box<ClarityValue>);
+pub struct ErrCV(Box<ClarityValue>);
 
 impl ErrCV {
+    /// Create a new `ErrCV` instance from a `ClarityVaue`.
     pub fn new(value: ClarityValue) -> ClarityValue {
-        ClarityValue::ResponseErr(ErrCV(CLARITY_TYPE_RESPONSE_ERR, value.into()))
+        ClarityValue::ResponseErr(Self(value.into()))
     }
 
-    pub fn into_inner(self) -> ClarityValue {
-        *self.1
+    /// Gets the underlying value from a `ErrCV` instance.
+    pub fn into_value(self) -> ClarityValue {
+        *self.0
+    }
+
+    /// Gets a mutable reference to the underlying value from a `ErrCV` instance.
+    pub fn as_mut_value(&mut self) -> &mut ClarityValue {
+        &mut self.0
+    }
+
+    /// Gets an immutable reference to the underlying value from a `ErrCV` instance.
+    pub fn as_ref_value(&self) -> &ClarityValue {
+        &self.0
     }
 }
 
 impl std::fmt::Display for ErrCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "(err {})", self.1)
+        write!(f, "(err {})", self.0)
     }
 }
 
 impl std::fmt::Debug for ErrCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "ErrCV({:#?})", self.1)
+        write!(f, "ErrCV({:#?})", self.0)
     }
 }
 
@@ -87,7 +113,7 @@ impl Serialize for ErrCV {
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_RESPONSE_ERR];
-        buff.extend_from_slice(&self.1.serialize()?);
+        buff.extend_from_slice(&self.0.serialize()?);
         Ok(buff)
     }
 }
@@ -105,7 +131,7 @@ impl Deserialize for ErrCV {
         }
 
         let cv = ClarityValue::deserialize(&bytes[1..])?;
-        Ok(ErrCV::new(cv))
+        Ok(Self::new(cv))
     }
 }
 
