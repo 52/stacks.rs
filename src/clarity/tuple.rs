@@ -5,10 +5,15 @@ use crate::clarity::CLARITY_TYPE_TUPLE;
 use crate::crypto::Deserialize;
 use crate::crypto::Serialize;
 
+/// A tuple item consists of a key (`String`) and a value (`ClarityValue`).
+pub type TupleItem = (String, ClarityValue);
+
+/// A Clarity Value representing a tuple, which wraps a vector of `TupleItem`.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct TupleCV(u8, Vec<(String, ClarityValue)>);
+pub struct TupleCV(Vec<TupleItem>);
 
 impl TupleCV {
+    /// Create a new `TupleCV` instance from a slice of `TupleItem`.
     pub fn new(values: &[(impl Into<String> + std::clone::Clone, ClarityValue)]) -> ClarityValue {
         let values = values
             .iter()
@@ -16,35 +21,48 @@ impl TupleCV {
             .map(|(key, value)| (key.into(), value))
             .collect();
 
-        ClarityValue::Tuple(TupleCV(CLARITY_TYPE_TUPLE, values))
+        ClarityValue::Tuple(Self(values))
     }
 
-    pub fn into_inner(self) -> Vec<(String, ClarityValue)> {
-        self.1
+    /// Gets the underlying vector from a `TupleCV` instance.
+    pub fn into_value(self) -> Vec<TupleItem> {
+        self.0
     }
 
-    pub fn iter(&self) -> std::slice::Iter<(String, ClarityValue)> {
-        self.1.iter()
+    /// Gets a mutable reference to the underlying vector from a `TupleCV` instance.
+    pub fn as_mut_value(&mut self) -> &mut Vec<TupleItem> {
+        &mut self.0
     }
 
-    pub fn iter_mut(&mut self) -> std::slice::IterMut<(String, ClarityValue)> {
-        self.1.iter_mut()
+    /// Gets an immutable reference to the underlying vector from a `TupleCV` instance.
+    pub fn as_ref_value(&self) -> &Vec<TupleItem> {
+        &self.0
+    }
+
+    // Returns an iterator over the underlying vector.
+    pub fn iter(&self) -> std::slice::Iter<TupleItem> {
+        self.0.iter()
+    }
+
+    // Returns a mutable iterator over the underlying vector.
+    pub fn iter_mut(&mut self) -> std::slice::IterMut<TupleItem> {
+        self.0.iter_mut()
     }
 }
 
 impl IntoIterator for TupleCV {
-    type Item = (String, ClarityValue);
-    type IntoIter = std::vec::IntoIter<(String, ClarityValue)>;
+    type Item = TupleItem;
+    type IntoIter = std::vec::IntoIter<TupleItem>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.1.into_iter()
+        self.0.into_iter()
     }
 }
 
 impl std::fmt::Display for TupleCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "(tuple ")?;
-        for (i, (key, value)) in self.1.iter().enumerate() {
+        for (i, (key, value)) in self.0.iter().enumerate() {
             if i > 0 {
                 write!(f, " ")?;
             }
@@ -57,7 +75,7 @@ impl std::fmt::Display for TupleCV {
 impl std::fmt::Debug for TupleCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "TupleCV(")?;
-        for (i, (key, value)) in self.1.iter().enumerate() {
+        for (i, (key, value)) in self.0.iter().enumerate() {
             if i > 0 {
                 write!(f, ", ")?;
             }
@@ -72,9 +90,9 @@ impl Serialize for TupleCV {
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_TUPLE];
-        buff.extend_from_slice(&(u32::try_from(self.1.len())?).to_be_bytes());
+        buff.extend_from_slice(&(u32::try_from(self.0.len())?).to_be_bytes());
 
-        for (key, value) in &self.1 {
+        for (key, value) in self.iter() {
             buff.extend_from_slice(&LengthPrefixedString::new(key).serialize()?);
             buff.extend_from_slice(&value.serialize()?);
         }
@@ -107,7 +125,7 @@ impl Deserialize for TupleCV {
             values.push((key, cv));
         }
 
-        Ok(TupleCV::new(&values))
+        Ok(Self::new(&values))
     }
 }
 
