@@ -5,28 +5,41 @@ use crate::clarity::CLARITY_TYPE_UINT;
 use crate::crypto::Deserialize;
 use crate::crypto::Serialize;
 
+/// A Clarity Value representing a signed integer.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct IntCV(u8, i128);
+pub struct IntCV(i128);
 
 impl IntCV {
+    /// Create a new `IntCV` instance from a signed integer.
     pub fn new(value: i128) -> ClarityValue {
-        ClarityValue::Int(IntCV(CLARITY_TYPE_INT, value))
+        ClarityValue::Int(Self(value))
     }
 
-    pub fn into_inner(self) -> i128 {
-        self.1
+    /// Gets the underlying signed integer from a `IntCV` instance.
+    pub fn into_value(self) -> i128 {
+        self.0
+    }
+
+    /// Gets a mutable reference to the underlying signed integer from a `IntCV` instance.
+    pub fn as_mut_value(&mut self) -> &mut i128 {
+        &mut self.0
+    }
+
+    /// Gets an immutable reference to the underlying signed integer from a `IntCV` instance.
+    pub fn as_ref_value(&self) -> &i128 {
+        &self.0
     }
 }
 
 impl std::fmt::Display for IntCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.1)
+        write!(f, "{}", self.0)
     }
 }
 
 impl std::fmt::Debug for IntCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "IntCV({})", self.1)
+        write!(f, "IntCV({})", self.0)
     }
 }
 
@@ -35,7 +48,7 @@ impl Serialize for IntCV {
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_INT];
-        buff.extend_from_slice(&self.1.to_be_bytes());
+        buff.extend_from_slice(&self.0.to_be_bytes());
         Ok(buff)
     }
 }
@@ -54,26 +67,39 @@ impl Deserialize for IntCV {
 
         let value = i128::from_be_bytes(buff);
 
-        Ok(IntCV::new(value))
+        Ok(Self::new(value))
     }
 }
 
+/// A Clarity Value representing an unsigned integer.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct UIntCV(u8, u128);
+pub struct UIntCV(u128);
 
 impl UIntCV {
+    /// Create a new `UIntCV` instance from an unsigned integer.
     pub fn new(value: u128) -> ClarityValue {
-        ClarityValue::UInt(UIntCV(CLARITY_TYPE_UINT, value))
+        ClarityValue::IntUnsigned(Self(value))
     }
 
-    pub fn into_inner(self) -> u128 {
-        self.1
+    /// Gets the underlying unsigned integer from a `UIntCV` instance.
+    pub fn into_value(self) -> u128 {
+        self.0
+    }
+
+    /// Gets a mutable reference to the underlying unsigned integer from a `UIntCV` instance.
+    pub fn as_mut_value(&mut self) -> &mut u128 {
+        &mut self.0
+    }
+
+    /// Gets an immutable reference to the underlying unsigned integer from a `UIntCV` instance.
+    pub fn as_ref_value(&self) -> &u128 {
+        &self.0
     }
 }
 
 impl std::fmt::Display for UIntCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "u{}", self.1)
+        write!(f, "u{}", self.0)
     }
 }
 
@@ -88,7 +114,7 @@ impl Serialize for UIntCV {
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_UINT];
-        buff.extend_from_slice(&self.1.to_be_bytes());
+        buff.extend_from_slice(&self.0.to_be_bytes());
         Ok(buff)
     }
 }
@@ -107,7 +133,7 @@ impl Deserialize for UIntCV {
 
         let value = u128::from_be_bytes(buff);
 
-        Ok(UIntCV::new(value))
+        Ok(Self::new(value))
     }
 }
 
