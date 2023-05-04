@@ -5,12 +5,14 @@ use crate::clarity::CLARITY_TYPE_OPTIONAL_SOME;
 use crate::crypto::Deserialize;
 use crate::crypto::Serialize;
 
+/// A Clarity Value representing a `None` value.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct NoneCV(u8);
+pub struct NoneCV;
 
 impl NoneCV {
+    /// Create a new `NoneCV` instance.
     pub fn new() -> ClarityValue {
-        ClarityValue::OptionalNone(NoneCV(CLARITY_TYPE_OPTIONAL_NONE))
+        ClarityValue::OptionalNone(Self)
     }
 }
 
@@ -46,32 +48,45 @@ impl Deserialize for NoneCV {
             ));
         }
 
-        Ok(NoneCV::new())
+        Ok(Self::new())
     }
 }
 
+/// A Clarity Value representing a `Some` value, which wraps another `ClarityValue`.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct SomeCV(u8, Box<ClarityValue>);
+pub struct SomeCV(Box<ClarityValue>);
 
 impl SomeCV {
+    /// Create a new `SomeCV` instance from a `ClarityValue`.
     pub fn new(value: ClarityValue) -> ClarityValue {
-        ClarityValue::OptionalSome(SomeCV(CLARITY_TYPE_OPTIONAL_SOME, value.into()))
+        ClarityValue::OptionalSome(Self(value.into()))
     }
 
-    pub fn into_inner(self) -> ClarityValue {
-        *self.1
+    /// Gets the underlying value from a `SomeCV` instance.
+    pub fn into_value(self) -> ClarityValue {
+        *self.0
+    }
+
+    /// Gets a mutable reference to the underlying value from a `SomeCV` instance.
+    pub fn as_mut_value(&mut self) -> &mut ClarityValue {
+        &mut self.0
+    }
+
+    /// Gets an immutable reference to the underlying value from a `SomeCV` instance.
+    pub fn as_ref_value(&self) -> &ClarityValue {
+        &self.0
     }
 }
 
 impl std::fmt::Display for SomeCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "(some {})", self.1)
+        write!(f, "(some {})", self.0)
     }
 }
 
 impl std::fmt::Debug for SomeCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "SomeCV({})", self.1)
+        write!(f, "SomeCV({})", self.0)
     }
 }
 
@@ -80,7 +95,7 @@ impl Serialize for SomeCV {
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_OPTIONAL_SOME];
-        buff.extend_from_slice(&self.1.serialize()?);
+        buff.extend_from_slice(&self.0.serialize()?);
         Ok(buff)
     }
 }
@@ -97,7 +112,7 @@ impl Deserialize for SomeCV {
             ));
         }
 
-        Ok(SomeCV::new(ClarityValue::deserialize(&bytes[1..])?))
+        Ok(Self::new(ClarityValue::deserialize(&bytes[1..])?))
     }
 }
 
