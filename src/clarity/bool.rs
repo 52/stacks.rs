@@ -5,12 +5,14 @@ use crate::clarity::CLARITY_TYPE_BOOL_TRUE;
 use crate::crypto::Deserialize;
 use crate::crypto::Serialize;
 
+/// A Clarity Value representing a true boolean.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct TrueCV(u8);
+pub struct TrueCV;
 
 impl TrueCV {
+    /// Create a new `TrueCV` instance.
     pub fn new() -> ClarityValue {
-        ClarityValue::BoolTrue(TrueCV(CLARITY_TYPE_BOOL_TRUE))
+        ClarityValue::BoolTrue(Self)
     }
 }
 
@@ -46,16 +48,18 @@ impl Deserialize for TrueCV {
             ));
         }
 
-        Ok(TrueCV::new())
+        Ok(Self::new())
     }
 }
 
+/// A Clarity Value representing a true boolean.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct FalseCV(u8);
+pub struct FalseCV;
 
 impl FalseCV {
+    /// Create a new `FalseCV` instance.
     pub fn new() -> ClarityValue {
-        ClarityValue::BoolFalse(FalseCV(CLARITY_TYPE_BOOL_FALSE))
+        ClarityValue::BoolFalse(Self)
     }
 }
 
@@ -91,7 +95,7 @@ impl Deserialize for FalseCV {
             ));
         }
 
-        Ok(FalseCV::new())
+        Ok(Self::new())
     }
 }
 
