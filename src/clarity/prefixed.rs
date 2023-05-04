@@ -37,7 +37,7 @@ pub struct FunctionArguments(Vec<ClarityValue>);
 
 impl FunctionArguments {
     pub fn new(values: impl Into<Vec<ClarityValue>>) -> FunctionArguments {
-        FunctionArguments(values.into())
+        Self(values.into())
     }
 
     pub fn serialize(&self) -> Result<Vec<u8>, Error> {
