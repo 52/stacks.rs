@@ -111,7 +111,7 @@ async fn main() -> Result<(), Error> {
 
     let contract_api = ContractsApi::new(network);
 
-    let value = contract_api
+    let response = contract_api
         .call_read_only(
             "ST000000000000000000002AMW42H",
             "pox",
@@ -119,14 +119,13 @@ async fn main() -> Result<(), Error> {
             [],
             Some(address),
         )
-        .await?;
+        .await?
+        .into_response_ok()?;
 
-    if let ClarityValue::ResponseOk(response) = value {
-        if let ClarityValue::Tuple(tuple) = response.into_inner() {
-            for (key, value) in tuple.iter() {
-                println!("{}: {}", key, value);
-            }
-        }
+    let tuple = response.as_ref_value().as_tuple()?;
+
+    for (key, value) in tuple.iter() {
+        println!("{}: {}", key, value);
     }
 
     Ok(())
