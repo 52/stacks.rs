@@ -5,12 +5,29 @@ use crate::clarity::CLARITY_TYPE_STRING_UTF8;
 use crate::crypto::Deserialize;
 use crate::crypto::Serialize;
 
+/// A Clarity Value representing a UTF8 string.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct StringUtf8CV(String);
 
 impl StringUtf8CV {
+    /// Create a new `StringUtf8CV` instance from a string.
     pub fn new(str: impl Into<String>) -> ClarityValue {
         ClarityValue::StringUTF8(Self(str.into()))
+    }
+
+    /// Gets the underlying string from a `StringUtf8CV` instance.
+    pub fn into_value(self) -> String {
+        self.0
+    }
+
+    /// Gets a mutable reference to the underlying string from a `StringUtf8CV` instance.
+    pub fn as_mut_value(&mut self) -> &mut String {
+        &mut self.0
+    }
+
+    /// Gets an immutable reference to the underlying string from a `StringUtf8CV` instance.
+    pub fn as_ref_value(&self) -> &String {
+        &self.0
     }
 }
 
@@ -53,16 +70,33 @@ impl Deserialize for StringUtf8CV {
 
         let len = u32::from_be_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]) as usize;
         let str = std::str::from_utf8(&bytes[5..(5 + len)]).unwrap();
-        Ok(StringUtf8CV::new(str))
+        Ok(Self::new(str))
     }
 }
 
+/// A Clarity Value representing a ASCII string.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct StringAsciiCV(String);
 
 impl StringAsciiCV {
+    /// Create a new `StringAsciiCV` instance from a string.
     pub fn new(str: impl Into<String>) -> ClarityValue {
         ClarityValue::StringASCII(Self(str.into()))
+    }
+
+    /// Gets the underlying string from a `StringAsciiCV` instance.
+    pub fn into_value(self) -> String {
+        self.0
+    }
+
+    /// Gets a mutable reference to the underlying string from a `StringAsciiCV` instance.
+    pub fn as_mut_value(&mut self) -> &mut String {
+        &mut self.0
+    }
+
+    /// Gets an immutable reference to the underlying string from a `StringAsciiCV` instance.
+    pub fn as_ref_value(&self) -> &String {
+        &self.0
     }
 }
 
@@ -110,7 +144,7 @@ impl Deserialize for StringAsciiCV {
 
         let len = u32::from_be_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]) as usize;
         let str = std::str::from_utf8(&bytes[5..(5 + len)]).unwrap();
-        Ok(StringAsciiCV::new(str))
+        Ok(Self::new(str))
     }
 }
 

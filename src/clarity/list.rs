@@ -4,24 +4,39 @@ use crate::clarity::CLARITY_TYPE_LIST;
 use crate::crypto::Deserialize;
 use crate::crypto::Serialize;
 
+/// A Clarity Value representing a list, which wraps a vector of `ClarityValue`.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ListCV(u8, Vec<ClarityValue>);
+pub struct ListCV(Vec<ClarityValue>);
 
 impl ListCV {
+    /// Create a new `ListCV` instance from a vector of `ClarityValue`.
     pub fn new(values: impl Into<Vec<ClarityValue>>) -> ClarityValue {
-        ClarityValue::List(ListCV(CLARITY_TYPE_LIST, values.into()))
+        ClarityValue::List(Self(values.into()))
     }
 
-    pub fn into_inner(self) -> Vec<ClarityValue> {
-        self.1
+    /// Gets the underlying vector from a `ListCV` instance.
+    pub fn into_value(self) -> Vec<ClarityValue> {
+        self.0
     }
 
+    /// Gets a mutable reference to the underlying vector from a `ListCV` instance.
+    pub fn as_mut_value(&mut self) -> &mut Vec<ClarityValue> {
+        &mut self.0
+    }
+
+    /// Gets an immutable reference to the underlying vector from a `ListCV` instance.
+    pub fn as_ref_value(&self) -> &Vec<ClarityValue> {
+        &self.0
+    }
+
+    // Returns an iterator over the underlying vector.
     pub fn iter(&self) -> std::slice::Iter<ClarityValue> {
-        self.1.iter()
+        self.0.iter()
     }
 
+    // Returns a mutable iterator over the underlying vector.
     pub fn iter_mut(&mut self) -> std::slice::IterMut<ClarityValue> {
-        self.1.iter_mut()
+        self.0.iter_mut()
     }
 }
 
@@ -30,14 +45,14 @@ impl IntoIterator for ListCV {
     type IntoIter = std::vec::IntoIter<ClarityValue>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.1.into_iter()
+        self.0.into_iter()
     }
 }
 
 impl std::fmt::Display for ListCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "(list ")?;
-        for (i, value) in self.1.iter().enumerate() {
+        for (i, value) in self.0.iter().enumerate() {
             if i > 0 {
                 write!(f, " ")?;
             }
@@ -50,7 +65,7 @@ impl std::fmt::Display for ListCV {
 impl std::fmt::Debug for ListCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "ListCV(")?;
-        for (i, value) in self.1.iter().enumerate() {
+        for (i, value) in self.0.iter().enumerate() {
             if i > 0 {
                 write!(f, ", ")?;
             }
@@ -65,9 +80,9 @@ impl Serialize for ListCV {
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_LIST];
-        buff.extend_from_slice(&(u32::try_from(self.1.len())?).to_be_bytes());
+        buff.extend_from_slice(&(u32::try_from(self.0.len())?).to_be_bytes());
 
-        for value in &self.1 {
+        for value in self.iter() {
             buff.extend_from_slice(&value.serialize()?);
         }
 
@@ -95,7 +110,7 @@ impl Deserialize for ListCV {
             values.push(cv);
         }
 
-        Ok(ListCV::new(values))
+        Ok(Self::new(values))
     }
 }
 

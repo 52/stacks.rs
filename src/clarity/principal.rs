@@ -8,28 +8,41 @@ use crate::crypto::c32_address_decode;
 use crate::crypto::Deserialize;
 use crate::crypto::Serialize;
 
+/// A Clarity Value representing a standard principal.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct StandardPrincipalCV(u8, String);
+pub struct StandardPrincipalCV(String);
 
 impl StandardPrincipalCV {
+    /// Create a new `StandardPrincipalCV` instance from an address string.
     pub fn new(address: impl Into<String>) -> ClarityValue {
-        let address = address.into();
-        ClarityValue::StandardP(StandardPrincipalCV(
-            CLARITY_TYPE_PRINCIPAL_STANDARD,
-            address,
-        ))
+        ClarityValue::StandardPrincipal(Self(address.into()))
+    }
+
+    /// Gets the underlying address string from a `StandardPrincipalCV` instance.
+    pub fn into_value(self) -> String {
+        self.0
+    }
+
+    /// Gets a mutable reference to the underlying address string from a `StandardPrincipalCV` instance.
+    pub fn as_mut_value(&mut self) -> &mut String {
+        &mut self.0
+    }
+
+    /// Gets an immutable reference to the underlying address string from a `StandardPrincipalCV` instance.
+    pub fn as_ref_value(&self) -> &String {
+        &self.0
     }
 }
 
 impl std::fmt::Display for StandardPrincipalCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.1)
+        write!(f, "{}", self.0)
     }
 }
 
 impl std::fmt::Debug for StandardPrincipalCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "StandardPrincipalCV({})", self.1)
+        write!(f, "StandardPrincipalCV({})", self.0)
     }
 }
 
@@ -37,7 +50,7 @@ impl Serialize for StandardPrincipalCV {
     type Err = Error;
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
-        let (addr, version) = c32_address_decode(&self.1)?;
+        let (addr, version) = c32_address_decode(&self.0)?;
         let mut buff = vec![CLARITY_TYPE_PRINCIPAL_STANDARD, version];
         buff.extend_from_slice(&addr);
         Ok(buff)
@@ -57,34 +70,45 @@ impl Deserialize for StandardPrincipalCV {
         }
 
         let addr = c32_address(&bytes[2..22], bytes[1])?;
-        Ok(StandardPrincipalCV::new(addr))
+        Ok(Self::new(addr))
     }
 }
 
+/// A Clarity Value representing a contract principal.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ContractPrincipalCV(u8, String, String);
+pub struct ContractPrincipalCV(String, String);
 
 impl ContractPrincipalCV {
+    /// Create a new `ContractPrincipalCV` instance from an address string and contract name.
     pub fn new(address: impl Into<String>, contract: impl Into<String>) -> ClarityValue {
-        let address = address.into();
-        let contract = contract.into();
-        ClarityValue::ContractP(ContractPrincipalCV(
-            CLARITY_TYPE_PRINCIPAL_CONTRACT,
-            address,
-            contract,
-        ))
+        ClarityValue::ContractPrincipal(Self(address.into(), contract.into()))
+    }
+
+    /// Gets the underlying address & contract strings from a `ContractPrincipalCV` instance.
+    pub fn into_value(self) -> (String, String) {
+        (self.0, self.1)
+    }
+
+    /// Gets a mutable reference to the underlying address & contract strings from a `ContractPrincipalCV` instance.
+    pub fn as_mut_value(&mut self) -> (&mut String, &mut String) {
+        (&mut self.0, &mut self.1)
+    }
+
+    /// Gets an immutable reference to the underlying address & contract strings from a `ContractPrincipalCV` instance.
+    pub fn as_ref_value(&self) -> (&String, &String) {
+        (&self.0, &self.1)
     }
 }
 
 impl std::fmt::Display for ContractPrincipalCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}.{}", self.1, self.2)
+        write!(f, "{}.{}", self.0, self.1)
     }
 }
 
 impl std::fmt::Debug for ContractPrincipalCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "ContractPrincipalCV({})", self.1)
+        write!(f, "ContractPrincipalCV({}.{})", self.0, self.1)
     }
 }
 
@@ -92,12 +116,12 @@ impl Serialize for ContractPrincipalCV {
     type Err = Error;
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
-        let (addr, version) = c32_address_decode(&self.1)?;
+        let (addr, version) = c32_address_decode(&self.0)?;
 
         let mut buff = vec![CLARITY_TYPE_PRINCIPAL_CONTRACT, version];
 
         buff.extend_from_slice(&addr);
-        buff.extend_from_slice(&LengthPrefixedString::new(&self.2).serialize()?);
+        buff.extend_from_slice(&LengthPrefixedString::new(&self.1).serialize()?);
 
         Ok(buff)
     }
@@ -123,7 +147,7 @@ impl Deserialize for ContractPrincipalCV {
         let c32 = c32_address(address_bytes, network)?;
         let name = std::str::from_utf8(name_bytes).map_err(|_| Error::InvalidClarityName)?;
 
-        Ok(ContractPrincipalCV::new(c32, name))
+        Ok(Self::new(c32, name))
     }
 }
 

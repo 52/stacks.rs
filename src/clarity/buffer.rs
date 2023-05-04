@@ -5,22 +5,35 @@ use crate::crypto::hex::bytes_to_hex;
 use crate::crypto::Deserialize;
 use crate::crypto::Serialize;
 
+/// A Clarity Value representing a buffer.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct BufferCV(u8, Vec<u8>);
+pub struct BufferCV(Vec<u8>);
 
 impl BufferCV {
+    /// Create a new `BufferCV` instance from a byte slice.
     pub fn new(value: &[u8]) -> ClarityValue {
-        ClarityValue::Buffer(BufferCV(CLARITY_TYPE_BUFFER, value.to_vec()))
+        ClarityValue::Buffer(Self(value.to_vec()))
     }
 
-    pub fn into_inner(self) -> Vec<u8> {
-        self.1
+    /// Gets the underlying byte vector from a `BufferCV` instance.
+    pub fn into_value(self) -> Vec<u8> {
+        self.0
+    }
+
+    /// Gets a mutable reference to the underlying byte vector from a `BufferCV` instance.
+    pub fn as_mut_value(&mut self) -> &mut Vec<u8> {
+        &mut self.0
+    }
+
+    /// Gets an immutable reference to the underlying byte vector from a `BufferCV` instance.
+    pub fn as_ref_value(&self) -> &Vec<u8> {
+        &self.0
     }
 }
 
 impl std::fmt::Display for BufferCV {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "0x{}", bytes_to_hex(&self.1))
+        write!(f, "0x{}", bytes_to_hex(&self.0))
     }
 }
 
@@ -35,8 +48,8 @@ impl Serialize for BufferCV {
 
     fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
         let mut buff = vec![CLARITY_TYPE_BUFFER];
-        buff.extend_from_slice(&(u32::try_from(self.1.len())?).to_be_bytes());
-        buff.extend_from_slice(&self.1);
+        buff.extend_from_slice(&(u32::try_from(self.0.len())?).to_be_bytes());
+        buff.extend_from_slice(&self.0);
         Ok(buff)
     }
 }
@@ -60,7 +73,7 @@ impl Deserialize for BufferCV {
             offset += 1;
         }
 
-        Ok(BufferCV::new(&buff))
+        Ok(Self::new(&buff))
     }
 }
 
