@@ -42,9 +42,9 @@ pub type ChainCode = [u8; KEY_BYTE_SIZE];
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct ExtendedPrivateKey {
-    pub(crate) private_key: SecretKey,
-    pub(crate) chain_code: ChainCode,
-    pub(crate) depth: u8,
+    pub private_key: SecretKey,
+    pub chain_code: ChainCode,
+    pub depth: u8,
 }
 
 impl ExtendedPrivateKey {
