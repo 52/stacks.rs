@@ -39,6 +39,12 @@ pub enum Error {
     API(#[from] api::Error),
     #[error(transparent)]
     IntConversionError(#[from] std::num::TryFromIntError),
+    #[error(transparent)]
+    InvalidKey(#[from] ring::error::Unspecified),
+    #[error(transparent)]
+    InvalidPrivateKey(#[from] secp256k1::Error),
+    #[error(transparent)]
+    TryFromSliceError(#[from] std::array::TryFromSliceError),
 }
 
 pub type StacksPublicKey = secp256k1::PublicKey;

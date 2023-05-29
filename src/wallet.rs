@@ -1,10 +1,16 @@
+use std::num::NonZeroU32;
+
 use crate::address::AddressVersion;
 use crate::address::StacksAddress;
+use crate::crypto::bip32::KEY_BYTE_SIZE;
 use crate::crypto::c32_address;
 use crate::crypto::ExtendedPrivateKey;
 use crate::Error;
 use crate::StacksPrivateKey;
 use crate::StacksPublicKey;
+
+use rand::Rng;
+use ring::{aead, pbkdf2};
 
 pub(crate) const STX_DERIVATION_PATH: &str = "m/44'/5757'/0'/0";
 
@@ -82,6 +88,73 @@ impl StacksWallet {
     pub fn set_account(&mut self, index: u32, account: StacksAccount) {
         self.accounts.insert(index, account);
     }
+
+    pub fn encrypt_key(&self, passphrase: &str) -> Result<Vec<u8>, Error> {
+        let mut salt = [0u8; 16];
+        let mut rng = rand::thread_rng();
+
+        salt.copy_from_slice(&rng.gen::<[u8; 16]>()[..]);
+
+        let n_iter = NonZeroU32::new(100_000).unwrap();
+        let mut key_and_nonce = [0u8; 16 + aead::NONCE_LEN];
+        pbkdf2::derive(
+            pbkdf2::PBKDF2_HMAC_SHA512,
+            n_iter,
+            &salt,
+            passphrase.as_bytes(),
+            &mut key_and_nonce,
+        );
+        let enc_key = &key_and_nonce[..16];
+        let mut nonce = [0u8; aead::NONCE_LEN];
+        nonce.copy_from_slice(&key_and_nonce[16..]);
+
+        let key = aead::UnboundKey::new(&aead::AES_128_GCM, enc_key)?;
+        let key = aead::LessSafeKey::new(key);
+        let nonce = aead::Nonce::assume_unique_for_key(nonce);
+        let mut data = vec![0u8; 0];
+        data.extend_from_slice(&self.root_key.chain_code[..]);
+        data.extend(self.root_key.private_key.secret_bytes());
+
+        key.seal_in_place_append_tag(nonce, aead::Aad::empty(), &mut data)?;
+
+        // result is salt + ciphertext + tag
+        let mut result = salt.to_vec();
+        result.extend_from_slice(&data);
+        Ok(result)
+    }
+
+    pub fn from_encrypted_key(passphrase: &str, data: &[u8]) -> Result<Self, Error> {
+        let salt = &data[..16];
+        let ciphertext = &data[16..];
+
+        let n_iter = NonZeroU32::new(100_000).unwrap();
+        let mut key_and_nonce = [0u8; 16 + aead::NONCE_LEN];
+        pbkdf2::derive(
+            pbkdf2::PBKDF2_HMAC_SHA512,
+            n_iter,
+            salt,
+            passphrase.as_bytes(),
+            &mut key_and_nonce,
+        );
+        let enc_key = &key_and_nonce[..16];
+        let mut nonce = [0u8; aead::NONCE_LEN];
+        nonce.copy_from_slice(&key_and_nonce[16..]);
+
+        let key = aead::UnboundKey::new(&aead::AES_128_GCM, enc_key)?;
+        let key = aead::LessSafeKey::new(key);
+        let nonce = aead::Nonce::assume_unique_for_key(nonce);
+        let mut data = ciphertext.to_vec();
+        key.open_in_place(nonce, aead::Aad::empty(), &mut data)?;
+        let chain_code: [u8; KEY_BYTE_SIZE] = data[..KEY_BYTE_SIZE].try_into()?;
+
+        let private_key = StacksPrivateKey::from_slice(&data[KEY_BYTE_SIZE..data.len() - 16])?;
+        let root_key = ExtendedPrivateKey {
+            private_key,
+            chain_code: chain_code,
+            depth: 0,
+        };
+        Ok(Self::new(root_key, StacksAccounts::new()))
+    }
 }
 
 #[cfg(test)]
@@ -130,5 +203,14 @@ mod tests {
         assert_eq!(mainnet_p2sh, expected_mainnet_p2sh);
         assert_eq!(testnet_p2pkh, expected_testnet_p2pkh);
         assert_eq!(testnet_p2sh, expected_testnet_p2sh);
+    }
+
+    #[test]
+    fn encrypt_key() {
+        let secret_key = "sound idle panel often situate develop unit text design antenna vendor screen opinion balcony share trigger accuse scatter visa uniform brass update opinion media";
+        let wallet = StacksWallet::from_secret_key(secret_key).unwrap();
+        let data = wallet.encrypt_key("hello world").unwrap();
+        let wallet2 = StacksWallet::from_encrypted_key("hello world", &data).unwrap();
+        assert_eq!(wallet2, wallet);
     }
 }
