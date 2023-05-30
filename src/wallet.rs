@@ -89,14 +89,17 @@ impl StacksWallet {
         self.accounts.insert(index, account);
     }
 
+    /// Encrypts the wallet with a passphrase.
     pub fn encrypt_key(&self, passphrase: &str) -> Result<Vec<u8>, Error> {
         let mut salt = [0u8; 16];
         let mut rng = rand::thread_rng();
 
         salt.copy_from_slice(&rng.gen::<[u8; 16]>()[..]);
 
+        #[allow(clippy::unwrap_used)]
         let n_iter = NonZeroU32::new(100_000).unwrap();
         let mut key_and_nonce = [0u8; 16 + aead::NONCE_LEN];
+
         pbkdf2::derive(
             pbkdf2::PBKDF2_HMAC_SHA512,
             n_iter,
@@ -104,6 +107,7 @@ impl StacksWallet {
             passphrase.as_bytes(),
             &mut key_and_nonce,
         );
+
         let enc_key = &key_and_nonce[..16];
         let mut nonce = [0u8; aead::NONCE_LEN];
         nonce.copy_from_slice(&key_and_nonce[16..]);
@@ -111,6 +115,7 @@ impl StacksWallet {
         let key = aead::UnboundKey::new(&aead::AES_128_GCM, enc_key)?;
         let key = aead::LessSafeKey::new(key);
         let nonce = aead::Nonce::assume_unique_for_key(nonce);
+
         let mut data = vec![0u8; 0];
         data.extend_from_slice(&self.root_key.chain_code[..]);
         data.extend(self.root_key.private_key.secret_bytes());
@@ -120,15 +125,19 @@ impl StacksWallet {
         // result is salt + ciphertext + tag
         let mut result = salt.to_vec();
         result.extend_from_slice(&data);
+
         Ok(result)
     }
 
+    /// Creates a wallet from an encrypted key and a passphrase.
     pub fn from_encrypted_key(passphrase: &str, data: &[u8]) -> Result<Self, Error> {
         let salt = &data[..16];
         let ciphertext = &data[16..];
 
+        #[allow(clippy::unwrap_used)]
         let n_iter = NonZeroU32::new(100_000).unwrap();
         let mut key_and_nonce = [0u8; 16 + aead::NONCE_LEN];
+
         pbkdf2::derive(
             pbkdf2::PBKDF2_HMAC_SHA512,
             n_iter,
@@ -136,6 +145,7 @@ impl StacksWallet {
             passphrase.as_bytes(),
             &mut key_and_nonce,
         );
+
         let enc_key = &key_and_nonce[..16];
         let mut nonce = [0u8; aead::NONCE_LEN];
         nonce.copy_from_slice(&key_and_nonce[16..]);
@@ -143,16 +153,18 @@ impl StacksWallet {
         let key = aead::UnboundKey::new(&aead::AES_128_GCM, enc_key)?;
         let key = aead::LessSafeKey::new(key);
         let nonce = aead::Nonce::assume_unique_for_key(nonce);
+
         let mut data = ciphertext.to_vec();
         key.open_in_place(nonce, aead::Aad::empty(), &mut data)?;
-        let chain_code: [u8; KEY_BYTE_SIZE] = data[..KEY_BYTE_SIZE].try_into()?;
 
+        let chain_code: [u8; KEY_BYTE_SIZE] = data[..KEY_BYTE_SIZE].try_into()?;
         let private_key = StacksPrivateKey::from_slice(&data[KEY_BYTE_SIZE..data.len() - 16])?;
         let root_key = ExtendedPrivateKey {
             private_key,
-            chain_code: chain_code,
+            chain_code,
             depth: 0,
         };
+
         Ok(Self::new(root_key, StacksAccounts::new()))
     }
 }
