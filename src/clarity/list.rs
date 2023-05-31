@@ -41,8 +41,8 @@ impl ListCV {
 }
 
 impl IntoIterator for ListCV {
-    type Item = ClarityValue;
     type IntoIter = std::vec::IntoIter<ClarityValue>;
+    type Item = ClarityValue;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -91,8 +91,8 @@ impl Serialize for ListCV {
 }
 
 impl Deserialize for ListCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_LIST {

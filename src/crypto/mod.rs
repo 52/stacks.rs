@@ -52,10 +52,10 @@ pub trait Serialize {
 
 /// Trait for deserializing data from bytes.
 pub trait Deserialize: Sized {
-    /// The output type returned by the deserializer.
-    type Output;
     /// The error type returned by the deserializer.
     type Err;
+    /// The output type returned by the deserializer.
+    type Output;
 
     /// Deserialize the data from bytes.
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err>;

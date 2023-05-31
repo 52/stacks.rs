@@ -57,8 +57,8 @@ impl Serialize for StringUtf8CV {
 }
 
 impl Deserialize for StringUtf8CV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_STRING_UTF8 {
@@ -131,8 +131,8 @@ impl Serialize for StringAsciiCV {
 }
 
 impl Deserialize for StringAsciiCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_STRING_ASCII {

@@ -1,6 +1,11 @@
 [config]
 default_to_workspace = false
 
+[tasks.fmt]
+install_create = "rustfmt"
+command = "cargo"
+args = ["fmt"]
+
 [tasks.clippy]
 install_crate = "clippy"
 command = "cargo"

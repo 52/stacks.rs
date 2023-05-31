@@ -9,8 +9,8 @@ pub struct DerivationPath {
 }
 
 impl IntoIterator for DerivationPath {
-    type Item = ChildIndex;
     type IntoIter = std::vec::IntoIter<Self::Item>;
+    type Item = ChildIndex;
 
     fn into_iter(self) -> Self::IntoIter {
         self.path.into_iter()

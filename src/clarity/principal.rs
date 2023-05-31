@@ -58,8 +58,8 @@ impl Serialize for StandardPrincipalCV {
 }
 
 impl Deserialize for StandardPrincipalCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_PRINCIPAL_STANDARD {
@@ -128,8 +128,8 @@ impl Serialize for ContractPrincipalCV {
 }
 
 impl Deserialize for ContractPrincipalCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_PRINCIPAL_CONTRACT {

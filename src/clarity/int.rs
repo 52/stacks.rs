@@ -54,8 +54,8 @@ impl Serialize for IntCV {
 }
 
 impl Deserialize for IntCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_INT {
@@ -120,8 +120,8 @@ impl Serialize for UIntCV {
 }
 
 impl Deserialize for UIntCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_UINT {

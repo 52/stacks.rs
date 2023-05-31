@@ -37,8 +37,8 @@ impl Serialize for TrueCV {
 }
 
 impl Deserialize for TrueCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_BOOL_TRUE {
@@ -84,8 +84,8 @@ impl Serialize for FalseCV {
 }
 
 impl Deserialize for FalseCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_BOOL_FALSE {

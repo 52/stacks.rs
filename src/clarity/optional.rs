@@ -37,8 +37,8 @@ impl Serialize for NoneCV {
 }
 
 impl Deserialize for NoneCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_OPTIONAL_NONE {
@@ -101,8 +101,8 @@ impl Serialize for SomeCV {
 }
 
 impl Deserialize for SomeCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_OPTIONAL_SOME {

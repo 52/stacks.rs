@@ -51,8 +51,8 @@ impl TupleCV {
 }
 
 impl IntoIterator for TupleCV {
-    type Item = TupleItem;
     type IntoIter = std::vec::IntoIter<TupleItem>;
+    type Item = TupleItem;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -102,8 +102,8 @@ impl Serialize for TupleCV {
 }
 
 impl Deserialize for TupleCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         let len = u32::from_be_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]);

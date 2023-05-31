@@ -55,8 +55,8 @@ impl Serialize for BufferCV {
 }
 
 impl Deserialize for BufferCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_BUFFER {

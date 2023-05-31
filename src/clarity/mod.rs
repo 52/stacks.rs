@@ -567,8 +567,8 @@ impl Serialize for ClarityValue {
 }
 
 impl Deserialize for ClarityValue {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         match bytes[0] {

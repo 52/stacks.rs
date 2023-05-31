@@ -54,8 +54,8 @@ impl Serialize for OkCV {
 }
 
 impl Deserialize for OkCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_RESPONSE_OK {
@@ -119,8 +119,8 @@ impl Serialize for ErrCV {
 }
 
 impl Deserialize for ErrCV {
-    type Output = ClarityValue;
     type Err = Error;
+    type Output = ClarityValue;
 
     fn deserialize(bytes: &[u8]) -> Result<Self::Output, Self::Err> {
         if bytes[0] != CLARITY_TYPE_RESPONSE_ERR {
