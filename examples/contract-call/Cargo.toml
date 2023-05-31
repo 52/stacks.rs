@@ -5,5 +5,5 @@ edition = "2021"
 authors = ["Max Karou <max@trustmachines.co>"]
 
 [dependencies]
-stacks-rs = {path = "../../", version = "0.1.0"}
+stacks-rs = {path = "../../", version = "0.1.9" }
 tokio = { version = "1.28.0", features = ["full"] }
