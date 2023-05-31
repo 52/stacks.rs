@@ -9,9 +9,8 @@ use stacks_rs::StacksWallet;
 
 const SECRET_KEY: &str = "sell invite acquire kitten bamboo drastic jelly vivid peace spawn twice guilt pave pen trash pretty park cube fragile unaware remain midnight betray rebuild";
 
-#[tokio::main]
 #[allow(unused_variables)]
-async fn main() -> Result<(), Error> {
+fn main() -> Result<(), Error> {
     let mut wallet = StacksWallet::from_secret_key(SECRET_KEY)?;
 
     let account = wallet.get_account(0)?;

@@ -1,7 +1,9 @@
 ## Stacks.rs - IN DEVELOPMENT
 
 A Rust toolkit to interact with the [Stacks Blockchain](https://www.stacks.co/what-is-stacks).</br>
-**Disclaimer**: Not ready for production use - breaking changes expected.
+
+> **Warning**:
+> Not ready for production use - breaking changes expected.
 
 ## Usage
 
@@ -17,8 +19,7 @@ use stacks_rs::Error;
 use stacks_rs::StacksTestnet;
 use stacks_rs::StacksWallet;
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
+fn main() -> Result<(), Error> {
     let mut wallet = StacksWallet::from_secret_key(SECRET_KEY)?;
 
     let account = wallet.get_account(0)?;
@@ -58,8 +59,7 @@ use stacks_rs::Error;
 use stacks_rs::StacksMainnet;
 use stacks_rs::StacksWallet;
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
+fn main() -> Result<(), Error> {
     let mut wallet = StacksWallet::from_secret_key(SECRET_KEY)?;
     let account = wallet.get_account(0)?;
 

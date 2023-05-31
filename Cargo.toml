@@ -32,12 +32,4 @@ features = ["std"]
 
 [dev-dependencies]
 rand = "0.8.5"
-
-[workspace]
-members = [
-    "./",
-    "./examples/contract-call",
-    "./examples/stx-transfer",
-    "./examples/broadcast-transfer",
-    "./examples/call-read-only"
-]
+tokio = { version = "1.17.0", features = ["full"] }
