@@ -207,7 +207,9 @@ pub fn c32_address_decode(address: impl Into<String>) -> Result<(Vec<u8>, u8), E
 #[cfg(test)]
 mod tests {
     use crate::crypto::hex::hex_to_bytes;
-    use rand::{thread_rng, Rng, RngCore};
+    use rand::thread_rng;
+    use rand::Rng;
+    use rand::RngCore;
 
     #[test]
     fn test_c32_encode() {

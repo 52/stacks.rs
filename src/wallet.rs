@@ -10,7 +10,8 @@ use crate::StacksPrivateKey;
 use crate::StacksPublicKey;
 
 use rand::Rng;
-use ring::{aead, pbkdf2};
+use ring::aead;
+use ring::pbkdf2;
 
 pub(crate) const STX_DERIVATION_PATH: &str = "m/44'/5757'/0'/0";
 

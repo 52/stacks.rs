@@ -142,7 +142,8 @@ mod tests {
     use super::*;
     use crate::crypto::hex::bytes_to_hex;
     use crate::crypto::hex::hex_to_bytes;
-    use rand::{thread_rng, Rng};
+    use rand::thread_rng;
+    use rand::Rng;
 
     #[test]
     fn test_int_cv() {

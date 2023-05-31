@@ -202,7 +202,10 @@ mod tests {
 
     #[test]
     fn test_b58_randomized_input() {
-        use rand::{thread_rng, Rng, RngCore};
+        use rand::thread_rng;
+        use rand::Rng;
+        use rand::RngCore;
+
         let mut rng = thread_rng();
 
         for _ in 0..100 {
