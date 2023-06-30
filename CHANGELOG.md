@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.11](https://github.com/mxnnn/stacks.rs/compare/v0.1.10...v0.1.11) - 2023-06-30
+
+### Other
+- Update README.md
+
 ## [0.1.10](https://github.com/mxnnn/stacks.rs/compare/v0.1.9...v0.1.10) - 2023-05-31
 
 ### Other
