@@ -1,9 +1,9 @@
 ## Stacks.rs - IN DEVELOPMENT
 
-A Rust toolkit to interact with the [Stacks Blockchain](https://www.stacks.co/what-is-stacks).</br>
+A minimal dependency Rust toolkit to interact with the [Stacks Blockchain](https://www.stacks.co/what-is-stacks)</br>
 
 > **Warning**:
-> Not ready for production use - breaking changes expected.
+> Not ready for production use - breaking changes expected
 
 ## Usage
 
