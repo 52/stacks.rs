@@ -4,7 +4,7 @@ version = "0.1.10"
 edition = "2021"
 license = "MIT"
 authors = ["Max Karou <max@trustmachines.co>"]
-repository = "https://github.com/mxnnn/stacks.rs"
+repository = "https://github.com/52/stacks.rs"
 description = "Rust toolkit to interact with the Stacks Blockchain."
 keywords = ["stacks", "blockchain", "bitcoin"]
 
