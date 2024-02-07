@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.12](https://github.com/52/stacks.rs/compare/v0.1.11...v0.1.12) - 2024-02-07
+
+### Added
+- *(cv)* added improved impls
+
 ## [0.1.11](https://github.com/52/stacks.rs/compare/v0.1.10...v0.1.11) - 2024-02-07
 
 ### Added
