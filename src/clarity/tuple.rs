@@ -48,6 +48,13 @@ impl TupleCV {
     pub fn iter_mut(&mut self) -> std::slice::IterMut<TupleItem> {
         self.0.iter_mut()
     }
+
+    /// Gets a value from the underlying vector from a `TupleCV` instance.
+    pub fn get(&self, key: &str) -> Option<&ClarityValue> {
+        self.0
+            .iter()
+            .find_map(|(k, v)| if k == key { Some(v) } else { None })
+    }
 }
 
 impl IntoIterator for TupleCV {
