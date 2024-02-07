@@ -29,7 +29,7 @@ impl StandardPrincipalCV {
     }
 
     /// Gets an immutable reference to the underlying address string from a `StandardPrincipalCV` instance.
-    pub fn as_ref_value(&self) -> &String {
+    pub fn as_ref_value(&self) -> &str {
         &self.0
     }
 }
@@ -95,7 +95,7 @@ impl ContractPrincipalCV {
     }
 
     /// Gets an immutable reference to the underlying address & contract strings from a `ContractPrincipalCV` instance.
-    pub fn as_ref_value(&self) -> (&String, &String) {
+    pub fn as_ref_value(&self) -> (&str, &str) {
         (&self.0, &self.1)
     }
 }

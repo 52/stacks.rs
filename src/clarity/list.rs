@@ -25,7 +25,7 @@ impl ListCV {
     }
 
     /// Gets an immutable reference to the underlying vector from a `ListCV` instance.
-    pub fn as_ref_value(&self) -> &Vec<ClarityValue> {
+    pub fn as_ref_value(&self) -> &[ClarityValue] {
         &self.0
     }
 
@@ -46,6 +46,24 @@ impl IntoIterator for ListCV {
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a ListCV {
+    type IntoIter = std::slice::Iter<'a, ClarityValue>;
+    type Item = &'a ClarityValue;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut ListCV {
+    type IntoIter = std::slice::IterMut<'a, ClarityValue>;
+    type Item = &'a mut ClarityValue;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter_mut()
     }
 }
 
@@ -82,7 +100,7 @@ impl Serialize for ListCV {
         let mut buff = vec![CLARITY_TYPE_LIST];
         buff.extend_from_slice(&(u32::try_from(self.0.len())?).to_be_bytes());
 
-        for value in self.iter() {
+        for value in self {
             buff.extend_from_slice(&value.serialize()?);
         }
 

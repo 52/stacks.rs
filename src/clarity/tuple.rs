@@ -35,7 +35,7 @@ impl TupleCV {
     }
 
     /// Gets an immutable reference to the underlying vector from a `TupleCV` instance.
-    pub fn as_ref_value(&self) -> &Vec<TupleItem> {
+    pub fn as_ref_value(&self) -> &[TupleItem] {
         &self.0
     }
 
@@ -63,6 +63,24 @@ impl IntoIterator for TupleCV {
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a TupleCV {
+    type IntoIter = std::slice::Iter<'a, (String, ClarityValue)>;
+    type Item = &'a (String, ClarityValue);
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut TupleCV {
+    type IntoIter = std::slice::IterMut<'a, (String, ClarityValue)>;
+    type Item = &'a mut (String, ClarityValue);
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter_mut()
     }
 }
 
@@ -99,7 +117,7 @@ impl Serialize for TupleCV {
         let mut buff = vec![CLARITY_TYPE_TUPLE];
         buff.extend_from_slice(&(u32::try_from(self.0.len())?).to_be_bytes());
 
-        for (key, value) in self.iter() {
+        for (key, value) in self {
             buff.extend_from_slice(&LengthPrefixedString::new(key).serialize()?);
             buff.extend_from_slice(&value.serialize()?);
         }

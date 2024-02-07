@@ -26,7 +26,7 @@ impl StringUtf8CV {
     }
 
     /// Gets an immutable reference to the underlying string from a `StringUtf8CV` instance.
-    pub fn as_ref_value(&self) -> &String {
+    pub fn as_ref_value(&self) -> &str {
         &self.0
     }
 }
@@ -95,7 +95,7 @@ impl StringAsciiCV {
     }
 
     /// Gets an immutable reference to the underlying string from a `StringAsciiCV` instance.
-    pub fn as_ref_value(&self) -> &String {
+    pub fn as_ref_value(&self) -> &str {
         &self.0
     }
 }

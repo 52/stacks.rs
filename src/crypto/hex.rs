@@ -71,7 +71,7 @@ pub fn hex_to_bytes(value: impl Into<String>) -> Result<Vec<u8>, Error> {
 /// Convert a byte array to a hex string.
 pub fn bytes_to_hex(value: &[u8]) -> String {
     let mut buff = String::with_capacity(value.len());
-    for b in value.iter() {
+    for b in value {
         write!(buff, "{b:02x}").unwrap();
     }
     buff

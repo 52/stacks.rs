@@ -18,5 +18,5 @@ args = [
 "-A", "clippy::new_ret_no_self",
 "-A", "clippy::missing_errors_doc",
 "-A", "clippy::too_many_arguments",
-"-A", "clippy::missing_panics_doc"
+"-A", "clippy::missing_panics_doc",
 ]

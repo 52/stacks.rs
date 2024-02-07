@@ -26,7 +26,7 @@ impl BufferCV {
     }
 
     /// Gets an immutable reference to the underlying byte vector from a `BufferCV` instance.
-    pub fn as_ref_value(&self) -> &Vec<u8> {
+    pub fn as_ref_value(&self) -> &[u8] {
         &self.0
     }
 }
