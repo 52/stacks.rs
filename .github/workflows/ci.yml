@@ -26,7 +26,8 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - uses: davidB/rust-cargo-make@v1
+      - name: Install Just
+        uses: extractions/setup-just@v1
 
       - name: Set up cargo cache
         uses: actions/cache@v3
@@ -41,8 +42,11 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Run clippy
-        run: cargo make clippy
+      - name: Run linter
+        run: just lint
 
-      - name: Run CI
-        run: cargo make --profile ci-flow
+      - name: Run formatter
+        run: just fmt-check
+
+      - name: Run tests
+        run: just test

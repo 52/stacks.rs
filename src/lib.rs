@@ -1,3 +1,16 @@
+#![deny(warnings, clippy::pedantic)]
+#![allow(
+    clippy::used_underscore_binding,
+    clippy::module_name_repetitions,
+    clippy::missing_panics_doc,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::too_many_arguments,
+    clippy::match_same_arms,
+    clippy::new_ret_no_self,
+    unused_labels
+)]
+
 pub use crate::address::AddressVersion;
 pub use crate::address::StacksAddress;
 pub use crate::network::Network;

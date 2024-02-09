@@ -1,5 +1,5 @@
-pub const HIRO_MAINNET_DEFAULT: &str = "https://stacks-node-api.mainnet.stacks.co";
-pub const HIRO_TESTNET_DEFAULT: &str = "https://stacks-node-api.testnet.stacks.co";
+pub const HIRO_MAINNET_DEFAULT: &str = "https://api.mainnet.hiro.so";
+pub const HIRO_TESTNET_DEFAULT: &str = "https://api.testnet.hiro.so";
 pub const HIRO_MOCKNET_DEFAULT: &str = "http://localhost:3999";
 
 #[repr(u8)]
