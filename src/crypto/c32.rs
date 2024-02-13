@@ -1,7 +1,21 @@
-use crate::crypto::DSha256Hash;
+// © 2024 Max Karou. All Rights Reserved.
+// Licensed under Apache Version 2.0, or MIT License, at your discretion.
+//
+// Apache License: http://www.apache.org/licenses/LICENSE-2.0
+// MIT License: http://opensource.org/licenses/MIT
+//
+// Usage of this file is permitted solely under a sanctioned license.
 
+use secp256k1::PublicKey;
+
+use crate::crypto::DSha256Hash;
+use crate::crypto::Hash160;
+use crate::crypto::Sha256Hash;
+
+/// `C32` alphabet, used for encoding/decoding.
 pub(crate) const C32_ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
+/// `C32` byte map, used for lookup of values.
 pub(crate) const C32_BYTE_MAP: [i8; 128] = [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -11,50 +25,83 @@ pub(crate) const C32_BYTE_MAP: [i8; 128] = [
     31, -1, -1, -1, -1, -1,
 ];
 
-#[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
+/// Error variants for `C32` encoding/decoding.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum Error {
-    /// Invalid C32 string.
-    #[error("Invalid C32 string")]
-    InvalidC32,
-    /// Invalid character.
-    #[error("Invalid C32 character: {0}")]
-    InvalidChar(char),
-    /// Invalid checksum.
-    #[error("Invalid C32 checksum - expected {0:?}, got {1:?}")]
-    InvalidChecksum([u8; 4], Vec<u8>),
-    /// Invalid C32 address.
-    #[error("Invalid C32 address: {0}")]
-    InvalidAddress(String),
-    /// Invalid C32 address version.
-    #[error("Invalid C32 address version: {0}")]
-    InvalidAddressVersion(u8),
-    /// Conversion error, from utf8.
+    /// Received a character that is not in the `C32` alphabet.
+    #[error("Bad character encountered: {0}")]
+    BadChar(char),
+    /// Attempted to decode an invalid `C32` string.
+    #[error("Bad input string, must be ASCII and contain only valid C32 characters.")]
+    BadInput,
+    /// Expected and received checksums are different.
+    #[error("Bad checksum - expected {0:?}, received {1:?}")]
+    BadChecksum([u8; 4], Vec<u8>),
+    /// Attempted to decode an invalid `C32` address.
+    #[error("Bad C32 address: {0}")]
+    BadAddress(String),
+    /// Received an unknown version byte.
+    #[error("Unknown address version, received: {0} - expected one of '[22, 26, 20, 21]'")]
+    UnknownAddressVersion(u8),
+    /// Conversion from a integer failed.
     #[error(transparent)]
-    FromUtf8Error(#[from] std::string::FromUtf8Error),
-    /// Integer conversion error.
+    TryFromInt(#[from] std::num::TryFromIntError),
+    /// Conversion from a string failed.
     #[error(transparent)]
-    IntConversionError(#[from] std::num::TryFromIntError),
+    TryFromUtf8(#[from] std::string::FromUtf8Error),
 }
 
-pub fn c32_encode(data: &[u8]) -> Result<String, Error> {
+/// The C32 address hash-mode.
+#[repr(u8)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Mode {
+    /// The hash-mode type for P2PKH.
+    P2PKH = 0x00,
+    /// The hash-mode type for P2SH.
+    P2SH = 0x01,
+    /// The hash-mode type for P2WPKH.
+    P2WPKH = 0x02,
+    /// The hash-mode type for P2WSH.
+    P2WSH = 0x03,
+}
+
+/// The C32 address version.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Version {
+    /// The mainnet P2PKH address version.
+    MainnetP2PKH = 22,
+    /// The mainnet P2SH address version.
+    MainnetP2SH = 20,
+    /// The testnet P2PKH address version.
+    TestnetP2PKH = 26,
+    /// The testnet P2SH address version.
+    TestnetP2SH = 21,
+}
+
+/// Encode a byte slice into a `C32` string.
+pub fn c32_encode<T>(slice: T) -> Result<String, Error>
+where
+    T: AsRef<[u8]>,
+{
+    let data = slice.as_ref();
     let mut encoded = Vec::new();
 
-    let mut buffer = 0u32;
+    let mut buff = 0u32;
     let mut bits = 0;
 
     for &byte in data.iter().rev() {
-        buffer |= (u32::from(byte)) << bits;
+        buff |= (u32::from(byte)) << bits;
         bits += 8;
 
         while bits >= 5 {
-            encoded.push(C32_ALPHABET[(buffer & 0x1F) as usize]);
-            buffer >>= 5;
+            encoded.push(C32_ALPHABET[(buff & 0x1F) as usize]);
+            buff >>= 5;
             bits -= 5;
         }
     }
 
     if bits > 0 {
-        encoded.push(C32_ALPHABET[(buffer & 0x1F) as usize]);
+        encoded.push(C32_ALPHABET[(buff & 0x1F) as usize]);
     }
 
     while let Some(i) = encoded.pop() {
@@ -76,34 +123,34 @@ pub fn c32_encode(data: &[u8]) -> Result<String, Error> {
     Ok(String::from_utf8(encoded)?)
 }
 
-pub fn c32_decode(input: impl Into<String>) -> Result<Vec<u8>, Error> {
-    let input: String = input.into();
+/// Decode a `C32` string into a byte slice.
+pub fn c32_decode<T>(str: T) -> Result<Vec<u8>, Error>
+where
+    T: Into<String>,
+{
+    let str: String = str.into();
 
-    if !input.is_ascii() {
-        return Err(Error::InvalidC32);
+    if !str.is_ascii() {
+        return Err(Error::BadInput);
     }
 
-    let input = {
-        let mut buffer: Vec<u8> = Vec::with_capacity(input.len());
+    let mut buff: Vec<u8> = Vec::with_capacity(str.len());
 
-        for i in input.as_bytes().iter().rev() {
-            let byte = C32_BYTE_MAP.get(*i as usize).unwrap_or(&-1);
+    for i in str.as_bytes().iter().rev() {
+        let byte = C32_BYTE_MAP.get(*i as usize).unwrap_or(&-1);
 
-            if byte.is_negative() {
-                return Err(Error::InvalidChar(*i as char));
-            }
-
-            buffer.push(u8::try_from(*byte)?);
+        if byte.is_negative() {
+            return Err(Error::BadChar(*i as char));
         }
 
-        buffer
-    };
+        buff.push(u8::try_from(*byte)?);
+    }
 
     let mut decoded = Vec::new();
     let mut carry = 0u16;
     let mut carry_bits = 0;
 
-    for bits in &input {
+    for bits in &buff {
         carry |= (u16::from(*bits)) << carry_bits;
         carry_bits += 5;
 
@@ -125,7 +172,7 @@ pub fn c32_decode(input: impl Into<String>) -> Result<Vec<u8>, Error> {
         }
     }
 
-    for i in input.iter().rev() {
+    for i in buff.iter().rev() {
         if *i == 0 {
             decoded.push(0);
         } else {
@@ -137,33 +184,42 @@ pub fn c32_decode(input: impl Into<String>) -> Result<Vec<u8>, Error> {
     Ok(decoded)
 }
 
-pub fn c32check_encode(data: &[u8], version: u8) -> Result<String, Error> {
+/// Encode a byte slice into a `C32` string with a checksum.
+pub fn c32check_encode<T>(hash: T, version: u8) -> Result<String, Error>
+where
+    T: AsRef<[u8]>,
+{
+    let hash = hash.as_ref();
+
     let mut check = vec![version];
-    check.extend_from_slice(data);
+    check.extend_from_slice(hash);
     let checksum = DSha256Hash::from_slice(&check).checksum();
 
-    let mut buffer = data.to_vec();
-    buffer.extend_from_slice(&checksum);
+    let mut buff = hash.to_vec();
+    buff.extend_from_slice(&checksum);
 
-    let mut encoded = c32_encode(&buffer)?.into_bytes();
-
+    let mut encoded = c32_encode(&buff)?.into_bytes();
     encoded.insert(0, C32_ALPHABET[version as usize]);
 
     Ok(String::from_utf8(encoded)?)
 }
 
-pub fn c32check_decode(input: impl Into<String>) -> Result<(Vec<u8>, u8), Error> {
-    let input: String = input.into();
+/// Decode a `C32` string with a checksum into a byte slice.
+pub fn c32check_decode<T>(str: T) -> Result<(Vec<u8>, u8), Error>
+where
+    T: Into<String>,
+{
+    let str: String = str.into();
 
-    if !input.is_ascii() {
-        return Err(Error::InvalidC32);
+    if !str.is_ascii() {
+        return Err(Error::BadInput);
     }
 
-    let (ver, data) = input.split_at(1);
+    let (ver, data) = str.split_at(1);
     let decoded = c32_decode(data)?;
 
     if decoded.len() < 4 {
-        return Err(Error::InvalidC32);
+        return Err(Error::BadInput);
     }
 
     let (bytes, exp_checksum) = decoded.split_at(decoded.len() - 4);
@@ -174,72 +230,139 @@ pub fn c32check_decode(input: impl Into<String>) -> Result<(Vec<u8>, u8), Error>
     let comp_checksum = DSha256Hash::from_slice(&check).checksum();
 
     if comp_checksum != exp_checksum {
-        return Err(Error::InvalidChecksum(comp_checksum, exp_checksum.to_vec()));
+        return Err(Error::BadChecksum(comp_checksum, exp_checksum.to_vec()));
     }
 
     Ok((bytes.to_vec(), check[0]))
 }
 
-pub fn c32_address(data: &[u8], version: u8) -> Result<String, Error> {
+/// Create a `C32` address from a byte slice and version.
+pub fn c32_address<T>(hash: T, version: u8) -> Result<String, Error>
+where
+    T: AsRef<[u8]>,
+{
+    let hash = hash.as_ref();
     if ![22, 26, 20, 21].contains(&version) {
-        return Err(Error::InvalidAddressVersion(version));
+        return Err(Error::UnknownAddressVersion(version));
     }
 
-    let address = format!("S{}", c32check_encode(data, version)?);
+    let address = format!("S{}", c32check_encode(hash, version)?);
 
     Ok(address)
 }
 
-pub fn c32_address_decode(address: impl Into<String>) -> Result<(Vec<u8>, u8), Error> {
-    let address: String = address.into();
+/// Decodes a `C32` address into a byte slice and version.
+pub fn c32_address_decode<T>(str: T) -> Result<(Vec<u8>, u8), Error>
+where
+    T: Into<String>,
+{
+    let str: String = str.into();
 
-    if !address.starts_with('S') {
-        return Err(Error::InvalidAddress(address));
+    if !str.starts_with('S') {
+        return Err(Error::BadAddress(str));
     }
 
-    if address.len() <= 5 {
-        return Err(Error::InvalidAddress(address));
+    if str.len() <= 5 {
+        return Err(Error::BadAddress(str));
     }
 
-    c32check_decode(&address[1..])
+    c32check_decode(&str[1..])
+}
+
+/// Hashes a public key to a P2PKH address.
+pub fn hash_p2pkh(input: &[u8]) -> Hash160 {
+    Hash160::from_slice(input)
+}
+
+/// Hashes a public key to a P2WPKH address.
+#[allow(clippy::cast_possible_truncation)]
+pub fn hash_p2wpkh(input: &[u8]) -> Hash160 {
+    let key_hash_hasher = Hash160::from_slice(input);
+    let key_hash = key_hash_hasher.as_bytes();
+    let mut buff = vec![];
+
+    buff.push(0);
+    buff.push(key_hash.len() as u8);
+    buff.extend_from_slice(key_hash);
+
+    Hash160::from_slice(&buff)
+}
+
+/// Hashes public keys to a P2SH address.
+#[allow(clippy::cast_possible_truncation)]
+pub fn hash_p2sh(sigs: u8, keys: &[PublicKey]) -> Hash160 {
+    let mut buff = vec![];
+    buff.push(sigs + 80);
+
+    for key in keys {
+        let bytes = key.serialize();
+        buff.push(bytes.len() as u8);
+        buff.extend_from_slice(&bytes);
+    }
+
+    buff.push(keys.len() as u8 + 80);
+    buff.push(174);
+
+    Hash160::from_slice(&buff)
+}
+
+/// Hashes public keys to a P2WSH address.
+#[allow(clippy::cast_possible_truncation)]
+pub fn hash_p2wsh(sigs: u8, keys: &[PublicKey]) -> Hash160 {
+    let mut script = vec![];
+    script.push(sigs + 80);
+
+    for key in keys {
+        let bytes = key.serialize();
+        script.push(bytes.len() as u8);
+        script.extend_from_slice(&bytes);
+    }
+
+    script.push(keys.len() as u8 + 80);
+    script.push(174);
+
+    let hash = Sha256Hash::from_slice(&script);
+    let digest = hash.as_bytes();
+
+    let mut buff = vec![];
+    buff.push(0);
+    buff.push(digest.len() as u8);
+    buff.extend_from_slice(digest);
+
+    Hash160::from_slice(&buff)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::crypto::hex::hex_to_bytes;
+    use super::*;
+    use crate::crypto::hex_to_bytes;
     use rand::thread_rng;
     use rand::Rng;
     use rand::RngCore;
+    use secp256k1::PublicKey;
 
     #[test]
-    fn test_c32_encode() {
+    fn test_crypto_c32_roundtrip() {
         let input = vec![1, 2, 3, 4, 6, 1, 2, 6, 2, 3, 6, 9, 4, 0, 0];
-        let encoded = super::c32_encode(&input).unwrap();
-        assert_eq!(encoded, "41061060410C0G30R4G8000");
-    }
-
-    #[test]
-    fn test_c32_decode() {
-        let input = vec![1, 2, 3, 4, 6, 1, 2, 6, 2, 3, 6, 9, 4, 0, 0];
-        let encoded = super::c32_encode(&input).unwrap();
-        let decoded = super::c32_decode(encoded).unwrap();
+        let encoded = c32_encode(&input).unwrap();
+        let decoded = c32_decode(encoded).unwrap();
         assert_eq!(input, decoded);
     }
 
     #[test]
-    fn test_c32_check() {
-        let data = hex_to_bytes("8a4d3f2e55c87f964bae8b2963b3a824a2e9c9ab").unwrap();
+    fn test_crypto_c32_check_roundtrip() {
+        let hash = hex_to_bytes("8a4d3f2e55c87f964bae8b2963b3a824a2e9c9ab").unwrap();
         let version = 22;
 
-        let encoded = super::c32_address(&data, version).unwrap();
-        let (decoded, decoded_version) = super::c32_address_decode(encoded).unwrap();
+        let address = c32_address(&hash, version).unwrap();
+        let (bytes, ver) = c32_address_decode(address).unwrap();
 
-        assert_eq!(decoded, data);
-        assert_eq!(decoded_version, version);
+        assert_eq!(bytes, hash);
+        assert_eq!(ver, version);
     }
 
     #[test]
-    fn test_c32_randomized_input() {
+    fn test_crypto_c32_randomized_roundtrip() {
         let mut rng = thread_rng();
 
         for _ in 0..100 {
@@ -247,14 +370,14 @@ mod tests {
             let mut input = vec![0u8; len];
             rng.fill_bytes(&mut input);
 
-            let encoded = super::c32_encode(&input).unwrap();
-            let decoded = super::c32_decode(encoded).unwrap();
+            let encoded = c32_encode(&input).unwrap();
+            let decoded = c32_decode(encoded).unwrap();
             assert_eq!(decoded, input);
         }
     }
 
     #[test]
-    fn test_c32_check_randomized_input() {
+    fn test_crypto_c32_check_randomized_roundtrip() {
         let mut rng = thread_rng();
 
         for _ in 0..10_000 {
@@ -262,12 +385,52 @@ mod tests {
             let versions = [22, 26, 20, 21];
 
             for version in versions.into_iter() {
-                let encoded = super::c32_address(&bytes, version).unwrap();
-                let (decoded, decoded_version) = super::c32_address_decode(encoded).unwrap();
+                let encoded = c32_address(&bytes, version).unwrap();
+                let (decoded, decoded_version) = c32_address_decode(encoded).unwrap();
 
                 assert_eq!(decoded, bytes);
                 assert_eq!(decoded_version, version);
             }
         }
+    }
+
+    #[test]
+    fn test_crypto_c32_p2pkh() {
+        let input = b"bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu";
+        let expected_str = "00f65a2969863fd2558441b5c27ec49e6db80024";
+        let expected_bytes: [u8; 20] = hex_to_bytes(expected_str).unwrap().try_into().unwrap();
+
+        assert_eq!(hash_p2pkh(input).into_bytes(), expected_bytes);
+    }
+
+    #[test]
+    fn test_crypto_c32_p2wpkh() {
+        let input = b"bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu";
+        let expected_str = "9ecb2946469c02135e5c9d85a58d18e33fb8b7fa";
+        let expected_bytes: [u8; 20] = hex_to_bytes(expected_str).unwrap().try_into().unwrap();
+
+        assert_eq!(hash_p2wpkh(input).into_bytes(), expected_bytes);
+    }
+
+    #[test]
+    fn test_crypto_c32_p2sh() {
+        let pk_hex = "03ef788b3830c00abe8f64f62dc32fc863bc0b2cafeb073b6c8e1c7657d9c2c3ab";
+        let pk = PublicKey::from_slice(&hex_to_bytes(pk_hex).unwrap()).unwrap();
+
+        let expected_str = "b10bb6d6ff7a8b4de86614fadcc58c35808f1176";
+        let expected_bytes: [u8; 20] = hex_to_bytes(expected_str).unwrap().try_into().unwrap();
+
+        assert_eq!(hash_p2sh(2, &[pk, pk]).into_bytes(), expected_bytes);
+    }
+
+    #[test]
+    fn test_crypto_c32_p2wsh() {
+        let pk_hex = "03ef788b3830c00abe8f64f62dc32fc863bc0b2cafeb073b6c8e1c7657d9c2c3ab";
+        let pk = PublicKey::from_slice(&hex_to_bytes(pk_hex).unwrap()).unwrap();
+
+        let expected_str = "99febcfc05cb5f5836d257f34c3acb4c3a221813";
+        let expected_bytes: [u8; 20] = hex_to_bytes(expected_str).unwrap().try_into().unwrap();
+
+        assert_eq!(hash_p2wsh(2, &[pk, pk]).into_bytes(), expected_bytes);
     }
 }

@@ -1,3 +1,11 @@
+// © 2024 Max Karou. All Rights Reserved.
+// Licensed under Apache Version 2.0, or MIT License, at your discretion.
+//
+// Apache License: http://www.apache.org/licenses/LICENSE-2.0
+// MIT License: http://opensource.org/licenses/MIT
+//
+// Usage of this file is permitted solely under a sanctioned license.
+
 use crate::crypto::DSha256Hash;
 
 /// `Base58` alphabet, used for encoding/decoding.
@@ -20,44 +28,42 @@ pub(crate) const B58_BYTE_MAP: [i8; 256] = [
 ];
 
 /// Error variants for `Base58` encoding/decoding.
-#[derive(thiserror::Error, Clone, Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum Error {
-    /// Invalid character.
-    #[error("Invalid B58 character: {0}")]
-    InvalidChar(char),
-    /// Invalid checksum.
-    #[error("Invalid B58 checksum - expected {0}, got {1}")]
-    InvalidChecksum(String, String),
-    /// Invalid B58 address version.
-    #[error("Invalid B58 address version: {0}")]
-    InvalidAddressVersion(u8),
-    /// Integer conversion error.
+    /// Received a character that is not in the `Base58` alphabet.
+    #[error("Bad character encountered: {0}")]
+    BadChar(char),
+    /// Expected and received checksums are different.
+    #[error("Bad checksum - expected {0}, received: {1}")]
+    BadChecksum(String, String),
+    /// Received an unknown bitcoin version byte.
+    #[error("Unknown address version, received: {0}")]
+    UnknownAddressVersion(u8),
+    /// Conversion from a integer failed.
     #[error(transparent)]
-    IntConversionError(#[from] std::num::TryFromIntError),
+    TryFromInt(#[from] std::num::TryFromIntError),
 }
 
+/// The B58 address version.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum BitcoinAddressVersion {
+pub enum Version {
+    /// The mainnet P2PKH address version.
     MainnetP2PKH = 0,
+    /// The mainnet P2SH address version.
     MainnetP2SH = 5,
+    /// The testnet P2PKH address version.
     TestnetP2PKH = 111,
+    /// The testnet P2SH address version.
     TestnetP2SH = 196,
 }
 
-impl BitcoinAddressVersion {
-    pub fn from_u8(v: u8) -> Result<Self, Error> {
-        match v {
-            0 => Ok(BitcoinAddressVersion::MainnetP2PKH),
-            5 => Ok(BitcoinAddressVersion::MainnetP2SH),
-            111 => Ok(BitcoinAddressVersion::TestnetP2PKH),
-            196 => Ok(BitcoinAddressVersion::TestnetP2SH),
-            _ => Err(Error::InvalidAddressVersion(v)),
-        }
-    }
-}
-
 /// Encode a byte slice into a `Base58` string.
-pub fn b58_encode(data: &[u8]) -> String {
+pub fn b58_encode<T>(slice: T) -> String
+where
+    T: AsRef<[u8]>,
+{
+    let data = slice.as_ref();
+
     let mut zeros = 0;
     while zeros < data.len() && data[zeros] == 0 {
         zeros += 1;
@@ -92,25 +98,28 @@ pub fn b58_encode(data: &[u8]) -> String {
 }
 
 /// Decode a `Base58` string into a byte vector.
-pub fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Error> {
-    let encoded: String = encoded.into();
+pub fn b58_decode<T>(str: T) -> Result<Vec<u8>, Error>
+where
+    T: Into<String>,
+{
+    let str: String = str.into();
 
-    if encoded.is_empty() {
+    if str.is_empty() {
         return Ok(vec![]);
     }
 
     let mut zeros = 0;
-    while zeros < encoded.len() && encoded.as_bytes()[zeros] == b'1' {
+    while zeros < str.len() && str.as_bytes()[zeros] == b'1' {
         zeros += 1;
     }
 
-    let mut buff = vec![0u8; encoded.len() * 733 / 1000 + 1];
+    let mut buff = vec![0u8; str.len() * 733 / 1000 + 1];
 
-    for c in encoded.chars() {
+    for c in str.chars() {
         let index = B58_BYTE_MAP[c as usize];
 
         if index == -1 {
-            return Err(Error::InvalidChar(c));
+            return Err(Error::BadChar(c));
         }
 
         let mut carry = u32::try_from(index)?;
@@ -133,8 +142,11 @@ pub fn b58_decode(encoded: impl Into<String>) -> Result<Vec<u8>, Error> {
 }
 
 /// Encode a byte slice into a `Base58Check` encoded string.
-pub fn base58check_encode(hash: &[u8], version: BitcoinAddressVersion) -> String {
-    let version = version as u8;
+pub fn base58check_encode<T>(hash: T, version: u8) -> String
+where
+    T: AsRef<[u8]>,
+{
+    let hash = hash.as_ref();
 
     let mut payload = Vec::with_capacity(21);
     payload.push(version);
@@ -154,38 +166,42 @@ pub fn base58check_encode(hash: &[u8], version: BitcoinAddressVersion) -> String
 }
 
 /// Decode a `Base58Check` encoded string into a byte vector.
-pub fn base58check_decode(
-    address: impl Into<String>,
-) -> Result<(Vec<u8>, BitcoinAddressVersion), Error> {
-    let address: String = address.into();
+pub fn base58check_decode<T>(str: T) -> Result<(Vec<u8>, u8), Error>
+where
+    T: Into<String>,
+{
+    let str: String = str.into();
 
-    let buffer = b58_decode(address)?;
-    let buffer_len = buffer.len();
+    let buff = b58_decode(str)?;
+    let buff_max = buff.len();
 
-    let checksum = &buffer[buffer_len - 4..];
-    let data = buffer[1..buffer_len - 4].to_vec();
+    let checksum = &buff[buff_max - 4..];
+    let data = buff[1..buff_max - 4].to_vec();
 
-    let sha = DSha256Hash::from_slice(&buffer[0..buffer_len - 4]);
+    let sha = DSha256Hash::from_slice(&buff[0..buff_max - 4]);
     let bytes = sha.as_bytes();
 
     for i in 0..4 {
         if checksum[i] != bytes[i] {
-            return Err(Error::InvalidChecksum(
+            return Err(Error::BadChecksum(
                 format!("{checksum:?}"),
                 format!("{bytes:?}"),
             ));
         }
     }
 
-    Ok((data, BitcoinAddressVersion::from_u8(buffer[0])?))
+    Ok((data, buff[0]))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::thread_rng;
+    use rand::Rng;
+    use rand::RngCore;
 
     #[test]
-    fn test_b58_normal_input() {
+    fn test_crypto_b58_normal_roundtrip() {
         let input = b"ji1bAyOeHisrHIT1zCvy4RQ78zYZ";
         let encoded = b58_encode(input);
         let decoded = b58_decode(encoded).unwrap();
@@ -193,7 +209,7 @@ mod tests {
     }
 
     #[test]
-    fn test_b58_long_input() {
+    fn test_crypto_b58_long_roundtrip() {
         let input = b"ji1bAyOeHisrHIT1zCvy4RtPee3l3BQYI7AxPryRcuXQ4myW4cZlJF861RZif9lgrigWw0bKMXtMUwngfm51jNWDXBdqjYG4PFg6fOFhne7jh61VrhDhdOBSq6UTXlbYYHB4HISWsoYj0tL2S9YfHiHbAlLscNrdngkcPKQaXa1WqcdDnMlnDXsWT9JAHdudnNzyX3nRWrZCZZpw9BTHxYKB5ptcjU7T12MpDFIlELprtqtNGyPeTNgbOG1x2yz8XElLoziXrIdgZczGBSmbrFAiA0FOb4zxVi10pLVt9x3zAtakfO5KQvjCWKDnWmK2nE8DTY3fcn3QqYBxA0756mNrzPjvfikqyv5FUmwHvuDtaLtU2U3XycFoSVkohOste3rrR7sCPtCgug0AtWXCJSsuCFSafFemQwz1sCqBETy6dTUiezAb6XTA9VtMMTJetOeoNIYTGAZp9CDHWVUAtpQhylBHwfb2rzlijR6nhwYXpMQ78zYZ";
         let encoded = b58_encode(input);
         let decoded = b58_decode(encoded).unwrap();
@@ -201,11 +217,7 @@ mod tests {
     }
 
     #[test]
-    fn test_b58_randomized_input() {
-        use rand::thread_rng;
-        use rand::Rng;
-        use rand::RngCore;
-
+    fn test_crypto_b58_randomized_roundtrip() {
         let mut rng = thread_rng();
 
         for _ in 0..100 {
@@ -220,10 +232,10 @@ mod tests {
     }
 
     #[test]
-    fn test_b58_check() {
+    fn test_crypto_b58_check_roundtrip() {
         let dummy = vec![
             (
-                BitcoinAddressVersion::MainnetP2PKH,
+                Version::MainnetP2PKH,
                 vec![
                     "1FzTxL9Mxnm2fdmnQEArfhzJHevwbvcH6d",
                     "1111111111111111111114oLvT2",
@@ -233,7 +245,7 @@ mod tests {
                 ],
             ),
             (
-                BitcoinAddressVersion::MainnetP2SH,
+                Version::MainnetP2SH,
                 vec![
                     "3GgUssdoWh5QkoUDXKqT6LMESBDf8aqp2y",
                     "31h1vYVSYuKP6AhS86fbRdMw9XHieotbST",
@@ -243,7 +255,7 @@ mod tests {
                 ],
             ),
             (
-                BitcoinAddressVersion::TestnetP2PKH,
+                Version::TestnetP2PKH,
                 vec![
                     "mvWRFPELmpCHSkFQ7o9EVdCd9eXeUTa9T8",
                     "mfWxJ45yp2SFn7UciZyNpvDKrzbhyfKrY8",
@@ -253,7 +265,7 @@ mod tests {
                 ],
             ),
             (
-                BitcoinAddressVersion::TestnetP2SH,
+                Version::TestnetP2SH,
                 vec![
                     "2N8EgwcZq89akxb6mCTTKiHLVeXRpxjuy98",
                     "2MsFDzHRUAMpjHxKyoEHU3aMCMsVtMqs1PV",
@@ -270,18 +282,18 @@ mod tests {
                 let encoded = base58check_encode(&decoded_data, decoded_version);
 
                 assert_eq!(encoded, address);
-                assert_eq!(decoded_version, version);
+                assert_eq!(decoded_version, version as u8);
             }
         }
     }
 
     #[test]
-    fn test_b58_error() {
+    fn test_crypto_b58_error() {
         for c in "^&*(@#%!~`?><,.;:{]}[{|)-_=+§äöüßÄÖÜ".chars() {
             let input = format!("{}", c);
 
             let decoded = b58_decode(input);
-            assert_eq!(decoded, Err(Error::InvalidChar(c)));
+            assert_eq!(decoded, Err(Error::BadChar(c)));
         }
     }
 }

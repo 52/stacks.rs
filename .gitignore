@@ -6,5 +6,7 @@ target/
 Cargo.lock
 
 # misc
+.DS_Store
 **/*.rs.bk
 *.pdb
+.env
