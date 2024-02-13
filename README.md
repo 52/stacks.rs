@@ -7,179 +7,177 @@ A minimal dependency Rust toolkit to interact with the [Stacks Blockchain](https
 
 ## Usage
 
-### Build a token-transfer transaction:
+### Build & sign `STXTokenTransfer` transactions:
 
 ```rust
+use stacks_rs::clarity;
 use stacks_rs::transaction::AnchorMode;
 use stacks_rs::transaction::PostConditionMode;
 use stacks_rs::transaction::PostConditions;
 use stacks_rs::transaction::STXTokenTransfer;
-use stacks_rs::AddressVersion;
-use stacks_rs::Error;
-use stacks_rs::StacksTestnet;
-use stacks_rs::StacksWallet;
+use stacks_rs::transaction::StacksMainnet;
+use stacks_rs::wallet::StacksWallet;
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), stacks_rs::Error> {
     let mut wallet = StacksWallet::from_secret_key(SECRET_KEY)?;
 
     let account = wallet.get_account(0)?;
-    let address = account.get_address(AddressVersion::TestnetP2PKH)?;
+    let sender_key = account.private_key()?;
 
     let tx = STXTokenTransfer::new(
-        "ST2G0KVR849MZHJ6YB4DCN8K5TRDVXF92A664PHXT",
-        account.private_key,
-        1337,
-        0,
-        0,
-        StacksTestnet::new(),
+        clarity!(PrincipalStandard, "ST000000000000000000002AMW42H"),
+        sender_key,
+        100_000,
+        1000,
+        69,
+        &StacksMainnet::new(),
         AnchorMode::Any,
-        "test memo",
-        PostConditionMode::Deny,
-        PostConditions::empty(),
+        "test-memo",
+        PostConditionMode::Allow,
+        PostConditions::default(),
         false,
     );
 
-    let signed_tx = tx.sign()?;
+    let signed = tx.sign()?;
 
     Ok(())
 }
 ```
 
-### Build a contract-call transaction:
+### Build & sign `STXContractCall` transactions:
 
 ```rust
-use stacks_rs::clarity::IntCV;
-use stacks_rs::clarity::StandardPrincipalCV;
-use stacks_rs::clarity::TupleCV;
+use stacks_rs::clarity;
 use stacks_rs::transaction::AnchorMode;
 use stacks_rs::transaction::PostConditionMode;
 use stacks_rs::transaction::PostConditions;
 use stacks_rs::transaction::STXContractCall;
-use stacks_rs::Error;
-use stacks_rs::StacksMainnet;
-use stacks_rs::StacksWallet;
+use stacks_rs::transaction::StacksMainnet;
+use stacks_rs::wallet::StacksWallet;
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), stacks_rs::Error> {
     let mut wallet = StacksWallet::from_secret_key(SECRET_KEY)?;
+
     let account = wallet.get_account(0)?;
+    let sender_key = account.private_key()?;
 
     let tx = STXContractCall::new(
-        "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
-        "example-contract",
-        "example-function",
-        [
-            IntCV::new(1),
-            StandardPrincipalCV::new("SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159"),
-            TupleCV::new(&[
-                ("a", IntCV::new(1)),
-                ("b", IntCV::new(2)),
-                ("c", IntCV::new(3)),
-            ]),
-        ],
-        account.private_key,
-        0,
-        0,
-        StacksMainnet::new(),
-        AnchorMode::Any,
-        PostConditionMode::Deny,
-        PostConditions::empty(),
+        clarity!(PrincipalContract, "ST000000000000000000002AMW42H", "pox"),
+        "make-pox",
+        clarity!(
+            FnArguments,
+            clarity!(UInt, 123),
+            clarity!(True),
+            clarity!(Buffer, [0x01, 0x02, 0x03, 0x04]),
+            clarity!(
+                List,
+                clarity!(StringAscii, "foo"),
+                clarity!(StringAscii, "bar")
+            )
+        ),
+        sender_key,
+        1000,
+        69,
+        &StacksMainnet::new(),
+        AnchorMode::Strict,
+        PostConditionMode::Allow,
+        PostConditions::default(),
         false,
     );
 
-    let signed_tx = tx.sign()?;
+    let signed = tx.sign()?;
 
     Ok(())
 }
 ```
 
-### Call read-only function:
+### Use the `clarity!(...)` macro to create complex types:
 
 ```rust
-use stacks_rs::api::ContractsApi;
-use stacks_rs::AddressVersion;
-use stacks_rs::Error;
-use stacks_rs::StacksTestnet;
-use stacks_rs::StacksWallet;
+use stacks_rs::clarity;
+use stacks_rs::clarity::Buffer;
+use stacks_rs::clarity::False;
+use stacks_rs::clarity::Int;
+use stacks_rs::clarity::List;
+use stacks_rs::clarity::OptionalNone;
+use stacks_rs::clarity::OptionalSome;
+use stacks_rs::clarity::PrincipalContract;
+use stacks_rs::clarity::PrincipalStandard;
+use stacks_rs::clarity::ResponseErr;
+use stacks_rs::clarity::ResponseOk;
+use stacks_rs::clarity::StringAscii;
+use stacks_rs::clarity::StringUtf8;
+use stacks_rs::clarity::True;
+use stacks_rs::clarity::Tuple;
+use stacks_rs::clarity::UInt;
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    let mut wallet = StacksWallet::from_secret_key(SECRET_KEY)?;
+fn main() -> Result<(), stacks_rs::Error> {
+    let list = clarity!(
+        List,
+        clarity!(Int, 3),
+        clarity!(Int, -4),
+        clarity!(UInt, 1),
+        clarity!(True),
+        clarity!(False),
+        clarity!(PrincipalStandard, "ST000000000000000000002AMW42H"),
+        clarity!(PrincipalContract, "ST000000000000000000002AMW42H", "pox"),
+        clarity!(OptionalSome, clarity!(Int, 1)),
+        clarity!(OptionalNone),
+        clarity!(ResponseOk, clarity!(OptionalSome, clarity!(Int, 1))),
+        clarity!(ResponseErr, clarity!(OptionalNone)),
+        clarity!(Tuple, ("foo", clarity!(Int, 1)), ("bar", clarity!(UInt, 2))),
+        clarity!(Buffer, vec![0xde, 0xad, 0xbe, 0xef]),
+        clarity!(StringAscii, "Hello, world!"),
+        clarity!(StringUtf8, "🌾!")
+    );
 
-    let account = wallet.get_account(0)?;
-    let address = account.get_address(AddressVersion::TestnetP2PKH)?;
-    let network = StacksTestnet::new();
-
-    let contract_api = ContractsApi::new(network);
-
-    let response = contract_api
-        .call_read_only(
-            "ST000000000000000000002AMW42H",
-            "pox",
-            "get-pox-info",
-            [],
-            Some(address),
-        )
-        .await?
-        .into_response_ok()?;
-
-    let tuple = response.as_ref_value().as_tuple()?;
-
-    for (key, value) in tuple.iter() {
-        println!("{}: {}", key, value);
+    for item in list {
+        println!("Item: {}", item.hex()?)
     }
 
     Ok(())
 }
 ```
 
-### Set nonce + fee & broadcast transfer:
+### Use the `post_condition!(...)` macro to create post-conditions:
 
 ```rust
-use stacks_rs::api::AccountsApi;
-use stacks_rs::api::TransactionsApi;
-use stacks_rs::transaction::AnchorMode;
-use stacks_rs::transaction::PostConditionMode;
-use stacks_rs::transaction::PostConditions;
-use stacks_rs::transaction::STXTokenTransfer;
-use stacks_rs::AddressVersion;
-use stacks_rs::Error;
-use stacks_rs::StacksTestnet;
-use stacks_rs::StacksWallet;
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    let mut wallet = StacksWallet::from_secret_key(SECRET_KEY)?;
+// create a collection of conditions:
+post_condition!(
+    (
+        STXCondition,
+        clarity!(PrincipalStandard, "ST000000000000002AMW42H"),
+        1_000_000,
+        ConditionCode::GTE
+    ),
+    (
+        STXCondition,
+        clarity!(PrincipalContract, "ST000000000000000000002AMW42H", "pox"),
+        1_000_000,
+        ConditionCode::EQ
+    ),
+    (
+        NonFungibleCondition,
+        clarity!(PrincipalStandard, "ST000000000000002AMW42H"),
+        clarity!(UInt, 60149),
+        ConditionCode::Has,
+        AssetInfo::new()
+    ),
+    (
+        FungibleCondition,
+        clarity!(PrincipalContract, "ST000000000000000000002AMW42H", "pox"),
+        1_000_000,
+        ConditionCode::LTE,
+        AssetInfo::new()
+    )
+);
 
-    let account = wallet.get_account(0)?;
-    let address = account.get_address(AddressVersion::TestnetP2PKH)?;
-    let network = StacksTestnet::new();
-
-    let tx_api = TransactionsApi::new(network);
-    let account_api = AccountsApi::new(network);
-
-    let mut tx = STXTokenTransfer::new(
-        "ST21HQTGHGJ3DDWM8BC1E00TYZPD3DF31NSK0Y1JS",
-        account.private_key,
-        1337,
-        0,
-        0,
-        network,
-        AnchorMode::Any,
-        "test memo",
-        PostConditionMode::Deny,
-        PostConditions::empty(),
-        false,
-    );
-
-    let byte_len = tx.byte_length()?;
-    let nonce = account_api.fetch_account_nonce(address).await?;
-    let fee = tx_api.estimate_tx_fee(byte_len).await?;
-    tx.set_nonce(nonce);
-    tx.set_fee(fee);
-
-    let signed_tx = tx.sign()?;
-    let tx_id = tx_api.broadcast_tx(&signed_tx).await?;
-
-    Ok(())
-}
+// ...or create a singular condition:
+post_condition!(
+    STXCondition,
+    clarity!(PrincipalStandard, "ST000000000000002AMW42H"),
+    1_000_000,
+    ConditionCode::GTE
+);
 ```

@@ -1,177 +1,111 @@
-use crate::transaction::auth::Authorization;
-use crate::transaction::auth::AuthorizationType;
-use crate::transaction::auth::SpendingCondition;
-use crate::transaction::Error;
-use crate::transaction::StacksTransaction;
-use crate::transaction::TransactionId;
-use crate::StacksPrivateKey;
-use crate::StacksPublicKey;
+// © 2024 Max Karou. All Rights Reserved.
+// Licensed under Apache Version 2.0, or MIT License, at your discretion.
+//
+// Apache License: http://www.apache.org/licenses/LICENSE-2.0
+// MIT License: http://opensource.org/licenses/MIT
+//
+// Usage of this file is permitted solely under a sanctioned license.
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct TransactionSigner<'a> {
-    transaction: &'a mut StacksTransaction,
-    sig_hash: TransactionId,
-    origin_done: bool,
-    check_overlap: bool,
-    check_oversign: bool,
+use secp256k1::PublicKey;
+use secp256k1::SecretKey;
+
+use crate::crypto::SignatureHash;
+use crate::transaction::Error;
+use crate::transaction::SpendingCondition;
+use crate::transaction::Transaction;
+
+/// A transaction signer.
+#[derive(Debug)]
+pub struct TransactionSigner {
+    /// The underlying transaction.
+    pub tx: Transaction,
+    /// The hash of the transaction.
+    pub hash: SignatureHash,
+    /// Origin has been signed.
+    pub origin_signed: bool,
+    /// Check for oversign.
+    pub verify_oversign: bool,
+    /// Check for overlaps.
+    pub verify_overlap: bool,
 }
 
-impl<'a> TransactionSigner<'a> {
-    pub fn new(transaction: &'a mut StacksTransaction) -> Result<Self, Error> {
-        let sig_hash = transaction.initial_sighash()?;
-        let signer = Self {
-            transaction,
-            sig_hash,
-            origin_done: false,
-            check_overlap: true,
-            check_oversign: true,
-        };
+impl TransactionSigner {
+    /// Creates a new `Signer`.
+    pub fn new(tx: Transaction) -> Result<Self, Error> {
+        let hash = tx.initial_hash()?;
 
-        Ok(signer)
+        Ok(Self {
+            tx,
+            hash,
+            origin_signed: false,
+            verify_oversign: true,
+            verify_overlap: true,
+        })
     }
 
-    pub fn new_sponsor(
-        transaction: &'a mut StacksTransaction,
-        condition: SpendingCondition,
+    /// Creates a new `Signer` with a sponsor.
+    pub fn new_sponser(
+        tx: &Transaction,
+        sponsor: Box<dyn SpendingCondition>,
     ) -> Result<Self, Error> {
-        if !transaction.auth.is_sponsored() {
-            return Err(Error::InvalidAuthorizationType(
-                AuthorizationType::Sponsored,
-            ));
+        if !tx.auth.is_sponsored() {
+            return Err(Error::BadSpendingConditionModification);
         }
 
-        transaction.auth.set_sponsor(condition)?;
-        let sig_hash = transaction.verify_origin()?;
-        let signer = Self {
-            transaction,
-            sig_hash,
-            origin_done: true,
-            check_overlap: true,
-            check_oversign: true,
-        };
+        let mut tx = tx.clone();
+        tx.auth.set_sponsor(sponsor)?;
+        let hash = tx.verify_origin()?;
+
+        let mut signer = Self::new(tx)?;
+        signer.hash = hash;
+        signer.origin_signed = true;
+        signer.verify_oversign = true;
+        signer.verify_overlap = true;
 
         Ok(signer)
     }
 
-    pub fn sign_origin(&mut self, private_key: &StacksPrivateKey) -> Result<(), Error> {
-        if self.check_overlap && self.origin_done {
+    /// Signs the origin of the transaction.
+    pub fn sign_origin(&mut self, pk: SecretKey) -> Result<(), Error> {
+        if self.verify_overlap && self.origin_signed {
             return Err(Error::OriginPostSponsorSign);
         }
 
-        let origin_oversign = match &self.transaction.auth {
-            Authorization::Sponsored(cond, _) | Authorization::Standard(cond) => {
-                cond.get_current_sigs() >= cond.get_req_sigs()
-            }
-        };
-
-        if self.check_oversign && origin_oversign {
-            return Err(Error::OriginOversign);
+        let origin = self.tx.auth.origin();
+        if self.verify_oversign && origin.signatures() >= origin.req_signatures() {
+            Err(Error::OriginOversign)
+        } else {
+            let next = self.tx.sign_next_origin(self.hash, pk)?;
+            self.hash = next;
+            Ok(())
         }
-
-        let next_sighash = self.sign_next_origin(self.sig_hash, private_key)?;
-        self.sig_hash = next_sighash;
-        Ok(())
     }
 
-    pub fn sign_sponsor(&mut self, private_key: &StacksPrivateKey) -> Result<(), Error> {
-        let sponsor = self.transaction.auth.get_sponsor()?;
-        let oversign = sponsor.get_current_sigs() >= sponsor.get_req_sigs();
+    /// Signs the sponsor of the transaction.
+    pub fn sign_sponsor(&mut self, pk: SecretKey) -> Result<(), Error> {
+        let sponsor = self.tx.auth.sponsor()?;
 
-        if self.check_oversign && oversign {
-            return Err(Error::SponsorOversign);
+        if self.verify_oversign && sponsor.signatures() >= sponsor.req_signatures() {
+            Err(Error::SponsorOversign)
+        } else {
+            let next = self.tx.sign_next_sponsor(self.hash, pk)?;
+            self.origin_signed = true;
+            self.hash = next;
+            Ok(())
         }
-
-        let sighash = self.sign_next_sponsor(self.sig_hash, private_key)?;
-        self.sig_hash = sighash;
-        Ok(())
     }
 
-    pub fn append_origin(&mut self, public_key: &StacksPublicKey) -> Result<(), Error> {
-        if self.check_overlap && self.origin_done {
-            return Err(Error::AppendOriginPostSponsor);
+    /// Appends a public key to the origin of the transaction.
+    pub fn append_origin(&mut self, pk: PublicKey) -> Result<(), Error> {
+        if self.verify_overlap && self.origin_signed {
+            Err(Error::OriginPostSponsorAppend)
+        } else {
+            self.tx.append_next_origin(pk)
         }
-
-        self.append_next_origin(public_key)
     }
 
-    pub fn append_sponsor(&mut self, public_key: &StacksPublicKey) -> Result<(), Error> {
-        self.append_next_sponsor(public_key)
-    }
-
-    pub fn sign_next_origin(
-        &mut self,
-        sighash: TransactionId,
-        private_key: &StacksPrivateKey,
-    ) -> Result<TransactionId, Error> {
-        let condition = self.transaction.auth.get_origin_mut();
-
-        Self::sign_and_append(condition, sighash, AuthorizationType::Standard, private_key)
-    }
-
-    pub fn sign_next_sponsor(
-        &mut self,
-        sighash: TransactionId,
-        private_key: &StacksPrivateKey,
-    ) -> Result<TransactionId, Error> {
-        let condition = self.transaction.auth.get_sponsor_mut()?;
-
-        Self::sign_and_append(
-            condition,
-            sighash,
-            AuthorizationType::Sponsored,
-            private_key,
-        )
-    }
-
-    pub fn append_next_origin(&mut self, public_key: &StacksPublicKey) -> Result<(), Error> {
-        let condition = self.transaction.auth.get_origin_mut();
-
-        match condition {
-            SpendingCondition::MultiSig(cond) => {
-                cond.push_public_key(*public_key);
-            }
-            SpendingCondition::SingleSig(_) => return Err(Error::AppendPublicKeyBadCondition),
-        }
-
-        Ok(())
-    }
-
-    pub fn append_next_sponsor(&mut self, public_key: &StacksPublicKey) -> Result<(), Error> {
-        let condition = self.transaction.auth.get_sponsor_mut()?;
-
-        match condition {
-            SpendingCondition::MultiSig(cond) => {
-                cond.push_public_key(*public_key);
-            }
-            SpendingCondition::SingleSig(_) => return Err(Error::AppendPublicKeyBadCondition),
-        }
-
-        Ok(())
-    }
-
-    pub fn sign_and_append(
-        condition: &mut SpendingCondition,
-        sighash: TransactionId,
-        auth_type: AuthorizationType,
-        private_key: &StacksPrivateKey,
-    ) -> Result<TransactionId, Error> {
-        let (signature, next_sighash) = TransactionId::next_signature(
-            sighash,
-            auth_type,
-            condition.get_tx_fee(),
-            condition.get_nonce(),
-            private_key,
-        )?;
-
-        match condition {
-            SpendingCondition::SingleSig(cond) => {
-                cond.set_signature(signature);
-            }
-            SpendingCondition::MultiSig(cond) => {
-                cond.push_signature(signature);
-            }
-        }
-
-        Ok(next_sighash)
+    /// Returns the underlying transaction.
+    pub fn transaction(self) -> Transaction {
+        self.tx
     }
 }

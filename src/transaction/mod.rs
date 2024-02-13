@@ -1,69 +1,80 @@
-pub use crate::transaction::auth::AuthorizationType;
-pub use crate::transaction::auth::MultiHashMode;
-pub use crate::transaction::auth::SingleHashMode;
-pub use crate::transaction::base::StacksTransaction;
-pub use crate::transaction::base::TransactionId;
+// © 2024 Max Karou. All Rights Reserved.
+// Licensed under Apache Version 2.0, or MIT License, at your discretion.
+//
+// Apache License: http://www.apache.org/licenses/LICENSE-2.0
+// MIT License: http://opensource.org/licenses/MIT
+//
+// Usage of this file is permitted solely under a sanctioned license.
+
+pub use crate::transaction::auth::Auth;
+pub use crate::transaction::auth::Modification;
+pub use crate::transaction::auth::SpendingCondition;
+pub use crate::transaction::auth::SpendingConditionMultiSig;
+pub use crate::transaction::auth::SpendingConditionStandard;
+pub use crate::transaction::base::AnchorMode;
+pub use crate::transaction::base::Transaction;
 pub use crate::transaction::call::STXContractCall;
-pub use crate::transaction::call::STXContractCallMultiSig;
-pub use crate::transaction::condition::AnchorMode;
 pub use crate::transaction::condition::AssetInfo;
-pub use crate::transaction::condition::FungibleConditionCode;
+pub use crate::transaction::condition::Condition;
+pub use crate::transaction::condition::ConditionCode;
 pub use crate::transaction::condition::FungiblePostCondition;
-pub use crate::transaction::condition::NonFungibleConditionCode;
 pub use crate::transaction::condition::NonFungiblePostCondition;
 pub use crate::transaction::condition::PostConditionMode;
 pub use crate::transaction::condition::PostConditions;
 pub use crate::transaction::condition::STXPostCondition;
+pub use crate::transaction::network::ChainID;
+pub use crate::transaction::network::Network;
+pub use crate::transaction::network::StacksMainnet;
+pub use crate::transaction::network::StacksMocknet;
+pub use crate::transaction::network::StacksTestnet;
+pub use crate::transaction::network::TransactionVersion;
 pub use crate::transaction::payload::ContractCallPayload;
 pub use crate::transaction::payload::Payload;
-pub use crate::transaction::payload::PayloadType;
 pub use crate::transaction::payload::TokenTransferPayload;
 pub use crate::transaction::signer::TransactionSigner;
-pub use crate::transaction::sponsor::sponsor_transaction;
 pub use crate::transaction::transfer::STXTokenTransfer;
-pub use crate::transaction::transfer::STXTokenTransferMultiSig;
+
+use crate::clarity;
+use crate::crypto;
 
 pub(crate) mod auth;
 pub(crate) mod base;
 pub(crate) mod call;
 pub(crate) mod condition;
+pub(crate) mod network;
 pub(crate) mod payload;
 pub(crate) mod signer;
-pub(crate) mod sponsor;
 pub(crate) mod transfer;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum Error {
-    #[error("Invalid condition code")]
-    InvalidConditionCode,
-    #[error("Invalid principal type, expected std or contract - got: {0}")]
-    InvalidPrincipalType(u8),
-    #[error("Invalid principal, neither std nor contract")]
-    InvalidPrincipal,
-    #[error("Invalid authorization type, expected {0}")]
-    InvalidAuthorizationType(AuthorizationType),
-    #[error("Invalid message signature length, expected 65 bytes - got: {0}")]
-    InvalidMessageSigLength(usize),
     #[error("Attempted to sign origin with too many signatures")]
     OriginOversign,
     #[error("Attempted to sign origin after sponsor key")]
     OriginPostSponsorSign,
+    #[error("Attempted to append public key to origin after sponsor key")]
+    OriginPostSponsorAppend,
     #[error("Attempted to sign sponsor with too many signatures")]
     SponsorOversign,
-    #[error("Attempted to append public key to origin after sponsor key")]
-    AppendOriginPostSponsor,
-    #[error("Cannot append public key to single-sig condition")]
-    AppendPublicKeyBadCondition,
     #[error("Invalid signer hash, expected {0} - got: {1}")]
-    VerifyBadSigner(String, String),
+    BadSigner(String, String),
     #[error("Invalid signature count, expected {0} - got: {1}")]
-    VerifyBadSignatureCount(u8, u8),
+    BadSignatureCount(u8, u8),
+    #[error("Attempted to modify a spending condition with an incompatible action")]
+    BadSpendingConditionModification,
+    /// `crypto::hex` crate errors.
     #[error(transparent)]
-    Clarity(#[from] crate::clarity::Error),
+    Hex(#[from] crypto::hex::Error),
+    /// `crypto::hash` crate errors.
     #[error(transparent)]
-    Hex(#[from] crate::crypto::hex::Error),
+    Hash(#[from] crypto::hash::Error),
+    /// `clarity` crate errors.
+    #[error(transparent)]
+    Clarity(#[from] clarity::Error),
+    /// `secp256k1` crate errors.
     #[error(transparent)]
     Secp256k1(#[from] secp256k1::Error),
+    /// Conversion from a integer failed.
     #[error(transparent)]
-    IntConversionError(#[from] std::num::TryFromIntError),
+    TryFromInt(#[from] std::num::TryFromIntError),
 }

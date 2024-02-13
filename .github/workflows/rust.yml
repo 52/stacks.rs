@@ -1,0 +1,111 @@
+name: rust
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+
+  workflow_dispatch:
+
+concurrency:
+  group: rust-${{ github.head_ref || github.ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  # Always colorize output.
+  CARGO_TERM_COLOR: always
+  # Disable incremental compilation.
+  CARGO_INCREMENTAL: 0
+  # Allow more retries for network requests in cargo (downloading crates).
+  CARGO_NET_RETRY: 10
+  # Allow more retries for network requests in rustup (downloading toolchains).
+  RUSTUP_MAX_RETRIES: 10
+  # Don't emit giant backtraces in the CI logs.
+  RUST_BACKTRACE: short
+  # RUSTFLAGS: -D warnings
+  RUSTDOCFLAGS: -D warnings
+
+jobs:
+  just-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Just
+        uses: extractions/setup-just@v1
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          echo "RUST_VERSION_HASH=$(rustc --version | sha256sum | awk '{print $1}')" >> $GITHUB_ENV
+
+      - name: Cache cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/
+            ./target/debug/build/
+          key: ${{ runner.os }}-rust-${{ env.RUST_VERSION_HASH }}-${{ hashFiles('./Cargo.lock') }}
+
+      - name: Run linter
+        run: just lint
+
+  just-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Just
+        uses: extractions/setup-just@v1
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install minimal nightly rustfmt
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          components: rustfmt
+
+      - name: Cache cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/
+            ./target/debug/build/
+          key: ${{ runner.os }}-rust-${{ env.RUST_VERSION_HASH }}-${{ hashFiles('./Cargo.lock') }}
+
+      - name: Run formatter
+        run: just fmt-check
+
+  just-test:
+    runs-on: ubuntu-latest
+    needs: [just-lint, just-fmt]
+
+    steps:
+      - name: Install Just
+        uses: extractions/setup-just@v1
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          echo "RUST_VERSION_HASH=$(rustc --version | sha256sum | awk '{print $1}')" >> $GITHUB_ENV
+
+      - name: Cache cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/
+            ./target/debug/build/
+          key: ${{ runner.os }}-rust-${{ env.RUST_VERSION_HASH }}-${{ hashFiles('./Cargo.lock') }}
+
+      - name: Install dependencies
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+
+      - name: Run tests
+        run: just test

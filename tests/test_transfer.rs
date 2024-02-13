@@ -1,0 +1,92 @@
+// © 2024 Max Karou. All Rights Reserved.
+// Licensed under Apache Version 2.0, or MIT License, at your discretion.
+//
+// Apache License: http://www.apache.org/licenses/LICENSE-2.0
+// MIT License: http://opensource.org/licenses/MIT
+//
+// Usage of this file is permitted solely under a sanctioned license.
+
+use stacks_rs::clarity;
+use stacks_rs::clarity::Codec;
+use stacks_rs::crypto::bytes_to_hex;
+use stacks_rs::transaction::AnchorMode;
+use stacks_rs::transaction::PostConditionMode;
+use stacks_rs::transaction::PostConditions;
+use stacks_rs::transaction::STXTokenTransfer;
+use stacks_rs::transaction::StacksMainnet;
+use stacks_rs::transaction::StacksTestnet;
+
+mod common;
+mod macros;
+
+use crate::common::post_conditions;
+use crate::common::private_key;
+use crate::macros::generate_token_transfer_test;
+
+generate_token_transfer_test!(
+    Standard,
+    test_transaction_token_transfer_mainnet,
+    "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+    12345,
+    0,
+    0,
+    StacksMainnet::new(),
+    AnchorMode::Any,
+    "test memo",
+    PostConditionMode::Deny,
+    PostConditions::default(),
+    false,
+    "0000000001040015c31b8c1c11c515e244b75806bac48d1399c7750000000000000000000000000000000000008b316d56e35b3b8d03ab3b9dbe05eb44d64c53e7ba3c468f9a78c82a13f2174c32facb0f29faeb21075ec933db935ebc28a8793cc60e14b8ee4ef05f52c94016030200000000000516df0ba3e79792be7be5e50a370289accfc8c9e032000000000000303974657374206d656d6f00000000000000000000000000000000000000000000000000",
+    "84cccb05f4bd0e1b08905ef1f1350ad635a6474448310548bdccfa04e0121bab"
+);
+
+generate_token_transfer_test!(
+    Standard,
+    test_transaction_token_transfer_testnet,
+    "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+    12345,
+    0,
+    0,
+    StacksTestnet::new(),
+    AnchorMode::Any,
+    "test memo",
+    PostConditionMode::Deny,
+    PostConditions::default(),
+    false,
+    "8080000000040015c31b8c1c11c515e244b75806bac48d1399c7750000000000000000000000000000000000014199f63f7e010141a36a4624d032758f54e08ff03b24ed2667463eb405b4d81505631b32a1f13b57371f29a6095b81741b32b5864b178e3546ff2bfb3dc08682030200000000000516df0ba3e79792be7be5e50a370289accfc8c9e032000000000000303974657374206d656d6f00000000000000000000000000000000000000000000000000",
+    "77c84320d3e7afe61b630d95a4548c45cbe00c270af1a0c8afda71efb9cf3499"
+);
+
+generate_token_transfer_test!(
+    Standard,
+    test_transaction_token_transfer_mainnet_complex,
+    "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+    12345,
+    100_000,
+    55,
+    StacksMainnet::new(),
+    AnchorMode::Strict,
+    "test memo",
+    PostConditionMode::Allow,
+    post_conditions(),
+    false,
+    "0000000001040015c31b8c1c11c515e244b75806bac48d1399c775000000000000003700000000000186a0000068e4c9c19e7cf711dfccc9597c1ab54950c17a81963b744583014b78ecb23b3e3bfa37415e6391ae5106a2999251607665fa68095071ad4d354346c7a3a1ab81010100000004000216a5d9d331000f5b79578ce56bd157f29a9056f0d60300000000000f4240000316a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e74726163740100000000000f4240020216a5d9d331000f5b79578ce56bd157f29a9056f0d616a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d6173736574010000000000000000000000000000eaf511010316a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e747261637416a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d61737365740500000000000f4240000516df0ba3e79792be7be5e50a370289accfc8c9e032000000000000303974657374206d656d6f00000000000000000000000000000000000000000000000000",
+    "458899d9933f8aacc6fec958bb9be2c5b8d1bd6ffe6865f5e6b391f7a63fb165"
+);
+
+generate_token_transfer_test!(
+    Standard,
+    test_transaction_token_transfer_testnet_complex,
+    "SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159",
+    12345,
+    100_000,
+    55,
+    StacksTestnet::new(),
+    AnchorMode::Strict,
+    "test memo",
+    PostConditionMode::Allow,
+    post_conditions(),
+    false,
+    "8080000000040015c31b8c1c11c515e244b75806bac48d1399c775000000000000003700000000000186a00000553a1671243d4bd9032e635a686da1e008cb902166a18c0b1662ca9ec341563d50ed87c3f43c155c6dc513c5633a1092822eac45dc901d1419f0aea40a9c89f5010100000004000216a5d9d331000f5b79578ce56bd157f29a9056f0d60300000000000f4240000316a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e74726163740100000000000f4240020216a5d9d331000f5b79578ce56bd157f29a9056f0d616a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d6173736574010000000000000000000000000000eaf511010316a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e747261637416a5d9d331000f5b79578ce56bd157f29a9056f0d60b6d792d636f6e7472616374086d792d61737365740500000000000f4240000516df0ba3e79792be7be5e50a370289accfc8c9e032000000000000303974657374206d656d6f00000000000000000000000000000000000000000000000000",
+    "54d8fe95c41bafdcc125126be4c631ba2354ecb8a2743c94be4a0ecb2f92adc0"
+);

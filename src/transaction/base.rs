@@ -1,117 +1,71 @@
-use crate::crypto::hash::Sha512_256Hash;
-use crate::crypto::impl_wrapped_array;
-use crate::crypto::Serialize;
-use crate::network::ChainID;
-use crate::network::TransactionVersion;
-use crate::transaction::auth::Authorization;
-use crate::transaction::auth::AuthorizationType;
-use crate::transaction::auth::MessageSignature;
-use crate::transaction::auth::SpendingCondition;
-use crate::transaction::auth::PUBLIC_KEY_ENCODING;
-use crate::transaction::condition::AnchorMode;
-use crate::transaction::condition::PostConditionMode;
-use crate::transaction::condition::PostConditions;
+// © 2024 Max Karou. All Rights Reserved.
+// Licensed under Apache Version 2.0, or MIT License, at your discretion.
+//
+// Apache License: http://www.apache.org/licenses/LICENSE-2.0
+// MIT License: http://opensource.org/licenses/MIT
+//
+// Usage of this file is permitted solely under a sanctioned license.
+
+use secp256k1::PublicKey;
+use secp256k1::SecretKey;
+
+use crate::clarity;
+use crate::clarity::Codec;
+use crate::crypto::c32::Mode;
+use crate::crypto::SignatureHash;
+use crate::transaction::auth::AUTH_TYPE_SPONSORED;
+use crate::transaction::auth::AUTH_TYPE_STANDARD;
+use crate::transaction::Auth;
+use crate::transaction::ChainID;
 use crate::transaction::Error;
+use crate::transaction::Modification;
 use crate::transaction::Payload;
-use crate::StacksPrivateKey;
-use crate::StacksPublicKey;
+use crate::transaction::PostConditionMode;
+use crate::transaction::PostConditions;
+use crate::transaction::SpendingCondition;
+use crate::transaction::TransactionVersion;
 
+/// The anchor mode of a transaction.
+#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct TransactionId([u8; 32]);
-impl_wrapped_array!(TransactionId, u8, 32);
-
-impl TransactionId {
-    pub fn from_slice(bytes: &[u8]) -> Self {
-        let hasher = Sha512_256Hash::from_slice(bytes);
-        TransactionId(hasher.into_bytes())
-    }
-
-    pub fn make_presign_hash(
-        sighash: TransactionId,
-        auth_type: AuthorizationType,
-        tx_fee: u64,
-        nonce: u64,
-    ) -> Self {
-        let mut buff = vec![];
-
-        buff.extend_from_slice(&sighash.to_bytes());
-        buff.push(auth_type as u8);
-        buff.extend_from_slice(&tx_fee.to_be_bytes());
-        buff.extend_from_slice(&nonce.to_be_bytes());
-
-        Self::from_slice(&buff)
-    }
-
-    pub fn make_postsign_hash(sighash: TransactionId, signature: MessageSignature) -> Self {
-        let mut buff = vec![];
-
-        buff.extend_from_slice(&sighash.to_bytes());
-        buff.push(PUBLIC_KEY_ENCODING);
-        buff.extend_from_slice(&signature.to_bytes());
-
-        Self::from_slice(&buff)
-    }
-
-    pub fn next_signature(
-        sighash: TransactionId,
-        auth_type: AuthorizationType,
-        tx_fee: u64,
-        nonce: u64,
-        private_key: &StacksPrivateKey,
-    ) -> Result<(MessageSignature, Self), Error> {
-        let secp = secp256k1::Secp256k1::new();
-        let presgn = Self::make_presign_hash(sighash, auth_type, tx_fee, nonce);
-
-        let signature = {
-            let msg = secp256k1::Message::from_slice(&presgn.to_bytes())?;
-            let recov = secp.sign_ecdsa_recoverable(&msg, private_key);
-            MessageSignature::from_recov(recov)?
-        };
-
-        let next_sighash = Self::make_postsign_hash(presgn, signature);
-        Ok((signature, next_sighash))
-    }
-
-    pub fn next_verification(
-        sighash: TransactionId,
-        auth_type: AuthorizationType,
-        tx_fee: u64,
-        nonce: u64,
-        signature: MessageSignature,
-    ) -> Result<(StacksPublicKey, Self), Error> {
-        let secp = secp256k1::Secp256k1::new();
-        let presgn = Self::make_presign_hash(sighash, auth_type, tx_fee, nonce);
-
-        let recov = signature.into_recov()?;
-        let msg = secp256k1::Message::from_slice(&presgn.to_bytes())?;
-        let pubk = secp.recover_ecdsa(&msg, &recov)?;
-
-        let next_sighash = Self::make_postsign_hash(presgn, signature);
-
-        Ok((pubk, next_sighash))
-    }
+pub enum AnchorMode {
+    /// The transaction must be included in an anchor block.
+    Strict = 0x01,
+    /// The transaction must be included in a micro block.
+    Micro = 0x02,
+    /// The transaction can be included in either an anchor block or micro block.
+    Any = 0x03,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct StacksTransaction {
+/// A Stacks transaction.
+#[derive(Debug, Clone)]
+pub struct Transaction {
+    /// The version of the transaction.
     pub version: TransactionVersion,
+    /// The chain ID of the transaction.
     pub chain_id: ChainID,
-    pub auth: Authorization,
+    /// The authorization of the transaction.
+    pub auth: Auth,
+    /// The anchor mode of the transaction.
     pub anchor_mode: AnchorMode,
+    /// The post condition mode of the transaction.
     pub post_condition_mode: PostConditionMode,
+    /// The post conditions of the transaction.
     pub post_conditions: PostConditions,
-    pub payload: Payload,
+    /// The payload of the transaction.
+    pub payload: Box<dyn Payload>,
 }
 
-impl StacksTransaction {
+impl Transaction {
+    /// Creates a new `Transaction`.
     pub fn new(
         version: TransactionVersion,
         chain_id: ChainID,
-        auth: Authorization,
+        auth: Auth,
         anchor_mode: AnchorMode,
         post_condition_mode: PostConditionMode,
         post_conditions: PostConditions,
-        payload: Payload,
+        payload: Box<dyn Payload>,
     ) -> Self {
         Self {
             version,
@@ -124,53 +78,105 @@ impl StacksTransaction {
         }
     }
 
-    pub fn tx_id(&self) -> Result<TransactionId, Error> {
-        let tx_bytes = self.serialize()?;
-        let tx_id = TransactionId::from_slice(&tx_bytes);
-        Ok(tx_id)
+    /// Returns the current `SignatureHash` of the transaction.
+    pub fn hash(&self) -> Result<SignatureHash, Error> {
+        let bytes = self.encode()?;
+        Ok(SignatureHash::from_slice(bytes))
     }
 
-    pub fn initial_sighash(&self) -> Result<TransactionId, Error> {
-        let mut tx = self.clone();
-        tx.auth = tx.auth.into_initial_hash();
-        tx.tx_id()
-    }
-
-    pub fn verify(&self) -> Result<(), Error> {
-        self.auth.verify(self.initial_sighash()?)
-    }
-
-    pub fn verify_origin(&self) -> Result<TransactionId, Error> {
-        self.auth.verify_origin(self.initial_sighash()?)
-    }
-
-    pub fn set_sponsor(&mut self, sponsor: SpendingCondition) -> Result<(), Error> {
-        self.auth.set_sponsor(sponsor)
-    }
-
+    /// Sets the fee for the transaction.
     pub fn set_fee(&mut self, fee: u64) {
         self.auth.set_fee(fee);
     }
 
+    /// Sets the nonce for the transaction.
     pub fn set_nonce(&mut self, nonce: u64) {
         self.auth.set_nonce(nonce);
     }
+
+    /// Verifies the transaction origin signatures.
+    pub(crate) fn verify_origin(&self) -> Result<SignatureHash, Error> {
+        self.auth.verify_origin(self.initial_hash()?)
+    }
+
+    /// Returns the initial `SignatureHash` of the transaction.
+    pub(crate) fn initial_hash(&self) -> Result<SignatureHash, Error> {
+        let mut tx = self.clone();
+        tx.auth = tx.auth.reset();
+        tx.hash()
+    }
+
+    /// Signs the next origin of the transaction.
+    pub(crate) fn sign_next_origin(
+        &mut self,
+        hash: SignatureHash,
+        pk: SecretKey,
+    ) -> Result<SignatureHash, Error> {
+        Self::sign_and_append(self.auth.origin_mut(), hash, AUTH_TYPE_STANDARD, pk)
+    }
+
+    /// Signs the next sponsor of the transaction.
+    pub(crate) fn sign_next_sponsor(
+        &mut self,
+        hash: SignatureHash,
+        pk: SecretKey,
+    ) -> Result<SignatureHash, Error> {
+        Self::sign_and_append(self.auth.sponsor_mut()?, hash, AUTH_TYPE_SPONSORED, pk)
+    }
+
+    /// Appends the next origin to the transaction.
+    pub(crate) fn append_next_origin(&mut self, pk: PublicKey) -> Result<(), Error> {
+        let origin = self.auth.origin_mut();
+
+        match origin.mode() {
+            Mode::P2SH | Mode::P2WSH => origin.modify(Modification::AddPublicKey(pk)),
+            Mode::P2PKH | Mode::P2WPKH => Err(Error::BadSpendingConditionModification),
+        }
+    }
+
+    /// Signs a `SigHash` and sets/appends the signature to a `SpendingCondition`.
+    pub(crate) fn sign_and_append(
+        condition: &mut dyn SpendingCondition,
+        hash: SignatureHash,
+        auth: u8,
+        pk: SecretKey,
+    ) -> Result<SignatureHash, Error> {
+        let (sig, hash) =
+            SignatureHash::next_signature(hash, auth, condition.fee(), condition.nonce(), pk)?;
+
+        match condition.mode() {
+            Mode::P2PKH | Mode::P2WPKH => {
+                condition.modify(Modification::SetSignature(sig))?;
+            }
+            Mode::P2SH | Mode::P2WSH => {
+                condition.modify(Modification::AddSignature(sig))?;
+            }
+        }
+
+        Ok(hash)
+    }
 }
 
-impl Serialize for StacksTransaction {
-    type Err = Error;
-
-    fn serialize(&self) -> Result<Vec<u8>, Self::Err> {
+impl Codec for Transaction {
+    fn encode(&self) -> Result<Vec<u8>, clarity::Error> {
         let mut buffer = vec![];
 
         buffer.push(self.version as u8);
         buffer.extend_from_slice(&(self.chain_id as u32).to_be_bytes());
-        buffer.extend_from_slice(&self.auth.serialize()?);
+        buffer.extend_from_slice(&self.auth.encode()?);
         buffer.push(self.anchor_mode as u8);
         buffer.push(self.post_condition_mode as u8);
-        buffer.extend_from_slice(&self.post_conditions.serialize()?);
-        buffer.extend_from_slice(&self.payload.serialize()?);
+        buffer.extend_from_slice(&self.post_conditions.encode()?);
+        buffer.extend_from_slice(&self.payload.encode()?);
 
         Ok(buffer)
+    }
+
+    #[allow(unused_variables)]
+    fn decode(bytes: &[u8]) -> Result<Self, clarity::Error>
+    where
+        Self: Sized,
+    {
+        unimplemented!()
     }
 }

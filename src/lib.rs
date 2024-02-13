@@ -1,51 +1,45 @@
-pub use crate::address::AddressVersion;
-pub use crate::address::StacksAddress;
-pub use crate::network::Network;
-pub use crate::network::StacksMainnet;
-pub use crate::network::StacksMocknet;
-pub use crate::network::StacksTestnet;
-pub use crate::wallet::StacksAccount;
-pub use crate::wallet::StacksWallet;
+// © 2024 Max Karou. All Rights Reserved.
+// Licensed under Apache Version 2.0, or MIT License, at your discretion.
+//
+// Apache License: http://www.apache.org/licenses/LICENSE-2.0
+// MIT License: http://opensource.org/licenses/MIT
+//
+// Usage of this file is permitted solely under a sanctioned license.
 
-pub mod address;
-pub mod api;
+#![deny(warnings, clippy::pedantic)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::expl_impl_clone_on_copy,
+    clippy::missing_panics_doc,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::upper_case_acronyms,
+    clippy::too_many_arguments
+)]
+
 pub mod clarity;
 pub mod crypto;
-pub mod network;
 pub mod transaction;
 pub mod wallet;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
-    #[error("Invalid public key count, expected {0}")]
-    InvalidPublicKeyCount(u8),
-    #[error("Invalid signature count, expected {0}")]
-    InvalidSignatureCount(u8),
+    /// `crypto::b58` crate errors.
     #[error(transparent)]
-    Bip32(#[from] crypto::bip32::Error),
-    #[error(transparent)]
-    Bip39(#[from] bip39::Error),
-    #[error(transparent)]
-    Base58(#[from] crypto::base58::Error),
+    Base58(#[from] crypto::b58::Error),
+    /// `crypto::c32` crate errors.
     #[error(transparent)]
     C32(#[from] crypto::c32::Error),
+    /// `crypto::hex` crate errors.
     #[error(transparent)]
     Hex(#[from] crypto::hex::Error),
+    /// `clarity` crate errors.
     #[error(transparent)]
     Clarity(#[from] clarity::Error),
+    /// `wallet` crate errors.
+    #[error(transparent)]
+    Wallet(#[from] wallet::Error),
+    /// `transaction` crate errors.
     #[error(transparent)]
     Transaction(#[from] transaction::Error),
-    #[error(transparent)]
-    API(#[from] api::Error),
-    #[error(transparent)]
-    IntConversionError(#[from] std::num::TryFromIntError),
-    #[error(transparent)]
-    InvalidKey(#[from] ring::error::Unspecified),
-    #[error(transparent)]
-    InvalidPrivateKey(#[from] secp256k1::Error),
-    #[error(transparent)]
-    TryFromSliceError(#[from] std::array::TryFromSliceError),
 }
-
-pub type StacksPublicKey = secp256k1::PublicKey;
-pub type StacksPrivateKey = secp256k1::SecretKey;

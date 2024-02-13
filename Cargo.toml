@@ -1,35 +1,27 @@
 [package]
 name = "stacks-rs"
-version = "0.1.12"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
-authors = ["Max Karou <max@trustmachines.co>"]
+authors = ["Max Karou <maxkarou@protonmail.com>"]
 repository = "https://github.com/52/stacks.rs"
-description = "Rust toolkit to interact with the Stacks Blockchain."
+description = "A minimal rust toolkit to interact with the Stacks Blockchain."
 keywords = ["stacks", "blockchain", "bitcoin"]
 
 [dependencies]
 bip39 = "2.0.0"
+bip32 = "0.5.1"
+dyn-clone = "1.0.16"
 ripemd = "0.1.3"
 thiserror = "1.0.29"
-rand = "0.8.5"
 
 [dependencies.secp256k1]
-version = "0.27.0"
+version = "0.28.2"
 features = ["recovery"]
 
-[dependencies.reqwest]
-version = "0.11"
-features = ["json"]
-
-[dependencies.serde]
-version = "1.0.160"
-features = ["derive"]
-
 [dependencies.ring]
-version = "0.16.20"
+version = "0.17.7"
 features = ["std"]
 
 [dev-dependencies]
 rand = "0.8.5"
-tokio = { version = "1.17.0", features = ["full"] }
