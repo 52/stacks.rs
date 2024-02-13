@@ -13,7 +13,7 @@ fmt-check:
 
 # run tests
 test: 
-    cargo test
+    cargo nextest run
 
 # run linters
 lint: 
