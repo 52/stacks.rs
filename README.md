@@ -7,7 +7,7 @@ A minimal dependency Rust toolkit to interact with the [Stacks Blockchain](https
 
 ## Usage
 
-### Build & sign `STXTokenTransfer` transactions:
+### Build & sign a `STXTokenTransfer` transaction:
 
 ```rust
 use stacks_rs::clarity;
@@ -44,7 +44,7 @@ fn main() -> Result<(), stacks_rs::Error> {
 }
 ```
 
-### Build & sign `STXContractCall` transactions:
+### Build & sign a `STXContractCall` transaction:
 
 ```rust
 use stacks_rs::clarity;
