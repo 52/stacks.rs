@@ -32,7 +32,7 @@ pub struct STXContractCall {
 }
 
 impl STXContractCall {
-    /// Creates a new contract-call builder, which wraps an unsigned single-sig transaction.
+    /// Creates a new contract-call builder.
     ///
     /// # Arguments
     ///
@@ -44,8 +44,8 @@ impl STXContractCall {
     /// * `nonce` - The nonce of the transaction.
     /// * `network` - The network to broadcast the transaction to.
     /// * `anchor_mode` - The anchor mode to use for the transaction.
-    /// * `post_condition_mode` - The post condition mode to use for the transaction.
-    /// * `post_conditions` - The post conditions to use for the transaction.
+    /// * `post_condition_mode` - The post condition mode.
+    /// * `post_conditions` - The post conditions to use.
     /// * `sponsored` - Whether or not the transaction is sponsored.
     pub fn new<T, N>(
         contract: PrincipalContract,

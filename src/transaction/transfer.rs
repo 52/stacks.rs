@@ -31,7 +31,7 @@ pub struct STXTokenTransfer {
 }
 
 impl STXTokenTransfer {
-    /// Creates a new STX token transfer builder, which wraps an unsigned single-sig transaction.
+    /// Creates a new STX token transfer builder.
     ///
     /// # Arguments
     ///
@@ -43,7 +43,7 @@ impl STXTokenTransfer {
     /// * `network` - The network to broadcast the transaction to.
     /// * `anchor_mode` - The anchor mode to use for the transaction.
     /// * `memo` - The memo to include with the transaction.
-    /// * `post_condition_mode` - The post condition mode to use for the transaction.
+    /// * `post_condition_mode` - The post condition mode.
     /// * `post_conditions` - The post conditions to use for the transaction.
     /// * `sponsored` - Whether or not the transaction is sponsored.
     pub fn new<T, N, M>(

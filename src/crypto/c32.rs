@@ -334,12 +334,13 @@ pub fn hash_p2wsh(sigs: u8, keys: &[PublicKey]) -> Hash160 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::crypto::hex_to_bytes;
     use rand::thread_rng;
     use rand::Rng;
     use rand::RngCore;
     use secp256k1::PublicKey;
+
+    use super::*;
+    use crate::crypto::hex_to_bytes;
 
     #[test]
     fn test_crypto_c32_roundtrip() {

@@ -836,14 +836,15 @@ impl IntoIterator for FnArguments {
 
 #[cfg(test)]
 mod tests {
+    use rand::thread_rng;
+    use rand::Rng;
+
     use super::*;
     use crate::clarity;
     use crate::clarity::Cast;
     use crate::clarity::Codec;
     use crate::crypto::hex::bytes_to_hex;
     use crate::crypto::hex::hex_to_bytes;
-    use rand::thread_rng;
-    use rand::Rng;
 
     #[test]
     fn test_clarity_int_rountrip() {
