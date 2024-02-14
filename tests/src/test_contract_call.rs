@@ -16,14 +16,11 @@ use stacks_rs::transaction::STXContractCall;
 use stacks_rs::transaction::StacksMainnet;
 use stacks_rs::transaction::StacksTestnet;
 
-mod common;
-mod macros;
-
-use crate::common::contract;
-use crate::common::fn_arguments;
-use crate::common::post_conditions;
-use crate::common::private_key;
-use crate::macros::generate_contract_call_test;
+use crate::generate_contract_call_test;
+use crate::setup::contract;
+use crate::setup::fn_arguments;
+use crate::setup::post_conditions;
+use crate::setup::private_key;
 
 generate_contract_call_test!(
     Standard,

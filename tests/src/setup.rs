@@ -6,9 +6,6 @@
 //
 // Usage of this file is permitted solely under a sanctioned license.
 
-#![allow(unused_macros, unused_imports, dead_code)]
-
-use secp256k1::SecretKey;
 use stacks_rs::clarity;
 use stacks_rs::clarity::FnArguments;
 use stacks_rs::clarity::PrincipalContract;
@@ -21,6 +18,7 @@ use stacks_rs::transaction::NonFungiblePostCondition;
 use stacks_rs::transaction::PostConditions;
 use stacks_rs::transaction::STXPostCondition;
 use stacks_rs::wallet::StacksWallet;
+use stacks_rs::SecretKey;
 
 /// Returns a `SecretKey` for testing.
 pub fn private_key() -> SecretKey {
@@ -62,7 +60,7 @@ pub fn fn_arguments() -> FnArguments {
         clarity!(ResponseOk, clarity!(Int, 1)),
         clarity!(ResponseErr, clarity!(Int, 1)),
         clarity!(Tuple, ("hello", clarity!(Int, 1)), ("x", clarity!(UInt, 2))),
-        clarity!(Buffer, vec![0xde, 0xad, 0xbe, 0xef]),
+        clarity!(Buffer, [0xde, 0xad, 0xbe, 0xef]),
         clarity!(StringAscii, "hello world"),
         clarity!(StringUtf8, "hello \u{1234}")
     )

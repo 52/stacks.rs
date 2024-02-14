@@ -16,12 +16,9 @@ use stacks_rs::transaction::STXTokenTransfer;
 use stacks_rs::transaction::StacksMainnet;
 use stacks_rs::transaction::StacksTestnet;
 
-mod common;
-mod macros;
-
-use crate::common::post_conditions;
-use crate::common::private_key;
-use crate::macros::generate_token_transfer_test;
+use crate::generate_token_transfer_test;
+use crate::setup::post_conditions;
+use crate::setup::private_key;
 
 generate_token_transfer_test!(
     Standard,

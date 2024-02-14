@@ -43,3 +43,6 @@ pub enum Error {
     #[error(transparent)]
     Transaction(#[from] transaction::Error),
 }
+
+pub use secp256k1::PublicKey;
+pub use secp256k1::SecretKey;

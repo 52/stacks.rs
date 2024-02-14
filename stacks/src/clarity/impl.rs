@@ -556,6 +556,62 @@ impl IntoIterator for List {
     }
 }
 
+impl Tuple {
+    /// Gets a value by key.
+    pub fn get<T>(&self, key: T) -> Option<Box<dyn Clarity>>
+    where
+        T: AsRef<str>,
+    {
+        self.__value
+            .iter()
+            .find(|(k, _)| k == key.as_ref())
+            .map(|(_, v)| v.clone())
+    }
+
+    /// Gets a mutable value by key.
+    pub fn get_mut<T>(&mut self, key: T) -> Option<&mut Box<dyn Clarity>>
+    where
+        T: AsRef<str>,
+    {
+        self.__value
+            .iter_mut()
+            .find(|(k, _)| k == key.as_ref())
+            .map(|(_, v)| v)
+    }
+
+    /// Inserts a key-value pair into the tuple.
+    pub fn insert<T>(&mut self, key: String, value: T)
+    where
+        T: Clarity,
+    {
+        self.__value.push((key, Box::new(value)));
+    }
+
+    /// Removes a key-value pair from the tuple.
+    ///
+    /// Returns the value if the key was present in the tuple.
+    pub fn remove<T>(&mut self, key: T) -> Option<Box<dyn Clarity>>
+    where
+        T: AsRef<str>,
+    {
+        if let Some(index) = self.__value.iter().position(|(k, _)| k == key.as_ref()) {
+            Some(self.__value.remove(index).1)
+        } else {
+            None
+        }
+    }
+
+    /// Returns an iterator over the keys of the tuple.
+    pub fn keys(&self) -> impl Iterator<Item = &String> {
+        self.__value.iter().map(|(k, _)| k)
+    }
+
+    /// Returns an iterator over the values of the tuple.
+    pub fn values(&self) -> impl Iterator<Item = &Box<dyn Clarity>> {
+        self.__value.iter().map(|(_, v)| v)
+    }
+}
+
 impl Codec for Tuple {
     fn encode(&self) -> Result<Vec<u8>, Error> {
         let mut buff = vec![Self::id()];
@@ -1156,6 +1212,33 @@ mod tests {
         let bytes = tuple.encode().unwrap();
         let value = Tuple::decode(&bytes).unwrap();
         assert_eq!(tuple, value);
+    }
+
+    #[test]
+    fn test_clarity_tuple_methods() {
+        let mut tuple = clarity!(Tuple, ("a", clarity!(Int, 1)), ("b", clarity!(UInt, 1)));
+
+        assert_eq!(tuple.get("a").unwrap().to_string(), "1");
+        assert_eq!(tuple.get("b").unwrap().to_string(), "u1");
+
+        tuple.insert("c".to_string(), clarity!(True));
+        assert_eq!(tuple.get("c").unwrap().to_string(), "true");
+
+        tuple.remove("c");
+        assert!(tuple.get("c").is_none());
+
+        assert!(tuple.get_mut("a").unwrap().cast_as::<Int>().is_ok());
+        assert!(tuple.get_mut("b").unwrap().cast_as::<UInt>().is_ok());
+
+        let mut iter = tuple.keys();
+        assert_eq!(iter.next().unwrap(), "a");
+        assert_eq!(iter.next().unwrap(), "b");
+        assert!(iter.next().is_none());
+
+        let mut iter = tuple.values();
+        assert_eq!(iter.next().unwrap().to_string(), "1");
+        assert_eq!(iter.next().unwrap().to_string(), "u1");
+        assert!(iter.next().is_none());
     }
 
     #[test]
