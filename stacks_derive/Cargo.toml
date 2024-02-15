@@ -8,7 +8,6 @@ authors.workspace = true
 repository.workspace = true
 categories.workspace = true
 keywords.workspace = true
-publish = false
 
 [lib]
 proc-macro = true
