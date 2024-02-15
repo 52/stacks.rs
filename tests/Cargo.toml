@@ -7,5 +7,7 @@ authors.workspace = true
 repository.workspace = true
 publish = false
 
-[dependencies]
-stacks-rs = { path = "../stacks", version = "*" }
+[dependencies.stacks-rs]
+version = "*"
+features = ["derive"]
+path = "../stacks"

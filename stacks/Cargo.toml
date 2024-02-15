@@ -20,9 +20,29 @@ thiserror = "1.0.29"
 version = "0.28.2"
 features = ["recovery"]
 
+[dependencies.stacks_derive]
+version = "*"
+optional = true
+path = "../stacks_derive"
+
 [dependencies.ring]
 version = "0.17.7"
 features = ["std"]
 
 [dev-dependencies]
 rand = "0.8.5"
+
+[features]
+default = ["clarity", "transaction", "wallet-sdk"]
+
+# Provide convenience derive(...) macros.
+derive = ["stacks_derive"]
+
+# Provide clarity types & encoding/decoding methods.
+clarity = []
+
+# Provide transaction builders. (transfer, call etc.)
+transaction = ["clarity"]
+
+# Provide a wallet-sdk
+wallet-sdk = []

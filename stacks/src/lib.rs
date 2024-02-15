@@ -17,10 +17,18 @@
     clippy::too_many_arguments
 )]
 
+#[cfg(feature = "clarity")]
 pub mod clarity;
 pub mod crypto;
+#[cfg(feature = "transaction")]
 pub mod transaction;
+#[cfg(feature = "wallet-sdk")]
 pub mod wallet;
+
+#[cfg(feature = "derive")]
+pub mod derive {
+    pub use stacks_derive::*;
+}
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
@@ -33,15 +41,22 @@ pub enum Error {
     /// `crypto::hex` crate errors.
     #[error(transparent)]
     Hex(#[from] crypto::hex::Error),
+    #[cfg(feature = "clarity")]
     /// `clarity` crate errors.
     #[error(transparent)]
     Clarity(#[from] clarity::Error),
-    /// `wallet` crate errors.
-    #[error(transparent)]
-    Wallet(#[from] wallet::Error),
+    #[cfg(feature = "transaction")]
     /// `transaction` crate errors.
     #[error(transparent)]
     Transaction(#[from] transaction::Error),
+    #[cfg(feature = "wallet-sdk")]
+    /// `wallet` crate errors.
+    #[error(transparent)]
+    Wallet(#[from] wallet::Error),
+    #[cfg(feature = "derive")]
+    /// `derive` crate errors.
+    #[error("{0}")]
+    Derive(String),
 }
 
 pub use secp256k1::PublicKey;

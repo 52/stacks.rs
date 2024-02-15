@@ -12,4 +12,5 @@
 mod macros;
 mod setup;
 mod test_contract_call;
+mod test_derive;
 mod test_transfer;
