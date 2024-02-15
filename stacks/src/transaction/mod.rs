@@ -6,6 +6,8 @@
 //
 // Usage of this file is permitted solely under a sanctioned license.
 
+use crate::clarity;
+use crate::crypto;
 pub use crate::transaction::auth::Auth;
 pub use crate::transaction::auth::Modification;
 pub use crate::transaction::auth::SpendingCondition;
@@ -33,9 +35,6 @@ pub use crate::transaction::payload::Payload;
 pub use crate::transaction::payload::TokenTransferPayload;
 pub use crate::transaction::signer::TransactionSigner;
 pub use crate::transaction::transfer::STXTokenTransfer;
-
-use crate::clarity;
-use crate::crypto;
 
 pub(crate) mod auth;
 pub(crate) mod base;

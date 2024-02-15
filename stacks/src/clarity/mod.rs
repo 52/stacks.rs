@@ -15,7 +15,6 @@ use dyn_clone::DynClone;
 use crate::clarity::macros::impl_clarity_primitive;
 use crate::clarity::macros::impl_clarity_primitive_cast;
 use crate::crypto;
-use crate::crypto::bytes_to_hex;
 
 #[path = "impl.rs"]
 pub mod impls;
@@ -107,7 +106,7 @@ pub trait Codec {
     ///
     /// The hex representation does not include a `0x` prefix.
     fn hex(&self) -> Result<String, Error> {
-        Ok(bytes_to_hex(self.encode()?))
+        Ok(crypto::bytes_to_hex(self.encode()?))
     }
     /// Returns the hex representation of the encoded bytes.
     ///
@@ -147,8 +146,8 @@ impl_clarity_primitive!(UInt, u128, CLARITY_TYPE_UINT);
 
 impl_clarity_primitive!(Buffer, Vec<u8>, CLARITY_TYPE_BUFFER);
 
-impl_clarity_primitive!(True, CLARITY_TYPE_BOOL_TRUE);
-impl_clarity_primitive!(False, CLARITY_TYPE_BOOL_FALSE);
+impl_clarity_primitive!(True, true, bool, CLARITY_TYPE_BOOL_TRUE);
+impl_clarity_primitive!(False, false, bool, CLARITY_TYPE_BOOL_FALSE);
 
 impl_clarity_primitive!(PrincipalStandard, String, CLARITY_TYPE_STD_PR);
 impl_clarity_primitive!(PrincipalContract, (String, String), CLARITY_TYPE_CON_PR);
@@ -157,7 +156,7 @@ impl_clarity_primitive_cast!(ResponseOk, Box<dyn Clarity>, CLARITY_TYPE_RESPONSE
 impl_clarity_primitive_cast!(ResponseErr, Box<dyn Clarity>, CLARITY_TYPE_RESPONSE_ERR);
 
 impl_clarity_primitive_cast!(OptionalSome, Box<dyn Clarity>, CLARITY_TYPE_OPTIONAL_SOME);
-impl_clarity_primitive!(OptionalNone, CLARITY_TYPE_OPTIONAL_NONE);
+impl_clarity_primitive!(OptionalNone, None, Option<()>, CLARITY_TYPE_OPTIONAL_NONE);
 
 impl_clarity_primitive!(List, Vec<Box<dyn Clarity>>, CLARITY_TYPE_LIST);
 impl_clarity_primitive!(Tuple, Vec<(String, Box<dyn Clarity>)>, CLARITY_TYPE_TUPLE);

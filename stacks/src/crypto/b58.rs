@@ -195,10 +195,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use rand::thread_rng;
     use rand::Rng;
     use rand::RngCore;
+
+    use super::*;
 
     #[test]
     fn test_crypto_b58_normal_roundtrip() {

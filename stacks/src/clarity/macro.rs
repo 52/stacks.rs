@@ -28,68 +28,41 @@ macro_rules! clarity {
     (StringUtf8, $x:expr) => ($crate::clarity::StringUtf8::new($x.to_string()));
     (FnArguments) => (clarity!(@empty, FnArguments));
     (LengthPrefixedStr, $x:expr) => ($crate::clarity::LengthPrefixedStr::new($x.to_string()));
-    (List $(, $args:expr)*) => {{
-        let tmp = vec![$(clarity!(@box $args)),*];
-        $crate::clarity::List::new(tmp)
-    }};
-    (Tuple $(, ($key:expr, $value:expr))*) => {{
-        let tmp = vec![$(($key.to_string(), clarity!(@box $value))),*];
-        $crate::clarity::Tuple::new(tmp)
-    }};
-    (FnArguments $(, $args:expr)*) => {{
-        let tmp = vec![$(clarity!(@box $args)),*];
-        $crate::clarity::FnArguments::new(tmp)
-    }};
+    (List $(, $args:expr)*) => ($crate::clarity::List::new(vec![$(clarity!(@box $args)),*]));
+    (Tuple $(, ($key:expr, $value:expr))*) => ($crate::clarity::Tuple::new(vec![$(($key.to_string(), clarity!(@box $value))),*]));
+    (FnArguments $(, $args:expr)*) => ($crate::clarity::FnArguments::new(vec![$(clarity!(@box $args)),*]));
 }
 
 macro_rules! impl_clarity_primitive {
-    ($name:ident, $type_id:ident) => {
-        pub struct $name;
-        impl $name {
-            pub fn new() -> Self {
-                $name
-            }
-        }
-        impl ::std::default::Default for $name {
-            fn default() -> Self {
-                $name
-            }
-        }
-        impl ::std::cmp::PartialEq for $name {
-            fn eq(&self, other: &Self) -> bool {
-                self.to_string() == other.to_string()
-            }
-        }
-        impl ::std::cmp::Eq for $name {}
-        impl $crate::clarity::Ident for $name {
-            fn id() -> u8 {
-                $type_id
-            }
-        }
-        impl $crate::clarity::Any for $name {
-            fn as_any(&self) -> &dyn ::std::any::Any {
-                self
-            }
-
-            fn into_any(self: Box<Self>) -> Box<dyn ::std::any::Any> {
-                self
-            }
-        }
-        impl $crate::clarity::Clarity for $name {}
-    };
-    ($name:ident, $value:ty, $type_id:ident) => {
-        pub struct $name {
-            __value: $value,
-        }
+    ($name:ident, $value:ty, $id:ident) => {
+        impl_clarity_primitive!(@common $name, $value, $id);
         impl $name {
             pub fn new(__value: $value) -> Self {
                 $name { __value }
             }
-
+        }
+    };
+    ($name:ident, $default:expr, $value:ty, $id:ident) => {
+        impl_clarity_primitive!(@common $name, $value, $id);
+        impl $name {
+            pub fn new() -> Self {
+                $name { __value: $default }
+            }
+        }
+        impl ::std::default::Default for $name {
+            fn default() -> Self {
+                $name::new()
+            }
+        }
+    };
+    (@common $name:ident, $value:ty, $id:ident) => {
+        pub struct $name {
+            __value: $value,
+        }
+        impl $name {
             pub fn value(&self) -> &$value {
                 &self.__value
             }
-
             pub fn into_value(self) -> $value {
                 self.__value
             }
@@ -100,18 +73,17 @@ macro_rules! impl_clarity_primitive {
             }
         }
         impl ::std::cmp::Eq for $name {}
-        impl $crate::clarity::Ident for $name {
-            fn id() -> u8 {
-                $type_id
-            }
-        }
         impl $crate::clarity::Any for $name {
             fn as_any(&self) -> &dyn ::std::any::Any {
                 self
             }
-
             fn into_any(self: Box<Self>) -> Box<dyn ::std::any::Any> {
                 self
+            }
+        }
+        impl $crate::clarity::Ident for $name {
+            fn id() -> u8 {
+                $id
             }
         }
         impl $crate::clarity::Clarity for $name {}

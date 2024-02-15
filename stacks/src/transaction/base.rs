@@ -33,7 +33,7 @@ pub enum AnchorMode {
     Strict = 0x01,
     /// The transaction must be included in a micro block.
     Micro = 0x02,
-    /// The transaction can be included in either an anchor block or micro block.
+    /// The transaction can be included in either an anchor or microblock.
     Any = 0x03,
 }
 
@@ -134,7 +134,8 @@ impl Transaction {
         }
     }
 
-    /// Signs a `SigHash` and sets/appends the signature to a `SpendingCondition`.
+    /// Signs a `SigHash` and sets/appends the signature to a
+    /// `SpendingCondition`.
     pub(crate) fn sign_and_append(
         condition: &mut dyn SpendingCondition,
         hash: SignatureHash,

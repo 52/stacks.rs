@@ -10,23 +10,20 @@ pub use crate::crypto::b58::b58_decode;
 pub use crate::crypto::b58::b58_encode;
 pub use crate::crypto::b58::base58check_decode;
 pub use crate::crypto::b58::base58check_encode;
-
 pub use crate::crypto::c32::c32_address;
 pub use crate::crypto::c32::c32_address_decode;
 pub use crate::crypto::c32::c32_decode;
 pub use crate::crypto::c32::c32_encode;
 pub use crate::crypto::c32::c32check_decode;
 pub use crate::crypto::c32::c32check_encode;
-
-pub use crate::crypto::hex::bytes_to_hex;
-pub use crate::crypto::hex::hex_to_bytes;
-
 pub use crate::crypto::hash::DSha256Hash;
 pub use crate::crypto::hash::Hash160;
 pub use crate::crypto::hash::MessageSignature;
 pub use crate::crypto::hash::Sha256Hash;
 pub use crate::crypto::hash::Sha512_256Hash;
 pub use crate::crypto::hash::SignatureHash;
+pub use crate::crypto::hex::bytes_to_hex;
+pub use crate::crypto::hex::hex_to_bytes;
 
 pub mod b58;
 pub mod c32;

@@ -1,0 +1,48 @@
+[package]
+name = "stacks-rs"
+description = "A minimal rust toolkit to interact with the Stacks Blockchain."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[dependencies]
+bip39 = "2.0.0"
+bip32 = "0.5.1"
+dyn-clone = "1.0.16"
+ripemd = "0.1.3"
+thiserror = "1.0.29"
+
+[dependencies.secp256k1]
+version = "0.28.2"
+features = ["recovery"]
+
+[dependencies.stacks_derive]
+version = "*"
+optional = true
+path = "../stacks_derive"
+
+[dependencies.ring]
+version = "0.17.7"
+features = ["std"]
+
+[dev-dependencies]
+rand = "0.8.5"
+
+[features]
+default = ["clarity", "transaction", "wallet-sdk"]
+
+# Provide convenience derive(...) macros.
+derive = ["stacks_derive"]
+
+# Provide clarity types & encoding/decoding methods.
+clarity = []
+
+# Provide transaction builders. (transfer, call etc.)
+transaction = ["clarity"]
+
+# Provide a wallet-sdk
+wallet-sdk = []

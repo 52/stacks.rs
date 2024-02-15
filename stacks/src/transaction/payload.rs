@@ -208,11 +208,16 @@ mod tests {
         let args = clarity!(
             FnArguments,
             clarity!(Tuple, ("a", UInt::new(100)), ("b", Int::new(-100))),
-            clarity!(List, True, False, clarity!(OptionalSome, UInt::new(100))),
+            clarity!(
+                List,
+                clarity!(True),
+                clarity!(False),
+                clarity!(OptionalSome, UInt::new(100))
+            ),
             clarity!(Buffer, b"hello world".to_vec()),
-            True,
+            True::new(),
             UInt::new(100000),
-            False,
+            False::new(),
             Int::new(-100000)
         );
 

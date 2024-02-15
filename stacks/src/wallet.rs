@@ -42,7 +42,7 @@ pub(crate) const STX_DERIVATION_PATH: &str = "m/44'/5757'/0'/0";
 /// A map of `StacksAccount` instances, indexed by derivation index.
 pub type StacksAccounts = HashMap<u32, StacksAccount>;
 
-/// A `StacksAccount` instance, which contains a public key, a private key, and a derivation index.
+/// A `StacksAccount` instance, which contains an extended key & an index.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StacksAccount {
     /// The extended private key of the account.

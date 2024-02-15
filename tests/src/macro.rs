@@ -9,6 +9,7 @@
 #![allow(unused_macros, unused_imports, dead_code)]
 
 /// Generates a test for a token-transfer transaction.
+#[macro_export]
 macro_rules! generate_token_transfer_test {
     (
         Standard,
@@ -66,6 +67,7 @@ macro_rules! generate_token_transfer_test {
 }
 
 /// Generates a test for a contract-call transaction.
+#[macro_export]
 macro_rules! generate_contract_call_test {
     (
         Standard,
@@ -119,6 +121,3 @@ macro_rules! generate_contract_call_test {
         }
     };
 }
-
-pub(crate) use generate_contract_call_test;
-pub(crate) use generate_token_transfer_test;
