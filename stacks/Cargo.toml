@@ -21,7 +21,7 @@ version = "0.28.2"
 features = ["recovery"]
 
 [dependencies.stacks_derive]
-version = "0.2.2"
+version = "0.2.3"
 optional = true
 path = "../stacks_derive"
 
