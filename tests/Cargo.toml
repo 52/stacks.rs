@@ -8,6 +8,6 @@ repository.workspace = true
 publish = false
 
 [dependencies.stacks-rs]
-version = "*"
+version = "0.2.2"
 features = ["derive"]
 path = "../stacks"
