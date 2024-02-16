@@ -180,8 +180,9 @@ pub(crate) fn __impl(input: proc_macro::TokenStream) -> Result<TokenStream> {
     let (imp, ty, wher) = generics.split_for_impl();
 
     Ok(quote!(
-        impl #imp #ident #ty #wher {
-            pub fn from_tuple(tuple: ::stacks_rs::clarity::Tuple) -> Result<Self, ::stacks_rs::Error> {
+        impl #imp ::std::convert::TryFrom<::stacks_rs::clarity::Tuple> for #ident #ty #wher {
+            type Error = ::stacks_rs::Error;
+            fn try_from(tuple: ::stacks_rs::clarity::Tuple) -> Result<Self, Self::Error> {
                 use ::stacks_rs::clarity::Cast;
                 Ok(Self { #(#tokens),* })
             }
@@ -240,7 +241,7 @@ where
         tuple.get(#key).ok_or_else(||#err_extract)?
         .cast::<::stacks_rs::clarity::#ty>()
         .map_err(|_| #err_cast)
-        .and_then(#ident::from_tuple)?
+        .and_then(#ident::try_from)?
     })
 }
 

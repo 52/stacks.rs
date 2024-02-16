@@ -50,7 +50,7 @@ fn test_derive_from_tuple() {
     let meta = clarity!(Tuple, ("e", clarity!(True)), ("f", clarity!(False)));
     let tuple = clarity!(Tuple, ("data", data), ("meta", meta));
 
-    let parsed = Payload::from_tuple(tuple).unwrap();
+    let parsed = Payload::try_from(tuple).unwrap();
     assert_eq!(parsed.data.a, 1);
     assert_eq!(parsed.data.b, 1);
     assert_eq!(parsed.data.c, vec![0x01, 0x02, 0x03]);
@@ -117,7 +117,7 @@ fn test_derive_from_tuple_to_string() {
         ("string_utf8", clarity!(StringUtf8, "hello \u{1234}"))
     );
 
-    let parsed = Payload::from_tuple(data).unwrap();
+    let parsed = Payload::try_from(data).unwrap();
 
     assert_eq!(parsed.int, "1");
     assert_eq!(parsed.uint, "u1");
