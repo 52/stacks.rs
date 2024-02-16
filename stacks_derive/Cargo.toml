@@ -1,5 +1,5 @@
 [package]
-name = "stacks-derive"
+name = "stacks_derive"
 description = "Derive macro implementations for 'stacks.rs'"
 version.workspace = true
 edition.workspace = true

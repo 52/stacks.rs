@@ -8,5 +8,5 @@ name = "stacks-rs"
 git_tag_enable = true
 
 [[package]]
-name = "stacks-derive"
+name = "stacks_derive"
 git_tag_enable = false
