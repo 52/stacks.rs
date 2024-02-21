@@ -6,6 +6,9 @@
 //
 // Usage of this file is permitted solely under a sanctioned license.
 
+use dyn_clone::clone_trait_object;
+use dyn_clone::DynClone;
+
 /// The mainnet Hiro API URL.
 pub const HIRO_MAINNET_DEFAULT: &str = "https://api.mainnet.hiro.so";
 /// The testnet Hiro API URL.
@@ -27,7 +30,7 @@ pub enum ChainID {
     Mainnet = 0x0000_0001,
 }
 
-pub trait Network {
+pub trait Network: DynClone {
     /// Returns the transaction version.
     fn version(&self) -> TransactionVersion;
     /// Returns the chain ID.
@@ -35,6 +38,8 @@ pub trait Network {
     /// Returns the API base URL.
     fn base_url(&self) -> String;
 }
+
+clone_trait_object!(Network);
 
 impl_network_type!(
     StacksMainnet,

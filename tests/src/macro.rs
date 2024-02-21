@@ -29,21 +29,22 @@ macro_rules! generate_token_transfer_test {
     ) => {
         #[test]
         fn $name() {
-            let tx = STXTokenTransfer::new(
-                clarity!(PrincipalStandard, $recipient),
-                private_key(),
-                $amount,
-                $fee,
-                $nonce,
-                &$network,
-                $anchor_mode,
-                $memo,
-                $post_condition_mode,
-                $post_conditions,
-                $sponsored,
-            )
-            .sign()
-            .expect("Failed to sign the transaction");
+            let tx = STXTokenTransfer::builder()
+                .recipient(clarity!(PrincipalStandard, $recipient))
+                .network($network)
+                .sender(private_key())
+                .amount($amount)
+                .fee($fee)
+                .nonce($nonce)
+                .anchor_mode($anchor_mode)
+                .memo($memo)
+                .post_condition_mode($post_condition_mode)
+                .post_conditions($post_conditions)
+                .sponsored($sponsored)
+                .build()
+                .transaction()
+                .sign(private_key())
+                .expect("Failed to sign the transaction");
 
             let encoded = tx.encode().expect("Failed to encode the transaction");
 
@@ -85,21 +86,22 @@ macro_rules! generate_contract_call_test {
     ) => {
         #[test]
         fn $name() {
-            let tx = STXContractCall::new(
-                contract(),
-                "function-name",
-                $function_args,
-                private_key(),
-                $fee,
-                $nonce,
-                &$network,
-                $anchor_mode,
-                $post_condition_mode,
-                $post_conditions,
-                $sponsored,
-            )
-            .sign()
-            .expect("Failed to sign the transaction");
+            let tx = STXContractCall::builder()
+                .contract(contract())
+                .fn_name("function-name")
+                .fn_args($function_args)
+                .sender(private_key())
+                .network($network)
+                .fee($fee)
+                .nonce($nonce)
+                .anchor_mode($anchor_mode)
+                .post_condition_mode($post_condition_mode)
+                .post_conditions($post_conditions)
+                .sponsored($sponsored)
+                .build()
+                .transaction()
+                .sign(private_key())
+                .expect("Failed to sign the transaction");
 
             let encoded = tx.encode().expect("Failed to encode the transaction");
 

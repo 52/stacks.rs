@@ -15,7 +15,8 @@ pub use crate::transaction::auth::SpendingConditionMultiSig;
 pub use crate::transaction::auth::SpendingConditionStandard;
 pub use crate::transaction::base::AnchorMode;
 pub use crate::transaction::base::Transaction;
-pub use crate::transaction::call::STXContractCall;
+pub use crate::transaction::builder::STXContractCall;
+pub use crate::transaction::builder::STXTokenTransfer;
 pub use crate::transaction::condition::AssetInfo;
 pub use crate::transaction::condition::Condition;
 pub use crate::transaction::condition::ConditionCode;
@@ -34,16 +35,14 @@ pub use crate::transaction::payload::ContractCallPayload;
 pub use crate::transaction::payload::Payload;
 pub use crate::transaction::payload::TokenTransferPayload;
 pub use crate::transaction::signer::TransactionSigner;
-pub use crate::transaction::transfer::STXTokenTransfer;
 
 pub(crate) mod auth;
 pub(crate) mod base;
-pub(crate) mod call;
+pub(crate) mod builder;
 pub(crate) mod condition;
 pub(crate) mod network;
 pub(crate) mod payload;
 pub(crate) mod signer;
-pub(crate) mod transfer;
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum Error {

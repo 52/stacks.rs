@@ -162,12 +162,12 @@ pub(crate) fn __impl(input: proc_macro::TokenStream) -> Result<TokenStream> {
 
                 return Err(Error::new_spanned(
                     tp.to_token_stream(),
-                    "Unsupported type, did you mean ::std::vec::Vec<u8> or `T: FromTuple`?",
+                    "Unsupported type, did you mean ::std::vec::Vec<u8> or `T: TryFrom<Tuple>`?",
                 ))
             }
             _ => return Err(Error::new_spanned(
                 field.ty.to_token_stream(),
-                "Unsupported type, expected one of: i128, u128, ::std::vec::Vec<u8>, bool, String, or `T: FromTuple`",
+                "Unsupported type, expected one of: i128, u128, ::std::vec::Vec<u8>, bool, String, or `T: TryFrom<Tuple>`",
             )),
         };
 
