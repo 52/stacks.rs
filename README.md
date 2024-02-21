@@ -11,9 +11,6 @@ A minimal dependency Rust toolkit to interact with the [Stacks Blockchain](https
 
 ```rust
 use stacks_rs::clarity;
-use stacks_rs::transaction::AnchorMode;
-use stacks_rs::transaction::PostConditionMode;
-use stacks_rs::transaction::PostConditions;
 use stacks_rs::transaction::STXTokenTransfer;
 use stacks_rs::transaction::StacksMainnet;
 use stacks_rs::wallet::StacksWallet;
@@ -24,21 +21,15 @@ fn main() -> Result<(), stacks_rs::Error> {
     let account = wallet.get_account(0)?;
     let sender_key = account.private_key()?;
 
-    let tx = STXTokenTransfer::new(
-        clarity!(PrincipalStandard, "ST000000000000000000002AMW42H"),
-        sender_key,
-        100_000,
-        1000,
-        69,
-        &StacksMainnet::new(),
-        AnchorMode::Any,
-        "test-memo",
-        PostConditionMode::Allow,
-        PostConditions::default(),
-        false,
-    );
+    let transaction = STXTokenTransfer::builder()
+        .recipient(clarity!(PrincipalStandard, "ST000000000000000000002AMW42H"))
+        .amount(100_000)
+        .sender(sender_key)
+        .network(StacksMainnet::new())
+        .build()
+        .transaction();
 
-    let signed = tx.sign()?;
+    let signed = transaction.sign(sender_key)?;
 
     Ok(())
 }
@@ -48,9 +39,6 @@ fn main() -> Result<(), stacks_rs::Error> {
 
 ```rust
 use stacks_rs::clarity;
-use stacks_rs::transaction::AnchorMode;
-use stacks_rs::transaction::PostConditionMode;
-use stacks_rs::transaction::PostConditions;
 use stacks_rs::transaction::STXContractCall;
 use stacks_rs::transaction::StacksMainnet;
 use stacks_rs::wallet::StacksWallet;
@@ -61,10 +49,10 @@ fn main() -> Result<(), stacks_rs::Error> {
     let account = wallet.get_account(0)?;
     let sender_key = account.private_key()?;
 
-    let tx = STXContractCall::new(
-        clarity!(PrincipalContract, "ST000000000000000000002AMW42H", "pox"),
-        "make-pox",
-        clarity!(
+    let transaction = STXContractCall::builder()
+        .contract(("ST000000000000000000002AMW42H", "pox"))
+        .fn_name("make-pox")
+        .fn_args(clarity!(
             FnArguments,
             clarity!(UInt, 123),
             clarity!(True),
@@ -74,18 +62,13 @@ fn main() -> Result<(), stacks_rs::Error> {
                 clarity!(StringAscii, "foo"),
                 clarity!(StringAscii, "bar")
             )
-        ),
-        sender_key,
-        1000,
-        69,
-        &StacksMainnet::new(),
-        AnchorMode::Strict,
-        PostConditionMode::Allow,
-        PostConditions::default(),
-        false,
-    );
+        ))
+        .sender(sender_key)
+        .network(StacksMainnet::new())
+        .build()
+        .transaction();
 
-    let signed = tx.sign()?;
+    let signed = transaction.sign(sender_key)?;
 
     Ok(())
 }

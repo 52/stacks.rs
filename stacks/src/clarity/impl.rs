@@ -76,6 +76,18 @@ impl Clone for Int {
 
 impl Copy for Int {}
 
+impl From<i128> for Int {
+    fn from(int: i128) -> Self {
+        Self::new(int)
+    }
+}
+
+impl From<Int> for i128 {
+    fn from(int: Int) -> Self {
+        int.__value
+    }
+}
+
 impl Codec for UInt {
     fn encode(&self) -> Result<Vec<u8>, Error> {
         let mut buff = vec![Self::id()];
@@ -116,6 +128,18 @@ impl Clone for UInt {
 }
 
 impl Copy for UInt {}
+
+impl From<u128> for UInt {
+    fn from(int: u128) -> Self {
+        Self::new(int)
+    }
+}
+
+impl From<UInt> for u128 {
+    fn from(int: UInt) -> Self {
+        int.__value
+    }
+}
 
 impl Codec for Buffer {
     fn encode(&self) -> Result<Vec<u8>, Error> {
@@ -171,6 +195,24 @@ impl IntoIterator for Buffer {
 
     fn into_iter(self) -> Self::IntoIter {
         self.__value.into_iter()
+    }
+}
+
+impl From<Vec<u8>> for Buffer {
+    fn from(bytes: Vec<u8>) -> Self {
+        Self::new(bytes)
+    }
+}
+
+impl From<Buffer> for Vec<u8> {
+    fn from(buf: Buffer) -> Self {
+        buf.__value
+    }
+}
+
+impl From<&[u8]> for Buffer {
+    fn from(bytes: &[u8]) -> Self {
+        Self::new(bytes.to_vec())
     }
 }
 
@@ -287,6 +329,24 @@ impl Clone for PrincipalStandard {
     }
 }
 
+impl From<&str> for PrincipalStandard {
+    fn from(addr: &str) -> Self {
+        Self::new(addr.to_string())
+    }
+}
+
+impl From<String> for PrincipalStandard {
+    fn from(addr: String) -> Self {
+        Self::new(addr)
+    }
+}
+
+impl From<PrincipalStandard> for String {
+    fn from(principal: PrincipalStandard) -> Self {
+        principal.__value
+    }
+}
+
 impl Codec for PrincipalContract {
     fn encode(&self) -> Result<Vec<u8>, Error> {
         let (addr, ver) = c32_address_decode(&self.__value.0)?;
@@ -326,6 +386,18 @@ impl Debug for PrincipalContract {
 impl Clone for PrincipalContract {
     fn clone(&self) -> Self {
         Self::new(self.__value.clone())
+    }
+}
+
+impl From<(String, String)> for PrincipalContract {
+    fn from((addr, name): (String, String)) -> Self {
+        Self::new((addr, name))
+    }
+}
+
+impl From<(&str, &str)> for PrincipalContract {
+    fn from((addr, name): (&str, &str)) -> Self {
+        Self::new((addr.to_string(), name.to_string()))
     }
 }
 

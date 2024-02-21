@@ -66,7 +66,7 @@ impl TransactionSigner {
     }
 
     /// Signs the origin of the transaction.
-    pub fn sign_origin(&mut self, pk: SecretKey) -> Result<(), Error> {
+    pub fn sign_origin(&mut self, key: SecretKey) -> Result<(), Error> {
         if self.verify_overlap && self.origin_signed {
             return Err(Error::OriginPostSponsorSign);
         }
@@ -75,20 +75,20 @@ impl TransactionSigner {
         if self.verify_oversign && origin.signatures() >= origin.req_signatures() {
             Err(Error::OriginOversign)
         } else {
-            let next = self.tx.sign_next_origin(self.hash, pk)?;
+            let next = self.tx.sign_next_origin(self.hash, key)?;
             self.hash = next;
             Ok(())
         }
     }
 
     /// Signs the sponsor of the transaction.
-    pub fn sign_sponsor(&mut self, pk: SecretKey) -> Result<(), Error> {
+    pub fn sign_sponsor(&mut self, key: SecretKey) -> Result<(), Error> {
         let sponsor = self.tx.auth.sponsor()?;
 
         if self.verify_oversign && sponsor.signatures() >= sponsor.req_signatures() {
             Err(Error::SponsorOversign)
         } else {
-            let next = self.tx.sign_next_sponsor(self.hash, pk)?;
+            let next = self.tx.sign_next_sponsor(self.hash, key)?;
             self.origin_signed = true;
             self.hash = next;
             Ok(())
@@ -96,11 +96,11 @@ impl TransactionSigner {
     }
 
     /// Appends a public key to the origin of the transaction.
-    pub fn append_origin(&mut self, pk: PublicKey) -> Result<(), Error> {
+    pub fn append_origin(&mut self, key: PublicKey) -> Result<(), Error> {
         if self.verify_overlap && self.origin_signed {
             Err(Error::OriginPostSponsorAppend)
         } else {
-            self.tx.append_next_origin(pk)
+            self.tx.append_next_origin(key)
         }
     }
 

@@ -14,12 +14,17 @@
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
     clippy::upper_case_acronyms,
-    clippy::too_many_arguments
+    clippy::too_many_arguments,
+    clippy::large_enum_variant,
+    clippy::result_large_err,
+    clippy::similar_names
 )]
 
 #[cfg(feature = "clarity")]
 pub mod clarity;
 pub mod crypto;
+#[cfg(feature = "rpc")]
+pub mod rpc;
 #[cfg(feature = "transaction")]
 pub mod transaction;
 #[cfg(feature = "wallet-sdk")]
@@ -30,7 +35,7 @@ pub mod derive {
     pub use stacks_derive::*;
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// `crypto::b58` crate errors.
     #[error(transparent)]
@@ -49,6 +54,10 @@ pub enum Error {
     /// `transaction` crate errors.
     #[error(transparent)]
     Transaction(#[from] transaction::Error),
+    #[cfg(feature = "rpc")]
+    /// `rpc` crate errors.
+    #[error(transparent)]
+    RPC(#[from] rpc::Error),
     #[cfg(feature = "wallet-sdk")]
     /// `wallet` crate errors.
     #[error(transparent)]

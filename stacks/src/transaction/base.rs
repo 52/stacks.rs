@@ -23,6 +23,7 @@ use crate::transaction::Payload;
 use crate::transaction::PostConditionMode;
 use crate::transaction::PostConditions;
 use crate::transaction::SpendingCondition;
+use crate::transaction::TransactionSigner;
 use crate::transaction::TransactionVersion;
 
 /// The anchor mode of a transaction.
@@ -76,6 +77,15 @@ impl Transaction {
             post_conditions,
             payload,
         }
+    }
+
+    /// Signs the transaction with a secret-key.
+    ///
+    /// Returns the signed transaction.
+    pub fn sign(self, key: SecretKey) -> Result<Transaction, Error> {
+        let mut signer = TransactionSigner::new(self)?;
+        signer.sign_origin(key)?;
+        Ok(signer.transaction())
     }
 
     /// Returns the current `SignatureHash` of the transaction.
@@ -134,8 +144,7 @@ impl Transaction {
         }
     }
 
-    /// Signs a `SigHash` and sets/appends the signature to a
-    /// `SpendingCondition`.
+    /// Signs a `SigHash` and sets/appends the signature to a condition.
     pub(crate) fn sign_and_append(
         condition: &mut dyn SpendingCondition,
         hash: SignatureHash,
