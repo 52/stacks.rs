@@ -41,9 +41,8 @@ pub mod __derive;
 
 #[cfg(feature = "derive")]
 pub mod derive {
-    pub use stacks_derive::*;
-
     pub use crate::__derive::*;
+    pub use stacks_derive::*;
 }
 
 #[derive(Debug, thiserror::Error)]

@@ -25,7 +25,7 @@ version = "0.28.2"
 features = ["recovery"]
 
 [dependencies.stacks_derive]
-version = "0.2.4"
+version = "0.2.7"
 optional = true
 path = "../stacks_derive"
 
@@ -47,22 +47,22 @@ features = ["json"]
 rand = "0.8.5"
 
 [features]
-default = ["crypto", "clarity", "transaction", "wallet-sdk"]
+default = ["crypto", "clarity", "transaction"]
 
 # Provide convenience derive(...) macros.
-derive = ["clarity", "stacks_derive"]
+derive = ["stacks_derive"]
 
 # Provide hex, sha, b58 & c32 primitives & methods.
 crypto = []
 
 # Provide clarity types & encoding/decoding methods.
-clarity = ["crypto"]
+clarity = []
 
 # Provide transaction builders. (transfer, call etc.)
-transaction = ["clarity", "typed-builder"]
+transaction = ["typed-builder"]
 
 # Provide a wallet-sdk
-wallet-sdk = ["crypto"]
+wallet-sdk = []
 
 # Provide rpc methods.
-rpc = ["clarity", "transaction", "ureq", "serde"]
+rpc = ["ureq", "serde"]
