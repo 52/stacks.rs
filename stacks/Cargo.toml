@@ -55,9 +55,6 @@ derive = ["clarity", "stacks_derive"]
 # Provide hex, sha, b58 & c32 primitives & methods.
 crypto = []
 
-# Provide hex, sha, b58 & c32 primitives & methods.
-crypto = []
-
 # Provide clarity types & encoding/decoding methods.
 clarity = ["crypto"]
 
