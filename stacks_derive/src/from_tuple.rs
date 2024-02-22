@@ -72,7 +72,7 @@ where
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let mut stream = TokenStream::new();
 
-        stream.extend(quote!(::stacks_rs::__derive::Error::));
+        stream.extend(quote!(::stacks_rs::derive::Error::));
 
         match self {
             Self::Cast(key, ty, ident) => {
@@ -183,7 +183,7 @@ pub(crate) fn __impl(input: proc_macro::TokenStream) -> Result<TokenStream> {
 
     Ok(quote!(
         impl #imp ::std::convert::TryFrom<::stacks_rs::clarity::Tuple> for #ident #ty #wher {
-            type Error = ::stacks_rs::__derive::Error;
+            type Error = ::stacks_rs::derive::Error;
             fn try_from(tuple: ::stacks_rs::clarity::Tuple) -> Result<Self, Self::Error> {
                 use ::stacks_rs::clarity::Cast;
                 Ok(Self { #(#tokens),* })

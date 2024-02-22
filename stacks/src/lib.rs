@@ -37,12 +37,13 @@ pub mod wallet;
 
 #[cfg(feature = "derive")]
 #[path = "derive.rs"]
-pub mod __derive;
+mod __derive;
 
 #[cfg(feature = "derive")]
 pub mod derive {
-    pub use crate::__derive::*;
     pub use stacks_derive::*;
+
+    pub use crate::__derive::*;
 }
 
 #[derive(Debug, thiserror::Error)]
