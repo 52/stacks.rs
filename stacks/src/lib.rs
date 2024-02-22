@@ -43,6 +43,8 @@ pub mod __derive;
 pub mod derive {
     pub use crate::__derive::*;
     pub use stacks_derive::*;
+
+    pub use crate::__derive::*;
 }
 
 #[derive(Debug, thiserror::Error)]

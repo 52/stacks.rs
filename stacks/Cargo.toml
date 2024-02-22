@@ -50,19 +50,22 @@ rand = "0.8.5"
 default = ["crypto", "clarity", "transaction"]
 
 # Provide convenience derive(...) macros.
-derive = ["stacks_derive"]
+derive = ["clarity", "stacks_derive"]
+
+# Provide hex, sha, b58 & c32 primitives & methods.
+crypto = []
 
 # Provide hex, sha, b58 & c32 primitives & methods.
 crypto = []
 
 # Provide clarity types & encoding/decoding methods.
-clarity = []
+clarity = ["crypto"]
 
 # Provide transaction builders. (transfer, call etc.)
 transaction = ["typed-builder"]
 
 # Provide a wallet-sdk
-wallet-sdk = []
+wallet-sdk = ["crypto"]
 
 # Provide rpc methods.
 rpc = ["ureq", "serde"]
