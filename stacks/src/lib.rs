@@ -22,17 +22,28 @@
 
 #[cfg(feature = "clarity")]
 pub mod clarity;
+
+#[cfg(feature = "crypto")]
 pub mod crypto;
+
 #[cfg(feature = "rpc")]
 pub mod rpc;
+
 #[cfg(feature = "transaction")]
 pub mod transaction;
+
 #[cfg(feature = "wallet-sdk")]
 pub mod wallet;
 
 #[cfg(feature = "derive")]
+#[path = "derive.rs"]
+pub mod __derive;
+
+#[cfg(feature = "derive")]
 pub mod derive {
     pub use stacks_derive::*;
+
+    pub use crate::__derive::*;
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -64,8 +75,8 @@ pub enum Error {
     Wallet(#[from] wallet::Error),
     #[cfg(feature = "derive")]
     /// `derive` crate errors.
-    #[error("{0}")]
-    Derive(String),
+    #[error(transparent)]
+    Derive(#[from] derive::Error),
 }
 
 pub use secp256k1::PublicKey;
