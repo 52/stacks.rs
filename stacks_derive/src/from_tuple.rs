@@ -72,19 +72,21 @@ where
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let mut stream = TokenStream::new();
 
+        stream.extend(quote!(::stacks_rs::__derive::Error::));
+
         match self {
             Self::Cast(key, ty, ident) => {
-                stream.extend(quote!("Failed to cast field '{}' as '{}' on struct '{}'", #key, stringify!(#ty), stringify!(#ident)))
+                stream.extend(quote!(Cast(#key.to_string(), stringify!(#ty).to_string(), stringify!(#ident).to_string())))
             }
             Self::Extract(key, ident) => {
-                stream.extend(quote!("Failed to extract value for field '{}' on '{}'", #key, stringify!(#ident)))
+                stream.extend(quote!(Extract(#key.to_string(), stringify!(#ident).to_string())))
             }
             Self::Match(key, ident) => {
-                stream.extend(quote!("Failed to match value for field '{}' on '{}'", #key, stringify!(#ident)))
+                stream.extend(quote!(Match(#key.to_string(), stringify!(#ident).to_string())))
             }
         }
 
-        tokens.extend(quote!(::stacks_rs::Error::Derive(format!(#stream))));
+        tokens.extend(stream);
     }
 }
 
@@ -181,7 +183,7 @@ pub(crate) fn __impl(input: proc_macro::TokenStream) -> Result<TokenStream> {
 
     Ok(quote!(
         impl #imp ::std::convert::TryFrom<::stacks_rs::clarity::Tuple> for #ident #ty #wher {
-            type Error = ::stacks_rs::Error;
+            type Error = ::stacks_rs::__derive::Error;
             fn try_from(tuple: ::stacks_rs::clarity::Tuple) -> Result<Self, Self::Error> {
                 use ::stacks_rs::clarity::Cast;
                 Ok(Self { #(#tokens),* })

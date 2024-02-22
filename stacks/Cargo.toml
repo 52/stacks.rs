@@ -47,19 +47,22 @@ features = ["json"]
 rand = "0.8.5"
 
 [features]
-default = ["clarity", "transaction", "wallet-sdk", "rpc"]
+default = ["crypto", "clarity", "transaction", "wallet-sdk"]
 
 # Provide convenience derive(...) macros.
-derive = ["stacks_derive"]
+derive = ["clarity", "stacks_derive"]
+
+# Provide hex, sha, b58 & c32 primitives & methods.
+crypto = []
 
 # Provide clarity types & encoding/decoding methods.
-clarity = []
+clarity = ["crypto"]
 
 # Provide transaction builders. (transfer, call etc.)
 transaction = ["clarity", "typed-builder"]
 
 # Provide a wallet-sdk
-wallet-sdk = []
+wallet-sdk = ["crypto"]
 
 # Provide rpc methods.
 rpc = ["clarity", "transaction", "ureq", "serde"]
