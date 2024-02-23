@@ -47,16 +47,16 @@ features = ["json"]
 rand = "0.8.5"
 
 [features]
-default = ["crypto", "clarity", "transaction"]
-
-# Provide convenience derive(...) macros.
-derive = ["clarity", "stacks_derive"]
+default = ["clarity", "transaction"]
 
 # Provide hex, sha, b58 & c32 primitives & methods.
 crypto = []
 
 # Provide clarity types & encoding/decoding methods.
 clarity = ["crypto"]
+
+# Provide convenience derive(...) macros.
+derive = ["stacks_derive"]
 
 # Provide transaction builders. (transfer, call etc.)
 transaction = ["typed-builder"]
