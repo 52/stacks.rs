@@ -37,7 +37,7 @@ pub mod wallet;
 
 #[cfg(feature = "derive")]
 #[path = "derive.rs"]
-pub mod __derive;
+mod __derive;
 
 #[cfg(feature = "derive")]
 pub mod derive {
