@@ -6,6 +6,7 @@
 //
 // Usage of this file is permitted solely under a sanctioned license.
 
+#![doc = include_str!("../../README.md")]
 #![deny(warnings, clippy::pedantic)]
 #![allow(
     clippy::module_name_repetitions,

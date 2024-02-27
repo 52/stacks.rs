@@ -6,7 +6,9 @@ changelog_update = false
 [[package]]
 name = "stacks-rs"
 git_tag_enable = true
+git_tag_name = "v{{ version }}"
 
 [[package]]
 name = "stacks_derive"
 git_tag_enable = false
+git_tag_name = "derive-v{{ version }}"

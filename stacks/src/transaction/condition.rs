@@ -50,7 +50,7 @@ macro_rules! post_condition {
 }
 
 /// Marker trait for post-conditions.
-pub trait Condition: Codec + DynClone + Debug {}
+pub trait Condition: Codec + DynClone + Send + Sync + Debug {}
 clone_trait_object!(Condition);
 
 /// The post-condition code.
