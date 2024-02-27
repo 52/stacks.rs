@@ -83,7 +83,7 @@ pub(crate) const CLARITY_TYPE_STRING_UTF8: u8 = 0x0e;
 pub(crate) const CLARITY_TYPE_NON_STD: u8 = 0xff;
 
 /// Trait for Clarity types.
-pub trait Clarity: Codec + Ident + Any + DynClone + Display + Debug {}
+pub trait Clarity: Codec + Ident + Any + DynClone + Send + Sync + Display + Debug {}
 clone_trait_object!(Clarity);
 
 /// Trait for encoding/decoding consensus data.
