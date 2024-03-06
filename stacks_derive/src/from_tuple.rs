@@ -217,7 +217,7 @@ pub(crate) fn __impl(input: proc_macro::TokenStream) -> Result<TokenStream> {
                         __internal_extract_and_cast(&mut stream, &key, &ty_name);
                         let err_cast = __Error::Cast(key, ty, ident.to_token_stream());
                         let tokens = quote!(
-                            .and_then(|x| x.cast::<OptionalSome>().map_err(|_| #err_cast))
+                            .and_then(|x| x.cast::<::stacks_rs::clarity::OptionalSome>().map_err(|_| #err_cast))
                             .and_then(|x| Ok(x.into_value().to_string()))
                             .ok()
                         );
