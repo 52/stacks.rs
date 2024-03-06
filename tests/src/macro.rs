@@ -87,7 +87,8 @@ macro_rules! generate_contract_call_test {
         #[test]
         fn $name() {
             let tx = STXContractCall::builder()
-                .contract(contract())
+                .address("SP3FGQ8Z7JY9BWYZ5WM53E0M9NK7WHJF0691NZ159")
+                .contract("example")
                 .fn_name("function-name")
                 .fn_args($function_args)
                 .sender(private_key())
@@ -100,6 +101,7 @@ macro_rules! generate_contract_call_test {
                 .sponsored($sponsored)
                 .build()
                 .transaction()
+                .expect("Failed to build the transaction")
                 .sign(private_key())
                 .expect("Failed to sign the transaction");
 

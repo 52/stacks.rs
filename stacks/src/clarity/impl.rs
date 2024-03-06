@@ -861,12 +861,13 @@ impl Codec for LengthPrefixedStr {
         Ok(buff)
     }
 
-    #[allow(unused_variables)]
     fn decode(bytes: &[u8]) -> Result<Self, Error>
     where
         Self: Sized,
     {
-        unimplemented!()
+        Ok(Self::new(String::from_utf8(
+            bytes[1..=(bytes[0] as usize)].to_vec(),
+        )?))
     }
 }
 
@@ -912,12 +913,23 @@ impl Codec for FnArguments {
         Ok(buff)
     }
 
-    #[allow(unused_variables)]
     fn decode(bytes: &[u8]) -> Result<Self, Error>
     where
         Self: Sized,
     {
-        unimplemented!()
+        let (len, mut remainder) = bytes.split_at(4);
+        let num = u32::from_be_bytes(len.try_into()?) as usize;
+
+        let mut __value = Vec::with_capacity(num);
+
+        for _ in 0..num {
+            let arg = decode_clarity_type(remainder)?;
+
+            remainder = &remainder[arg.len()?..];
+            __value.push(arg);
+        }
+
+        Ok(FnArguments { __value })
     }
 }
 
@@ -1389,6 +1401,43 @@ mod tests {
         assert!(iter.next().unwrap().cast::<StringAscii>().is_ok());
         assert!(iter.next().unwrap().cast::<StringUtf8>().is_ok());
         assert!(iter.next().is_none());
+    }
+
+    #[test]
+    fn test_clarity_fn_arguments_roundtrip() {
+        let addr = "ST3J2GVMMM2R07ZFBJDWTYEYAR8FZH5WKDTFJ9AHA";
+        let args = clarity!(
+            FnArguments,
+            clarity!(Int, -1),
+            clarity!(UInt, 1),
+            clarity!(Buffer, b"test".to_vec()),
+            clarity!(True),
+            clarity!(OptionalSome, clarity!(True)),
+            clarity!(OptionalNone),
+            clarity!(PrincipalStandard, addr),
+            clarity!(PrincipalContract, addr, "test"),
+            clarity!(ResponseOk, clarity!(True)),
+            clarity!(ResponseErr, clarity!(False)),
+            clarity!(List, clarity!(True), clarity!(False)),
+            clarity!(Tuple, ("a", clarity!(True))),
+            clarity!(StringAscii, "hello world"),
+            clarity!(StringUtf8, "hello \u{1234}")
+        );
+
+        let bytes = args.encode().unwrap();
+        let value = FnArguments::decode(&bytes).unwrap();
+
+        assert_eq!(args.len().unwrap(), value.len().unwrap());
+        assert_eq!(args.to_string(), value.to_string());
+        assert_eq!(args, value);
+    }
+
+    #[test]
+    fn test_clarity_length_prefixed_str_roundtrip() {
+        let str = LengthPrefixedStr::new("hello world".to_string());
+        let bytes = str.encode().unwrap();
+        let value = LengthPrefixedStr::decode(&bytes).unwrap();
+        assert_eq!(str, value);
     }
 
     fn generate_complex_clarity_list() -> List {

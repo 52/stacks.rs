@@ -14,6 +14,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use quote::ToTokens;
 use syn::Error;
+use syn::Ident;
 use syn::Result;
 
 use crate::parse_opts;
@@ -50,6 +51,18 @@ pub(crate) struct FieldRecv {
     /// }
     /// ```
     key: Option<String>,
+    /// Indicate whether the field is a response.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// #[derive(FromTuple)]
+    /// struct Data {
+    ///     #[stacks(key = "some-key", response)]
+    ///     a: i128,
+    /// }
+    /// ```
+    response: Option<bool>,
 }
 
 /// The internal error type for the `FromTuple` implementation.
@@ -129,47 +142,93 @@ pub(crate) fn __impl(input: proc_macro::TokenStream) -> Result<TokenStream> {
 
         match &field.ty {
             syn::Type::Path(tp) if tp.path.is_ident("i128") => 'stream: {
-                break 'stream __internal_derive_cast(&mut stream, &[quote!(Int)], &key, &ty_name)
+                // handle i128 as response
+                if field.response == Some(true) {
+                    __internal_extract_and_cast(&mut stream, &key, &ty_name);
+                    __internal_err_unwrap(&mut stream);
+                    __internal_type_cast(&mut stream, &quote!(ResponseOk), &key, &ty_name);
+                    __internal_err_unwrap(&mut stream);
+                    stream.extend(quote!(.into_value()));
+                    __internal_type_cast(&mut stream, &quote!(Int), &key, &ty_name);
+                    __internal_err_unwrap(&mut stream);
+                    stream.extend(quote!(.into_value()));
+                } else {
+                    __internal_extract_and_cast(&mut stream, &key, &ty_name);
+                    __internal_if_chain_cast(&mut stream, &[quote!(Int)], &key, &ty_name);
+                }
+                break 'stream;
             }
             syn::Type::Path(tp) if tp.path.is_ident("u128") => 'stream: {
-                break 'stream __internal_derive_cast(&mut stream, &[quote!(UInt)], &key, &ty_name)
+                // handle u128 as response
+                if field.response == Some(true) {
+                    __internal_extract_and_cast(&mut stream, &key, &ty_name);
+                    __internal_err_unwrap(&mut stream);
+                    __internal_type_cast(&mut stream, &quote!(ResponseOk), &key, &ty_name);
+                    __internal_err_unwrap(&mut stream);
+                    stream.extend(quote!(.into_value()));
+                    __internal_type_cast(&mut stream, &quote!(UInt), &key, &ty_name);
+                    __internal_err_unwrap(&mut stream);
+                    stream.extend(quote!(.into_value()));
+                } else {
+                    __internal_extract_and_cast(&mut stream, &key, &ty_name);
+                    __internal_if_chain_cast(&mut stream, &[quote!(UInt)], &key, &ty_name);
+                }
+                break 'stream;
             }
             syn::Type::Path(tp) if tp.path.is_ident("bool") => 'stream: {
-                break 'stream __internal_derive_cast(&mut stream, &[quote!(True), quote!(False)], &key, &ty_name);
+                __internal_extract_and_cast(&mut stream, &key, &ty_name);
+                __internal_if_chain_cast(&mut stream, &[quote!(True), quote!(False)], &key, &ty_name);
+                break 'stream;
             }
             syn::Type::Path(tp) if tp.path.is_ident("String") => 'stream: {
-                break 'stream __internal_derive_string(&mut stream, &key, &ty_name);
+                __internal_extract_and_cast(&mut stream, &key, &ty_name);
+                __internal_err_unwrap(&mut stream);
+                stream.extend(quote!(.to_string()));
+                break 'stream;
             }
             syn::Type::Path(tp) => 'stream: {
-                let field = tp.path.segments.last().and_then(|seg| {
-                    match &seg.arguments {
-                        syn::PathArguments::AngleBracketed(it) => {
-                            let args = &it.args;
-                            Some((&seg.ident, Some(quote!(#args))))
-                        }
-                        syn::PathArguments::None => Some((&seg.ident, None)),
-                        _ => None,
-                    }
-                });
-
+                let field = __internal_parse_type_path(tp);
                 if let Some((ident, Some(ref args))) = field {
+
+                    // handle Vec<u8>
                     if ident.eq("Vec") && args.to_string().eq("u8") {
-                        break 'stream __internal_derive_cast(&mut stream, &[quote!(Buffer)], &key, &ty_name);
+                        __internal_extract_and_cast(&mut stream, &key, &ty_name);
+                        __internal_if_chain_cast(&mut stream, &[quote!(Buffer)], &key, &ty_name);
+                        break 'stream;
+                    }
+
+                    // handle Option<i128>
+                    if ident.eq("Option") && args.to_string().eq("i128") {
+                        __internal_extract_and_cast(&mut stream, &key, &ty_name);
+                        __internal_derive_option(&mut stream, &quote!(Int));
+                        break 'stream;
+                    }
+
+                    // handle Option<u128>
+                    if ident.eq("Option") && args.to_string().eq("u128") {
+                        __internal_extract_and_cast(&mut stream, &key, &ty_name);
+                        __internal_derive_option(&mut stream, &quote!(UInt));
+                        break 'stream;
                     }
                 }
 
+                // handle standalone T: TryFrom<Tuple>
                 if let Some((ident, None)) = field {
-                    break 'stream __internal_derive_type(&mut stream, &quote!(Tuple), &key, &ident.into_token_stream());
+                __internal_extract_and_cast(&mut stream, &key, &ty_name);
+                __internal_err_unwrap(&mut stream);
+                __internal_type_cast(&mut stream, &quote!(Tuple), &key, &ident.into_token_stream());
+                stream.extend(quote!(.and_then(#ident::try_from)?));
+                break 'stream;
                 }
 
                 return Err(Error::new_spanned(
                     tp.to_token_stream(),
-                    "Unsupported type, did you mean ::std::vec::Vec<u8> or `T: TryFrom<Tuple>`?",
+                    "Unsupported type, did you mean ::std::vec::Vec<u8>, Option<T> or `T: TryFrom<Tuple>`?",
                 ))
             }
             _ => return Err(Error::new_spanned(
                 field.ty.to_token_stream(),
-                "Unsupported type, expected one of: i128, u128, ::std::vec::Vec<u8>, bool, String, or `T: TryFrom<Tuple>`",
+                "Unsupported type, expected one of: i128, u128, ::std::vec::Vec<u8>, Option<T>, bool, String, or `T: TryFrom<Tuple>`",
             )),
         };
 
@@ -192,7 +251,18 @@ pub(crate) fn __impl(input: proc_macro::TokenStream) -> Result<TokenStream> {
     ))
 }
 
-fn __internal_derive_cast<Token>(
+fn __internal_extract_and_cast<Token>(stream: &mut TokenStream, key: &Token, ident: &Token)
+where
+    Token: quote::ToTokens,
+{
+    let err = __Error::Extract(key, ident);
+
+    stream.extend(quote! {
+        tuple.get(#key).ok_or_else(||#err)
+    });
+}
+
+fn __internal_if_chain_cast<Token>(
     stream: &mut TokenStream,
     types: &[Token],
     key: &Token,
@@ -200,8 +270,7 @@ fn __internal_derive_cast<Token>(
 ) where
     Token: quote::ToTokens,
 {
-    let extract_err = __Error::Extract(key, ident);
-    let match_err = __Error::Match(key, ident);
+    let err = __Error::Match(key, ident);
 
     let mut inner = TokenStream::new();
     for (i, ty) in types.iter().enumerate() {
@@ -224,36 +293,53 @@ fn __internal_derive_cast<Token>(
     }
 
     stream.extend(quote! {
-        tuple.get(#key)
-            .ok_or_else(|| #extract_err)
             .and_then(|value| {
-                #inner else { Err(#match_err) }
+                #inner else { Err(#err) }
             })?
     })
 }
 
-fn __internal_derive_type<Token>(stream: &mut TokenStream, ty: &Token, key: &Token, ident: &Token)
+fn __internal_type_cast<Token>(stream: &mut TokenStream, ty: &Token, key: &Token, ident: &Token)
 where
     Token: quote::ToTokens,
 {
-    let err_extract = __Error::Extract(key, ident);
     let err_cast = __Error::Cast(key, ty, ident);
 
     stream.extend(quote! {
-        tuple.get(#key).ok_or_else(||#err_extract)?
         .cast::<::stacks_rs::clarity::#ty>()
         .map_err(|_| #err_cast)
-        .and_then(#ident::try_from)?
     })
 }
 
-fn __internal_derive_string<Token>(stream: &mut TokenStream, key: &Token, ident: &Token)
+fn __internal_derive_option<Token>(stream: &mut TokenStream, ty: &Token)
 where
     Token: quote::ToTokens,
 {
-    let err = __Error::Extract(key, ident);
-
     stream.extend(quote! {
-        tuple.get(#key).ok_or_else(||#err)?.to_string()
+        .map(|value| {
+            value
+            .cast::<::stacks_rs::clarity::OptionalSome>()
+            .and_then(|value| value.cast::<::stacks_rs::clarity::#ty>())
+            .map(::stacks_rs::clarity::#ty::into_value)
+            .ok()
+        })?
     })
+}
+
+fn __internal_err_unwrap(stream: &mut TokenStream) {
+    stream.extend(quote! {?})
+}
+
+fn __internal_parse_type_path(ty: &syn::TypePath) -> Option<(&Ident, Option<TokenStream>)> {
+    ty.path
+        .segments
+        .last()
+        .and_then(|seg| match &seg.arguments {
+            syn::PathArguments::AngleBracketed(it) => {
+                let args = &it.args;
+                Some((&seg.ident, Some(quote!(#args))))
+            }
+            syn::PathArguments::None => Some((&seg.ident, None)),
+            _ => None,
+        })
 }

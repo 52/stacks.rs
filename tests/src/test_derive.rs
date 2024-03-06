@@ -7,7 +7,20 @@
 // Usage of this file is permitted solely under a sanctioned license.
 
 use stacks_rs::clarity;
+use stacks_rs::clarity::Any;
+use stacks_rs::clarity::Cast;
+use stacks_rs::clarity::Int;
+use stacks_rs::clarity::ResponseErr;
+use stacks_rs::clarity::ResponseOk;
+use stacks_rs::clarity::Tuple;
+use stacks_rs::derive;
 use stacks_rs::derive::FromTuple;
+
+#[derive(FromTuple)]
+pub struct X {
+    #[stacks(key = "field", response)]
+    field: i128,
+}
 
 #[test]
 fn test_derive_from_tuple() {
@@ -17,6 +30,8 @@ fn test_derive_from_tuple() {
         data: Data,
         #[stacks(key = "meta")]
         meta: Meta,
+        #[stacks(key = "response")]
+        response: Response,
     }
 
     #[derive(FromTuple)]
@@ -37,6 +52,22 @@ fn test_derive_from_tuple() {
         e: bool,
         #[stacks(key = "f")]
         f: bool,
+        #[stacks(key = "g")]
+        g: Option<i128>,
+        #[stacks(key = "h")]
+        h: Option<i128>,
+        #[stacks(key = "i")]
+        i: Option<u128>,
+        #[stacks(key = "j")]
+        j: Option<u128>,
+    }
+
+    #[derive(FromTuple)]
+    struct Response {
+        #[stacks(key = "k", response)]
+        k: u128,
+        #[stacks(key = "l", response)]
+        l: i128,
     }
 
     let data = clarity!(
@@ -47,8 +78,28 @@ fn test_derive_from_tuple() {
         ("d", clarity!(PrincipalStandard, "STX000001"))
     );
 
-    let meta = clarity!(Tuple, ("e", clarity!(True)), ("f", clarity!(False)));
-    let tuple = clarity!(Tuple, ("data", data), ("meta", meta));
+    let meta = clarity!(
+        Tuple,
+        ("e", clarity!(True)),
+        ("f", clarity!(False)),
+        ("g", clarity!(OptionalSome, clarity!(Int, 1))),
+        ("h", clarity!(OptionalNone)),
+        ("i", clarity!(OptionalSome, clarity!(UInt, 1))),
+        ("j", clarity!(OptionalNone))
+    );
+
+    let response = clarity!(
+        Tuple,
+        ("k", clarity!(ResponseOk, clarity!(UInt, 1))),
+        ("l", clarity!(ResponseOk, clarity!(Int, 1)))
+    );
+
+    let tuple = clarity!(
+        Tuple,
+        ("data", data),
+        ("meta", meta),
+        ("response", response)
+    );
 
     let parsed = Payload::try_from(tuple).unwrap();
     assert_eq!(parsed.data.a, 1);
@@ -57,6 +108,12 @@ fn test_derive_from_tuple() {
     assert_eq!(parsed.data.d, "STX000001");
     assert_eq!(parsed.meta.e, true);
     assert_eq!(parsed.meta.f, false);
+    assert_eq!(parsed.meta.g, Some(1));
+    assert_eq!(parsed.meta.h, None);
+    assert_eq!(parsed.meta.i, Some(1));
+    assert_eq!(parsed.meta.j, None);
+    assert_eq!(parsed.response.k, 1);
+    assert_eq!(parsed.response.l, 1);
 }
 
 #[test]

@@ -44,7 +44,7 @@ pub(crate) mod network;
 pub(crate) mod payload;
 pub(crate) mod signer;
 
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
     #[error("Attempted to sign origin with too many signatures")]
     OriginOversign,
