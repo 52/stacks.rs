@@ -78,6 +78,31 @@ pub enum Version {
     TestnetP2SH = 21,
 }
 
+/// A C32 address
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Address {
+    /// The address hash.
+    pub hash: Hash160,
+    /// The address version.
+    pub version: u8,
+}
+
+impl Address {
+    /// Creates a new `Address`.
+    pub fn new(hash: Hash160, version: u8) -> Self {
+        Self { hash, version }
+    }
+}
+
+impl std::str::FromStr for Address {
+    type Err = Error;
+
+    fn from_str(str: &str) -> Result<Self, Self::Err> {
+        let (bytes, version) = c32_address_decode(str)?;
+        Ok(Self::new(Hash160::new(bytes), version))
+    }
+}
+
 /// Encode a byte slice into a `C32` string.
 pub fn c32_encode<T>(slice: T) -> Result<String, Error>
 where

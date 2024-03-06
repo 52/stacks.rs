@@ -177,6 +177,16 @@ impl Sha512_256Hash {
 impl_hash_byte_array!(Hash160, u8, HASH160_ENCODED_SIZE);
 impl Hash160 {
     /// Create a new `Hash160` from a slice.
+    pub fn new<T>(bytes: T) -> Self
+    where
+        T: AsRef<[u8]>,
+    {
+        let mut buff = [0u8; HASH160_ENCODED_SIZE];
+        buff.copy_from_slice(bytes.as_ref());
+        Self(buff)
+    }
+
+    /// Create a new `Hash160` from a slice.
     pub fn from_slice<T>(bytes: T) -> Self
     where
         T: AsRef<[u8]>,

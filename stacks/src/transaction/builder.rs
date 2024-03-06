@@ -6,12 +6,15 @@
 //
 // Usage of this file is permitted solely under a sanctioned license.
 
+use std::str::FromStr;
+
 use secp256k1::SecretKey;
 
 use super::ContractCallPayload;
+use crate::clarity;
 use crate::clarity::Clarity;
 use crate::clarity::FnArguments;
-use crate::clarity::PrincipalContract;
+use crate::crypto::c32::Address;
 use crate::crypto::c32::Mode;
 use crate::transaction::AnchorMode;
 use crate::transaction::Auth;
@@ -104,8 +107,11 @@ where
     N: Network,
 {
     #[builder(setter(into))]
-    /// The contract principal.
-    pub contract: PrincipalContract,
+    /// The contract address.
+    pub address: String,
+    #[builder(setter(into))]
+    /// The contract name.
+    pub contract: String,
     #[builder(setter(into))]
     /// The function name.
     pub fn_name: String,
@@ -148,9 +154,11 @@ where
     N: Network,
 {
     /// Consumes the contract-call & returns a `Transaction`.
-    pub fn transaction(self) -> Transaction {
+    pub fn transaction(self) -> Result<Transaction, clarity::Error> {
         let pk = self.sender.public_key(&secp256k1::Secp256k1::new());
-        let payload = ContractCallPayload::new(self.contract, self.fn_name, self.fn_args);
+        let address = Address::from_str(&self.address)?;
+
+        let payload = ContractCallPayload::new(address, self.contract, self.fn_name, self.fn_args);
         let condition = SpendingConditionStandard::new(pk, self.fee, self.nonce, Mode::P2PKH);
 
         let auth = if self.sponsored {
@@ -159,7 +167,7 @@ where
             Auth::Standard(Box::new(condition))
         };
 
-        Transaction::new(
+        let transaction = Transaction::new(
             self.network.version(),
             self.network.chain_id(),
             auth,
@@ -167,6 +175,8 @@ where
             self.post_condition_mode,
             self.post_conditions,
             Box::new(payload),
-        )
+        );
+
+        Ok(transaction)
     }
 }

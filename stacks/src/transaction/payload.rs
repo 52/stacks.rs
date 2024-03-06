@@ -12,11 +12,13 @@ use dyn_clone::clone_trait_object;
 use dyn_clone::DynClone;
 
 use crate::clarity;
+use crate::clarity::decode_clarity_type;
 use crate::clarity::Clarity;
 use crate::clarity::Codec;
 use crate::clarity::FnArguments;
 use crate::clarity::LengthPrefixedStr;
-use crate::clarity::PrincipalContract;
+use crate::crypto::c32::Address;
+use crate::crypto::Hash160;
 
 /// The token-transfer payload type.
 pub(crate) const PAYLOAD_TYPE_TOKEN_TRANSFER: u8 = 0x00;
@@ -26,6 +28,29 @@ pub(crate) const PAYLOAD_TYPE_CONTRACT_CALL: u8 = 0x02;
 /// Marker trait for transaction payloads.
 pub trait Payload: Codec + DynClone + Debug {}
 clone_trait_object!(Payload);
+
+impl Codec for Box<dyn Payload> {
+    fn encode(&self) -> Result<Vec<u8>, clarity::Error> {
+        self.as_ref().encode()
+    }
+
+    fn decode(bytes: &[u8]) -> Result<Self, clarity::Error>
+    where
+        Self: Sized,
+    {
+        match bytes[0] {
+            PAYLOAD_TYPE_TOKEN_TRANSFER => {
+                let payload = TokenTransferPayload::decode(bytes)?;
+                Ok(Box::new(payload))
+            }
+            PAYLOAD_TYPE_CONTRACT_CALL => {
+                let payload = ContractCallPayload::decode(bytes)?;
+                Ok(Box::new(payload))
+            }
+            _ => Err(clarity::Error::UnexpectedType(bytes[0])),
+        }
+    }
+}
 
 /// The payload type for a transaction.
 #[derive(Debug, Clone)]
@@ -73,12 +98,34 @@ impl Codec for TokenTransferPayload {
         Ok(buff)
     }
 
-    #[allow(unused_variables)]
     fn decode(bytes: &[u8]) -> Result<Self, clarity::Error>
     where
         Self: Sized,
     {
-        unimplemented!()
+        if bytes[0] != PAYLOAD_TYPE_TOKEN_TRANSFER {
+            return Err(clarity::Error::UnexpectedType(bytes[0]));
+        }
+
+        let mut offset = 1;
+
+        let address = decode_clarity_type(&bytes[offset..])?;
+        let addr_len = address.len()?;
+
+        offset += addr_len;
+
+        let amount_bytes = &bytes[offset..offset + 8];
+        let amount = u64::from_be_bytes(amount_bytes.try_into()?);
+
+        offset += 8;
+
+        let memo_bytes = &bytes[offset..offset + 34];
+        let memo = String::from_utf8(memo_bytes.to_vec())?;
+
+        Ok(Self {
+            address,
+            amount,
+            memo,
+        })
     }
 }
 
@@ -87,8 +134,10 @@ impl Payload for TokenTransferPayload {}
 /// The payload type for a contract call.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContractCallPayload {
-    /// The contract to call.
-    pub address: PrincipalContract,
+    /// The contract address.
+    pub address: Address,
+    /// The name of the contract to call.
+    pub contract: LengthPrefixedStr,
     /// The name of the function to call.
     pub name: LengthPrefixedStr,
     /// The arguments to pass to the function.
@@ -97,14 +146,15 @@ pub struct ContractCallPayload {
 
 impl ContractCallPayload {
     /// Creates a new `ContractCallPayload`
-    pub fn new<T>(address: PrincipalContract, name: T, args: FnArguments) -> Self
+    pub fn new<T, K>(address: Address, contract: T, name: K, args: FnArguments) -> Self
     where
-        T: Into<String>,
+        T: Into<LengthPrefixedStr>,
+        K: Into<LengthPrefixedStr>,
     {
-        let name = LengthPrefixedStr::new(name.into());
         Self {
             address,
-            name,
+            contract: contract.into(),
+            name: name.into(),
             args,
         }
     }
@@ -113,18 +163,46 @@ impl ContractCallPayload {
 impl Codec for ContractCallPayload {
     fn encode(&self) -> Result<Vec<u8>, clarity::Error> {
         let mut buff = vec![PAYLOAD_TYPE_CONTRACT_CALL];
-        buff.extend_from_slice(&self.address.encode()?[1..]);
+        buff.extend_from_slice(&[self.address.version]);
+        buff.extend_from_slice(self.address.hash.as_bytes());
+        buff.extend_from_slice(&self.contract.encode()?);
         buff.extend_from_slice(&self.name.encode()?);
         buff.extend_from_slice(&self.args.encode()?);
         Ok(buff)
     }
 
-    #[allow(unused_variables)]
     fn decode(bytes: &[u8]) -> Result<Self, clarity::Error>
     where
         Self: Sized,
     {
-        unimplemented!()
+        if bytes[0] != PAYLOAD_TYPE_CONTRACT_CALL {
+            return Err(clarity::Error::UnexpectedType(bytes[0]));
+        }
+
+        let mut offset = 1;
+
+        let version = bytes[offset];
+        offset += 1;
+
+        let hash = Hash160::new(&bytes[offset..offset + 20]);
+        let address = Address::new(hash, version);
+
+        offset += 20;
+
+        let contract = LengthPrefixedStr::decode(&bytes[offset..])?;
+        let contract_len = contract.len()?;
+
+        let name = LengthPrefixedStr::decode(&bytes[offset + contract_len..])?;
+        let name_len = name.len()?;
+
+        let args = FnArguments::decode(&bytes[offset + contract_len + name_len..])?;
+
+        Ok(Self {
+            address,
+            contract,
+            name,
+            args,
+        })
     }
 }
 
@@ -132,9 +210,12 @@ impl Payload for ContractCallPayload {}
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
     use crate::clarity::False;
     use crate::clarity::Int;
+    use crate::clarity::PrincipalContract;
     use crate::clarity::PrincipalStandard;
     use crate::clarity::True;
     use crate::clarity::UInt;
@@ -142,13 +223,16 @@ mod tests {
 
     #[test]
     fn test_transaction_payload_token_transfer_encode() {
-        let (std, con) = get_test_data();
+        let std = get_test_standard_cv();
+        let con = get_test_contract_cv();
 
         let std_payload = TokenTransferPayload::new(std, 100000, "Hello, world!");
 
         let std_encoded = std_payload.encode().unwrap();
-        let std_hex = bytes_to_hex(&std_encoded);
+        let std_decoded = TokenTransferPayload::decode(&std_encoded).unwrap();
+        assert_eq!(std_decoded.hex().unwrap(), std_payload.hex().unwrap());
 
+        let std_hex = bytes_to_hex(&std_encoded);
         let std_expected = "00051a164247d6f2b425ac5771423ae6c80c754f7172b000000000000186a048656c6c6f2c20776f726c6421000000000000000000000000000000000000000000";
         assert_eq!(std_hex, std_expected);
 
@@ -163,39 +247,47 @@ mod tests {
 
     #[test]
     fn test_transaction_payload_token_transfer_encode_empty() {
-        let (std, _) = get_test_data();
+        let std = get_test_standard_cv();
 
         let payload = TokenTransferPayload::new(std, 100000, "");
-        let encoded = payload.encode().unwrap();
-        let hex = bytes_to_hex(&encoded);
 
+        let encoded = payload.encode().unwrap();
+        let decoded = TokenTransferPayload::decode(&encoded).unwrap();
+        assert_eq!(decoded.hex().unwrap(), payload.hex().unwrap());
+
+        let hex = bytes_to_hex(&encoded);
         let expected = "00051a164247d6f2b425ac5771423ae6c80c754f7172b000000000000186a000000000000000000000000000000000000000000000000000000000000000000000";
         assert_eq!(hex, expected);
     }
 
     #[test]
     fn test_transaction_payload_contract_call_encode() {
-        let (_, con) = get_test_data();
+        let (address, contract, fn_name) = get_test_contract_fixtures();
 
-        let args = clarity!(FnArguments, UInt::new(100), Int::new(-100));
-        let payload = ContractCallPayload::new(con, "my-function", args);
+        let fn_args = clarity!(FnArguments, UInt::new(100), Int::new(-100));
+        let payload = ContractCallPayload::new(address, contract, fn_name, fn_args);
 
         let encoded = payload.encode().unwrap();
-        let hex = bytes_to_hex(&encoded);
+        let decoded = ContractCallPayload::decode(&encoded).unwrap();
+        assert_eq!(decoded, payload);
 
+        let hex = bytes_to_hex(&encoded);
         let expected = "021a164247d6f2b425ac5771423ae6c80c754f7172b00b6d792d636f6e74726163740b6d792d66756e6374696f6e00000002010000000000000000000000000000006400ffffffffffffffffffffffffffffff9c";
         assert_eq!(hex, expected);
     }
 
     #[test]
     fn test_transaction_payload_contract_call_encode_empty() {
-        let (_, con) = get_test_data();
+        let (address, contract, fn_name) = get_test_contract_fixtures();
+        let fn_args = clarity!(FnArguments);
 
-        let payload = ContractCallPayload::new(con, "my-function", clarity!(FnArguments));
+        let payload = ContractCallPayload::new(address, contract, fn_name, fn_args);
 
         let encoded = payload.encode().unwrap();
-        let hex = bytes_to_hex(&encoded);
+        let decoded = ContractCallPayload::decode(&encoded).unwrap();
+        assert_eq!(decoded, payload);
 
+        let hex = bytes_to_hex(&encoded);
         let expected =
             "021a164247d6f2b425ac5771423ae6c80c754f7172b00b6d792d636f6e74726163740b6d792d66756e6374696f6e00000000";
         assert_eq!(hex, expected);
@@ -203,9 +295,9 @@ mod tests {
 
     #[test]
     fn test_transaction_payload_contract_call_encode_complex() {
-        let (_, con) = get_test_data();
+        let (address, contract, fn_name) = get_test_contract_fixtures();
 
-        let args = clarity!(
+        let fn_args = clarity!(
             FnArguments,
             clarity!(Tuple, ("a", UInt::new(100)), ("b", Int::new(-100))),
             clarity!(
@@ -221,26 +313,36 @@ mod tests {
             Int::new(-100000)
         );
 
-        let payload = ContractCallPayload::new(con, "my-function", args);
+        let payload = ContractCallPayload::new(address, contract, fn_name, fn_args);
 
         let encoded = payload.encode().unwrap();
-        let hex = bytes_to_hex(&encoded);
+        let decoded = ContractCallPayload::decode(&encoded).unwrap();
+        assert_eq!(decoded, payload);
 
+        let hex = bytes_to_hex(&encoded);
         let expected = "021a164247d6f2b425ac5771423ae6c80c754f7172b00b6d792d636f6e74726163740b6d792d66756e6374696f6e000000070c0000000201610100000000000000000000000000000064016200ffffffffffffffffffffffffffffff9c0b0000000303040a0100000000000000000000000000000064020000000b68656c6c6f20776f726c640301000000000000000000000000000186a00400fffffffffffffffffffffffffffe7960";
         assert_eq!(hex, expected);
     }
 
-    fn get_test_data() -> (PrincipalStandard, PrincipalContract) {
-        let std = clarity!(
+    fn get_test_standard_cv() -> PrincipalStandard {
+        clarity!(
             PrincipalStandard,
             "STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6"
-        );
+        )
+    }
 
-        let con = clarity!(
+    fn get_test_contract_cv() -> PrincipalContract {
+        clarity!(
             PrincipalContract,
             "STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6",
             "my-contract"
-        );
-        (std, con)
+        )
+    }
+
+    fn get_test_contract_fixtures() -> (Address, String, String) {
+        let addr = Address::from_str("STB44HYPYAT2BB2QE513NSP81HTMYWBJP02HPGK6").unwrap();
+        let contract_name = String::from("my-contract");
+        let fn_name = String::from("my-function");
+        (addr, contract_name.to_string(), fn_name.to_string())
     }
 }

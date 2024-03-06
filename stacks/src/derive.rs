@@ -21,4 +21,4 @@ pub enum Error {
 
 pub trait FromTuple {}
 
-impl<T: TryFrom<crate::clarity::Tuple>> FromTuple for T {}
+impl<T> FromTuple for T where T: TryFrom<crate::clarity::Tuple> {}

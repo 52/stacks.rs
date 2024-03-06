@@ -50,7 +50,8 @@ fn main() -> Result<(), stacks_rs::Error> {
     let sender_key = account.private_key()?;
 
     let transaction = STXContractCall::builder()
-        .contract(("ST000000000000000000002AMW42H", "pox"))
+        .address("ST000000000000000000002AMW42H")
+        .contract("pox")
         .fn_name("make-pox")
         .fn_args(clarity!(
             FnArguments,

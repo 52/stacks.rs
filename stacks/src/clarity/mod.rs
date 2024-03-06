@@ -21,7 +21,7 @@ pub mod impls;
 #[path = "macro.rs"]
 pub mod macros;
 
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
     /// Exceeded maximum string length.
     #[error("Bad string length - received {0} bytes, max. {1} bytes")]
@@ -35,7 +35,7 @@ pub enum Error {
     /// Downcasting trait object to a concrete type failed.
     #[error("Bad downcast, please check the type identifier and the cast type")]
     BadDowncast,
-    /// Decoding a clarity type with a unknown type identifier.
+    /// Decoding a type with an unknown type identifier.
     #[error("Unexpected type identifier - received: {0}")]
     UnexpectedType(u8),
     /// `crypto::c32` crate errors.
@@ -47,6 +47,9 @@ pub enum Error {
     /// Conversion from a string failed.
     #[error(transparent)]
     TryFromUtf8(#[from] std::string::FromUtf8Error),
+    /// Conversion from a slice failed.
+    #[error(transparent)]
+    TryFromSliceError(#[from] std::array::TryFromSliceError),
 }
 
 /// The clarity type identifier for `Int`.
