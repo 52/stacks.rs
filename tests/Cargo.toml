@@ -8,6 +8,6 @@ repository.workspace = true
 publish = false
 
 [dependencies.stacks-rs]
-version = "0.3.0"
+version = "0.3.1"
 features = ["derive", "wallet-sdk"]
 path = "../stacks"
