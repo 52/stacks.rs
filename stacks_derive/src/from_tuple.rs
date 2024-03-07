@@ -197,6 +197,19 @@ pub(crate) fn __impl(input: proc_macro::TokenStream) -> Result<TokenStream> {
                         break 'stream;
                     }
 
+                    // handle Vec<String>
+                    if ident.eq("Vec") && args.to_string().eq("String") {
+                        let ty = quote!(List);
+                        __internal_extract_and_cast(&mut stream, &key, &ty_name);
+                        let err_cast = __Error::Cast(key, ty, ident.to_token_stream());
+                        let tokens = quote!(
+                            .and_then(|x| x.cast::<::stacks_rs::clarity::List>().map_err(|_| #err_cast))
+                        );
+                        stream.extend(tokens);
+                        stream.extend(quote!(.map(|list| list.into_iter().map(|any| any.to_string()).collect())?));
+                        break 'stream;
+                    }
+
                     // handle Option<i128>
                     if ident.eq("Option") && args.to_string().eq("i128") {
                         __internal_extract_and_cast(&mut stream, &key, &ty_name);
