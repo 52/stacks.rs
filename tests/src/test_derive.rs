@@ -10,6 +10,7 @@ use stacks_rs::clarity;
 use stacks_rs::clarity::Any;
 use stacks_rs::clarity::Cast;
 use stacks_rs::clarity::Int;
+use stacks_rs::clarity::List;
 use stacks_rs::clarity::OptionalSome;
 use stacks_rs::clarity::ResponseErr;
 use stacks_rs::clarity::ResponseOk;
@@ -29,6 +30,8 @@ fn test_derive_from_tuple() {
         response: Response,
         #[stacks(key = "options")]
         options: Options,
+        #[stacks(key = "vector")]
+        vector: Vector,
     }
 
     #[derive(FromTuple)]
@@ -75,6 +78,12 @@ fn test_derive_from_tuple() {
         n: i128,
     }
 
+    #[derive(FromTuple)]
+    struct Vector {
+        #[stacks(key = "o")]
+        o: Vec<String>,
+    }
+
     let data = clarity!(
         Tuple,
         ("a", clarity!(Int, 1)),
@@ -107,12 +116,25 @@ fn test_derive_from_tuple() {
         ("n", clarity!(ResponseOk, clarity!(Int, 1)))
     );
 
+    let vector = clarity!(
+        Tuple,
+        (
+            "o",
+            clarity!(
+                List,
+                clarity!(PrincipalStandard, "STX0001"),
+                clarity!(PrincipalStandard, "STX0002")
+            )
+        )
+    );
+
     let tuple = clarity!(
         Tuple,
         ("data", data),
         ("meta", meta),
         ("response", response),
-        ("options", optionals)
+        ("options", optionals),
+        ("vector", vector)
     );
 
     let parsed = Payload::try_from(tuple).unwrap();
@@ -130,13 +152,10 @@ fn test_derive_from_tuple() {
     assert_eq!(parsed.options.l, None);
     assert_eq!(parsed.response.m, 1);
     assert_eq!(parsed.response.n, 1);
-
-    // assert_eq!(parsed.meta.g, Some(1));
-    // assert_eq!(parsed.meta.h, None);
-    // assert_eq!(parsed.meta.i, Some(1));
-    // assert_eq!(parsed.meta.j, None);
-    // assert_eq!(parsed.response.k, 1);
-    // assert_eq!(parsed.response.l, 1);
+    assert_eq!(
+        parsed.vector.o,
+        vec!["STX0001".to_string(), "STX0002".to_string()]
+    );
 }
 
 #[test]
