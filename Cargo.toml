@@ -7,6 +7,7 @@ members = [
     "stacks-primitives",
     "stacks-rpc",
     "stacks-tests",
+    "stacks-wallet",
 ]
 
 [workspace.package]
@@ -14,22 +15,38 @@ version = "0.4.0"
 edition = "2021"
 authors = ["Max Karou <maxkarou@protonmail.com>"]
 license = "MIT OR Apache-2.0"
-rust-version = "1.81"
-repository = "https://github.com/52/stacks-rs"
-homepage = "https://github.com/52/stacks-rs"
+rust-version = "1.56"
+repository = "https://github.com/52/stacks.rs"
+homepage = "https://github.com/52/stacks.rs"
 
 [workspace.dependencies]
 # workspace
+stacks-derive = { version = "0.4", path = "stacks-derive" }
 stacks-primitives = { version = "0.4", path = "stacks-primitives" }
 
-# core
-bytes = { version = "1", default-features = false }
-lazy-regex = { version = "3.0", default-features = false, features = ["lite"] }
-rand = { version = "0.8", default-features = false, features = ["getrandom"] }
+# crypto
+sha2 = { version = "0.10", default-features = false }
+k256 = { version = "0.13", default-features = false }
+ripemd = { version = "0.1", default-features = false }
+
+# macro
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "2.0"
+
+# serde
 serde = { version = "1.0", default-features = false, features = ["alloc"] }
-serde_bytes = { version = "0.11", default-features = false, features = ["alloc"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 
 # encoding
-bs58 = { version = "0.5", default-features = false, features = ["alloc"] }
-c32 = { version = "0.4", default-features = false, features = ["alloc"] }
-const-hex = { version = "1.14", default-features = false, features = ["alloc"] }
+b58 = { package = "bs58", version = "0.5", default-features = false }
+c32 = { version = "0.5.1", default-features = false, features = ["alloc", "check"] }
+hex = { package = "const-hex", version = "1.1", default-features = false, features = ["alloc"] }
+
+# rand
+rand = { version = "0.9.1" }
+rand_core = { version = "0.6.4", default-features = false, features = ["getrandom"] }
+
+# core
+bytes = { version = "1.10", default-features = false }
+lazy-regex = { version = "3.4", default-features = false, features = ["lite"] }
