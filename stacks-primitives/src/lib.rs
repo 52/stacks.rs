@@ -13,16 +13,32 @@
 
 extern crate alloc;
 
+pub extern crate b58;
+pub extern crate c32;
+pub extern crate hex;
+
+#[cfg(feature = "serde")]
+pub mod serde;
+
 pub mod address;
 pub mod bytes;
 pub mod codec;
+pub mod ecdsa;
+pub mod hash;
+pub mod macros;
+pub mod network;
 pub mod string;
+pub mod utils;
 pub mod value;
 
-/// Re-exports for feature-specific type compatibility.
-///
-/// Provides a unified interface for common types and traits across features.
+/// Private re-exports for common allocation types.
 #[doc(hidden)]
-pub(crate) mod lib {
-    pub(crate) use write as w;
+pub mod __private {
+    pub use ::alloc::boxed::Box;
+    pub use ::alloc::collections::BTreeMap;
+    pub use ::alloc::rc::Rc;
+    pub use ::alloc::string::String;
+    pub use ::alloc::string::ToString;
+    pub use ::alloc::sync::Arc;
+    pub use ::alloc::vec::Vec;
 }
