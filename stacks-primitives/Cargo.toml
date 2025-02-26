@@ -13,14 +13,22 @@ rust-version.workspace = true
 repository.workspace = true
 
 [features]
-default = ["serde"]
-serde = ["dep:serde", "dep:serde_bytes", "bytes/serde"]
+default = []
+rand = ["dep:rand_core"]
+serde = ["dep:serde", "bytes/serde", "hex/serde"]
 
 [dependencies]
-bs58 = { workspace = true }
+b58 = { workspace = true }
 bytes = { workspace = true }
 c32 = { workspace = true }
-const-hex = { workspace = true }
+hex = { workspace = true }
+k256 = { workspace = true, features = ["ecdsa"] }
 lazy-regex = { workspace = true }
+rand_core = { workspace = true, optional = true }
+ripemd = { workspace = true }
 serde = { workspace = true, optional = true, features = ["derive"] }
-serde_bytes = { workspace = true, optional = true }
+sha2 = { workspace = true }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
