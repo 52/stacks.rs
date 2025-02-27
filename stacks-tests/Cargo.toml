@@ -13,5 +13,12 @@ license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-[dependencies]
-stacks-primitives = { workspace = true }
+[dev-dependencies]
+# workspace
+stacks-primitives = { workspace = true, features = ["rand", "serde"] }
+
+# rand
+rand_core = { workspace = true }
+
+# serde
+serde_json = { workspace = true }
