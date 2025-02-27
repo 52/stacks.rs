@@ -1,0 +1,13 @@
+[package]
+name = "stacks-wallet"
+description = ""
+keywords = []
+categories = []
+homepage = ""
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
