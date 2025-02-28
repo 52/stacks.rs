@@ -64,6 +64,7 @@ pub const fn memcpy(
 /// assert!(!utils::memcmp(&a, 0, &b, 0, 3));
 /// ```
 #[inline]
+#[must_use]
 #[track_caller]
 pub const fn memcmp(
     a: &[u8],
