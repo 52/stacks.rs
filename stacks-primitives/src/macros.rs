@@ -475,7 +475,7 @@ macro_rules! wrap_bytes {
             fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
                 // SAFETY: `Self` is a #[repr(transparent)] wrapper of `[u8; N]`.
                 <&[u8; $n]>::try_from(bytes).map(|src| unsafe {
-                    &*(::core::ptr::from_ref(src).cast::<$name>())
+                    &*((src as *const [u8; $n]).cast::<$name>())
                 })
             }
         }
@@ -487,7 +487,7 @@ macro_rules! wrap_bytes {
             fn try_from(bytes: &'a mut [u8]) -> Result<Self, Self::Error> {
                 // SAFETY: `Self` is a #[repr(transparent)] wrapper of `[u8; N]`.
                 <&mut [u8; $n]>::try_from(bytes).map(|src| unsafe {
-                    &mut *(::core::ptr::from_mut(src).cast::<$name>())
+                    &mut *((src as *mut [u8; $n]).cast::<$name>())
                 })
             }
         }

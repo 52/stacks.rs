@@ -729,7 +729,7 @@ impl<'a, const N: usize> TryFrom<&'a [u8]> for &'a FixedBytes<N> {
     fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         // SAFETY: `FixedBytes` is a #[repr(transparent)] wrapper of `[u8; N]`.
         <&[u8; N]>::try_from(bytes).map(|src| unsafe {
-            &*(ptr::from_ref(src).cast::<FixedBytes<N>>())
+            &*((src as *const [u8; N]).cast::<FixedBytes<N>>())
         })
     }
 }
@@ -741,7 +741,7 @@ impl<'a, const N: usize> TryFrom<&'a mut [u8]> for &'a mut FixedBytes<N> {
     fn try_from(bytes: &'a mut [u8]) -> Result<Self, Self::Error> {
         // SAFETY: `FixedBytes` is a #[repr(transparent)] wrapper of `[u8; N]`.
         <&mut [u8; N]>::try_from(bytes).map(|src| unsafe {
-            &mut *(ptr::from_mut(src).cast::<FixedBytes<N>>())
+            &mut *((src as *mut [u8; N]).cast::<FixedBytes<N>>())
         })
     }
 }
