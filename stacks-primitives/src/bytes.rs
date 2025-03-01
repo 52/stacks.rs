@@ -13,7 +13,6 @@ use core::default;
 use core::fmt;
 use core::marker;
 use core::ops;
-use core::ptr;
 use core::slice;
 use core::str;
 
