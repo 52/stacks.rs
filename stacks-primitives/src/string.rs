@@ -12,6 +12,9 @@ use alloc::string::ToString;
 use lazy_regex::Lazy;
 use lazy_regex::Regex;
 
+#[cfg(feature = "serde")]
+use crate::lib::serde::*;
+
 /// Error variants for `LengthPrefixedString` creation and validation.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Error {
@@ -49,7 +52,7 @@ pub trait Constraint {
 macro_rules! define_fn_constraint {
     ($(#[$attr:meta])* $name:ident, fn ($param:tt: &str) -> bool $body:block) => {
         $(#[$attr])*
-        #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub struct $name;
         impl Constraint for $name {
             #[inline]
@@ -62,7 +65,7 @@ macro_rules! define_fn_constraint {
 macro_rules! define_regex_constraint {
     ($(#[$attr:meta])* $name:ident, $pattern:expr) => {
         $(#[$attr])*
-        #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub struct $name;
         impl Constraint for $name {
             #[inline]
@@ -95,7 +98,9 @@ define_regex_constraint! {
 /// - `const MIN`: The minimum byte length (inclusive).
 /// - `const MAX`: The maximum byte length (inclusive).
 /// - `C: Constraint`: The validation `Constraint`, defaults to `Any`.
-pub struct LenghtPrefixedString<
+#[repr(transparent)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LengthPrefixedString<
     const MIN: usize,
     const MAX: usize,
     C: Constraint = Any,
@@ -105,9 +110,9 @@ pub struct LenghtPrefixedString<
 }
 
 impl<const MIN: usize, const MAX: usize, C: Constraint>
-    LenghtPrefixedString<MIN, MAX, C>
+    LengthPrefixedString<MIN, MAX, C>
 {
-    /// Creates a new `LenghtPrefixedString`.
+    /// Creates a new `LengthPrefixedString`.
     ///
     /// # Returns
     ///
@@ -154,7 +159,9 @@ impl<const MIN: usize, const MAX: usize, C: Constraint>
     /// - The string's byte length is between `MIN` and `MAX` (inclusive).
     /// - The string satisfies the constraint `C`.
     ///
-    /// Using this method with invalid input may lead to unintended behaviour.
+    /// Using this method with a string that exceeds `MAX`, is below `MIN`, or
+    /// violates `C` may lead to logical errors or undefined behavior in
+    /// downstream code.
     pub fn new_unchecked<T>(str: T) -> Self
     where
         T: Into<String>,
@@ -166,34 +173,70 @@ impl<const MIN: usize, const MAX: usize, C: Constraint>
     }
 }
 
-impl<const MIN: usize, const MAX: usize, C: Constraint>
-    From<LenghtPrefixedString<MIN, MAX, C>> for String
+impl<const MIN: usize, const MAX: usize, C: Constraint> core::fmt::Display
+    for LengthPrefixedString<MIN, MAX, C>
 {
-    fn from(str: LenghtPrefixedString<MIN, MAX, C>) -> String {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.__v)
+    }
+}
+
+impl<const MIN: usize, const MAX: usize, C: Constraint> core::fmt::Debug
+    for LengthPrefixedString<MIN, MAX, C>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "LengthPrefixedString({})", self.__v)
+    }
+}
+
+impl<const MIN: usize, const MAX: usize, C: Constraint>
+    core::borrow::Borrow<str> for LengthPrefixedString<MIN, MAX, C>
+{
+    fn borrow(&self) -> &str {
+        &self.__v
+    }
+}
+
+impl<const MIN: usize, const MAX: usize, C: Constraint> core::ops::Deref
+    for LengthPrefixedString<MIN, MAX, C>
+{
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.__v
+    }
+}
+
+impl<const MIN: usize, const MAX: usize, C: Constraint>
+    From<LengthPrefixedString<MIN, MAX, C>> for String
+{
+    fn from(str: LengthPrefixedString<MIN, MAX, C>) -> String {
         str.__v
     }
 }
 
 impl<const MIN: usize, const MAX: usize, C: Constraint> TryFrom<String>
-    for LenghtPrefixedString<MIN, MAX, C>
+    for LengthPrefixedString<MIN, MAX, C>
 {
     type Error = Error;
+
     fn try_from(str: String) -> Result<Self, Self::Error> {
         Self::new(str)
     }
 }
 
 impl<const MIN: usize, const MAX: usize, C: Constraint> TryFrom<&str>
-    for LenghtPrefixedString<MIN, MAX, C>
+    for LengthPrefixedString<MIN, MAX, C>
 {
     type Error = Error;
+
     fn try_from(str: &str) -> Result<Self, Self::Error> {
         Self::new(str.to_string())
     }
 }
 
 impl<const MIN: usize, const MAX: usize, C: Constraint> AsRef<str>
-    for LenghtPrefixedString<MIN, MAX, C>
+    for LengthPrefixedString<MIN, MAX, C>
 {
     fn as_ref(&self) -> &str {
         &self.__v
@@ -201,12 +244,41 @@ impl<const MIN: usize, const MAX: usize, C: Constraint> AsRef<str>
 }
 
 impl<const MIN: usize, const MAX: usize, C: Constraint> AsRef<[u8]>
-    for LenghtPrefixedString<MIN, MAX, C>
+    for LengthPrefixedString<MIN, MAX, C>
 {
     fn as_ref(&self) -> &[u8] {
         self.__v.as_bytes()
     }
 }
 
-pub type Identifier = LenghtPrefixedString<0, 128, Name>;
-pub type Memo = LenghtPrefixedString<0, 34>;
+#[cfg(feature = "serde")]
+impl<const MIN: usize, const MAX: usize, C: Constraint> serde::Serialize
+    for LengthPrefixedString<MIN, MAX, C>
+where
+    C: Constraint,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.__v.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, const MIN: usize, const MAX: usize, C: Constraint> Deserialize<'de>
+    for LengthPrefixedString<MIN, MAX, C>
+where
+    C: Constraint,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Self::new(s).map_err(serde::de::Error::custom)
+    }
+}
+
+pub type Identifier = LengthPrefixedString<0, 128, Name>;
+pub type Memo = LengthPrefixedString<0, 34>;
