@@ -1,0 +1,17 @@
+# rust
+debug/
+target/
+
+# fuzz
+corpus
+artifacts
+coverage
+
+# lock files
+Cargo.lock
+
+# misc
+.DS_Store
+**/*.rs.bk
+*.pdb
+.env
