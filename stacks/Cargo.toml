@@ -1,68 +1,13 @@
 [package]
 name = "stacks-rs"
-description = "A minimal rust toolkit to interact with the Stacks Blockchain."
+description = ""
+keywords = []
+categories = []
+homepage = ""
+
 version.workspace = true
 edition.workspace = true
-license.workspace = true
 authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
 repository.workspace = true
-categories.workspace = true
-keywords.workspace = true
-
-[dependencies]
-bip39 = "2.0.0"
-bip32 = "0.5.1"
-dyn-clone = "1.0.16"
-ripemd = "0.1.3"
-thiserror = "1.0.29"
-
-[dependencies.typed-builder]
-version = "0.18.1"
-optional = true
-
-[dependencies.secp256k1]
-version = "0.28.2"
-features = ["recovery"]
-
-[dependencies.stacks_derive]
-version = "0.3.3"
-optional = true
-path = "../stacks_derive"
-
-[dependencies.ring]
-version = "0.17.7"
-features = ["std"]
-
-[dependencies.serde]
-version = "1.0.197"
-optional = true
-features = ["derive"]
-
-[dependencies.ureq]
-version = "2.9.6"
-optional = true
-features = ["json"]
-
-[dev-dependencies]
-rand = "0.8.5"
-
-[features]
-default = ["clarity", "transaction"]
-
-# Provide hex, sha, b58 & c32 primitives & methods.
-crypto = []
-
-# Provide clarity types & encoding/decoding methods.
-clarity = ["crypto"]
-
-# Provide convenience derive(...) macros.
-derive = ["stacks_derive"]
-
-# Provide transaction builders. (transfer, call etc.)
-transaction = ["typed-builder"]
-
-# Provide a wallet-sdk
-wallet-sdk = ["crypto"]
-
-# Provide rpc methods.
-rpc = ["ureq", "serde"]

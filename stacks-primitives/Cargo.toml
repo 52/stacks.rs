@@ -1,0 +1,20 @@
+[package]
+name = "stacks-primitives"
+description = ""
+keywords = ["stacks", "stacks-blockchain", "bitcoin", "primitives"]
+categories = ["no_std", "data-structures", "cryptography::cryptocurrencies"]
+homepage = ""
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+bs58 = { workspace = true }
+c32 = { workspace = true }
+const-hex = { workspace = true }
+lazy-regex = { workspace = true }
+serde = { workspace = true }
