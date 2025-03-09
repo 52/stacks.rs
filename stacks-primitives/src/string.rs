@@ -6,16 +6,23 @@
 //
 // Usage of this file is permitted solely under a sanctioned license.
 
+use alloc::str::Chars;
 use alloc::string::String;
-use alloc::string::ToString;
+use core::any;
+use core::borrow;
+use core::cmp;
+use core::default;
+use core::error;
+use core::fmt;
+use core::marker;
+use core::ops;
 
 use lazy_regex::Lazy;
 use lazy_regex::Regex;
 
-#[cfg(feature = "serde")]
-use crate::lib::serde::*;
+use crate::lib::*;
 
-/// Error variants for `LengthPrefixedString` creation and validation.
+/// Error variants for creation and validation of a [`BoundedString`].
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Error {
     /// The string's byte length exceeds the maximum allowed length.
@@ -26,50 +33,54 @@ pub enum Error {
     Violation(String),
 }
 
-impl core::fmt::Display for Error {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Overflow(len, max) => {
-                write!(f, "String length {len} exceeds maximum of {max} bytes")
+                w!(f, "String length {len} exceeds maximum of {max} bytes")
             }
             Self::Underflow(len, min) => {
-                write!(f, "String length {len} below minimum of {min} bytes")
+                w!(f, "String length {len} is below minimum of {min} bytes")
             }
             Self::Violation(str) => {
-                write!(f, "String '{str}' violates the required constraint")
+                w!(f, "String '{str}' does not satisfy the required constraint")
             }
         }
     }
 }
 
-/// A trait for defining custom constraints on strings.
+impl error::Error for Error {}
+
+/// Trait for defining custom constraints on strings.
+///
+/// For more details, please refer to docs of [`BoundedString`].
 pub trait Constraint {
-    /// Checks if the given string satisfies the constraint.
-    fn check(str: &str) -> bool;
+    /// Asserts that the given string satisfies the constraint.
+    fn assert(str: &str) -> bool;
 }
 
 /// Defines a function-based constraint.
 macro_rules! define_fn_constraint {
-    ($(#[$attr:meta])* $name:ident, fn ($param:tt: &str) -> bool $body:block) => {
-        $(#[$attr])*
+    ($(#[$attrs:meta])* $name:ident, fn ($param:tt: &str) -> bool $body:block) => {
+        $(#[$attrs])*
         #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub struct $name;
         impl Constraint for $name {
             #[inline]
-            fn check($param: &str) -> bool $body
+            fn assert($param: &str) -> bool $body
         }
     };
 }
 
 /// Defines a regex-based constraint.
 macro_rules! define_regex_constraint {
-    ($(#[$attr:meta])* $name:ident, $pattern:expr) => {
-        $(#[$attr])*
+    ($(#[$attrs:meta])* $name:ident, $pattern:expr) => {
+        $(#[$attrs])*
         #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub struct $name;
         impl Constraint for $name {
             #[inline]
-            fn check(str: &str) -> bool {
+            fn assert(str: &str) -> bool {
                 static PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new($pattern).unwrap());
                 PATTERN.is_match(str)
             }
@@ -78,52 +89,143 @@ macro_rules! define_regex_constraint {
 }
 
 define_fn_constraint! {
-    /// A function-constraint that accepts any string.
+    /// A function-constraint that matches any string.
     Any,
     fn (_: &str) -> bool {
         true
     }
 }
 
-define_regex_constraint! {
-    /// A regex-constraint for valid name identifiers.
-    Name,
-    "^[a-zA-Z]([a-zA-Z0-9]|[-_!?+<>=/*])*$|^[-+=/*]$|^[<>]=?$"
-}
-
-/// A string with configurable length bounds and custom constraint.
+/// A string with fixed-length bounds.
 ///
-/// # Type Parameters
+/// # Layout
 ///
-/// - `const MIN`: The minimum byte length (inclusive).
-/// - `const MAX`: The maximum byte length (inclusive).
-/// - `C: Constraint`: The validation `Constraint`, defaults to `Any`.
+/// [`BoundedString`] matches the size, alignment and ABI of [`String`].
+///
+/// ```rust
+/// # use core::mem::align_of;
+/// # use core::mem::size_of;
+/// # use stacks_primitives::string::BoundedString;
+/// assert_eq!(size_of::<BoundedString<0, 100>>(), size_of::<String>());
+/// assert_eq!(align_of::<BoundedString<0, 100>>(), align_of::<String>());
+/// ```
+///
+/// # Generics
+///
+/// - `const MIN: usize` - Minimum allowed byte length of the string.
+/// - `const MAX: usize` - Maximum allowed byte length of the string.
+/// - `C: Constraint` - Validation constraints applied to the string’s content.
+///
+/// # Constraint
+///
+/// - The `C` type must implement the [`Constraint`] trait.
+/// - Allows the implementer to enforce custom rules beyond length bounds.
+/// - By default, `C: Constraint = Any`, which accepts all strings.
+///
+/// ```rust
+/// # use stacks_primitives::string::BoundedString;
+/// # use stacks_primitives::string::Constraint;
+/// # use stacks_primitives::string::Error;
+/// struct Uppercase;
+///
+/// impl Constraint for Uppercase {
+///     fn assert(str: &str) -> bool {
+///         str.chars().all(|char| char.is_uppercase())
+///     }
+/// }
+///
+/// let str = BoundedString::<10, 15, Uppercase>::new("USQUEADFINEM")?;
+/// assert_eq!(str.len(), 12);
+/// # Ok::<(), Error>(())
+/// ```
+///
+/// # Errors
+///
+/// Lenght violations return [`Error::Overflow`] or [`Error::Underflow`]:
+///
+/// ```rust
+/// # use stacks_primitives::string::BoundedString;
+/// # use stacks_primitives::string::Error;
+/// let overflow = BoundedString::<0, 5>::new("usque ad finem").unwrap_err();
+/// assert_eq!(overflow, Error::Overflow(14, 5));
+/// # Ok::<(), Error>(())
+/// ```
+///
+/// ```rust
+/// # use stacks_primitives::string::BoundedString;
+/// # use stacks_primitives::string::Error;
+/// let underflow = BoundedString::<15, 20>::new("usque ad finem").unwrap_err();
+/// assert_eq!(underflow, Error::Underflow(14, 15));
+/// # Ok::<(), Error>(())
+/// ```
+///
+/// [`Constraint`] violations return [`Error::Violation`]:
+///
+/// ```rust
+/// # use stacks_primitives::string::BoundedString;
+/// # use stacks_primitives::string::Constraint;
+/// # use stacks_primitives::string::Error;
+/// struct Ascii;
+///
+/// impl Constraint for Ascii {
+///     fn assert(str: &str) -> bool {
+///         str.is_ascii()
+///     }
+/// }
+///
+/// let err = BoundedString::<4, 4, Ascii>::new("🦀");
+/// assert_eq!(err.unwrap_err(), Error::Violation("🦀".to_string()));
+/// # Ok::<(), Error>(())
+/// ```
+///
+/// # Examples
+///
+/// ```rust
+/// # use stacks_primitives::string::BoundedString;
+/// # use stacks_primitives::string::Error;
+/// let str = BoundedString::<10, 15>::new("usque ad finem")?;
+/// assert_eq!(str.len(), 14);
+/// # Ok::<(), Error>(())
+/// ```
 #[repr(transparent)]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct LengthPrefixedString<
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
+pub struct BoundedString<
     const MIN: usize,
     const MAX: usize,
     C: Constraint = Any,
 > {
     __v: String,
-    __c: core::marker::PhantomData<C>,
+    #[cfg_attr(feature = "serde", serde(skip_serializing))]
+    __c: marker::PhantomData<C>,
 }
 
 impl<const MIN: usize, const MAX: usize, C: Constraint>
-    LengthPrefixedString<MIN, MAX, C>
+    BoundedString<MIN, MAX, C>
 {
-    /// Creates a new `LengthPrefixedString`.
+    /// Creates a new [`BoundedString`] with validation.
     ///
     /// # Returns
     ///
-    /// - `Ok(Self)`: A validated instance of `LengthPrefixedString`.
-    /// - `Err(Error)`: If any errors occur during the validation process.
+    /// - `Ok(Self)`: A validated instance of [`BoundedString`].
+    /// - `Err(Error)`: If validation fails due to violations.
     ///
     /// # Errors
     ///
     /// - [`Error::Overflow`] if the string's length exceeds `MAX`.
     /// - [`Error::Underflow`] if the string's length is less than `MIN`.
     /// - [`Error::Violation`] if the string does not satisfy `C`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use stacks_primitives::string::BoundedString;
+    /// # use stacks_primitives::string::Error;
+    /// let str = BoundedString::<10, 15>::new("usque ad finem")?;
+    /// assert_eq!(str.len(), 14);
+    /// # Ok::<(), Error>(())
+    /// ```
     pub fn new<T>(str: T) -> Result<Self, Error>
     where
         T: Into<String>,
@@ -138,147 +240,320 @@ impl<const MIN: usize, const MAX: usize, C: Constraint>
             return Err(Error::Overflow(str.len(), MAX));
         }
 
-        if C::check(&str) {
-            Ok(Self::new_unchecked(str))
-        } else {
-            Err(Error::Violation(str))
+        if !C::assert(&str) {
+            return Err(Error::Violation(str));
         }
+
+        Ok(Self::new_unchecked(str))
     }
 
-    /// Creates a new `LengthPrefixedString` without validation.
+    /// Creates a new [`BoundedString`] without validation.
     ///
     /// # Returns
     ///
-    /// - `Self`: An instance of `LengthPrefixedString`.
+    /// - `Self`: A new instance of [`BoundedString`].
     ///
     /// # Safety
     ///
-    /// This method does not perform any validation.
+    /// The caller must ensure:
+    /// - The string's byte length is between `MIN` and `MAX`.
+    /// - The string satisfies `C: Constraint`.
     ///
-    /// The caller must ensure that:
-    /// - The string's byte length is between `MIN` and `MAX` (inclusive).
-    /// - The string satisfies the constraint `C`.
+    /// Failure to meet these expectations may cause logical errors.
     ///
-    /// Using this method with a string that exceeds `MAX`, is below `MIN`, or
-    /// violates `C` may lead to logical errors or undefined behavior in
-    /// downstream code.
-    pub fn new_unchecked<T>(str: T) -> Self
-    where
-        T: Into<String>,
-    {
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use stacks_primitives::string::BoundedString;
+    /// # use stacks_primitives::string::Error;
+    /// let raw = String::from("usque ad finem");
+    /// let str = BoundedString::<10, 15>::new_unchecked(raw);
+    /// assert_eq!(str.len(), 14);
+    /// # Ok::<(), Error>(())
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn new_unchecked(str: String) -> Self {
         Self {
-            __v: str.into(),
-            __c: core::marker::PhantomData,
+            __v: str,
+            __c: marker::PhantomData,
         }
     }
-}
 
-impl<const MIN: usize, const MAX: usize, C: Constraint> core::fmt::Display
-    for LengthPrefixedString<MIN, MAX, C>
-{
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.__v)
+    /// Creates a new empty [`BoundedString`].
+    ///
+    /// # Returns
+    ///
+    /// - `Self`: A new instance of [`BoundedString`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use stacks_primitives::string::BoundedString;
+    /// # use stacks_primitives::string::Error;
+    /// let str = BoundedString::<0, 10>::empty();
+    /// assert_eq!(str.len(), 0);
+    /// # Ok::<(), Error>(())
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn empty() -> Self {
+        Self::new_unchecked(String::new())
+    }
+
+    /// Consumes `self` and returns the underlying string.
+    ///
+    /// # Returns
+    ///
+    /// - `String`: The wrapped string.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use stacks_primitives::string::BoundedString;
+    /// # use stacks_primitives::string::Error;
+    /// let str = BoundedString::<10, 15>::new("usque ad finem")?;
+    /// assert_eq!(str.raw(), "usque ad finem");
+    /// # Ok::<(), Error>(())
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn raw(self) -> String {
+        self.__v
+    }
+
+    /// Returns an iterator over the characters of the underlying string.
+    ///
+    /// # Returns
+    ///
+    /// - [`alloc::str::Chars`]: An iterator over the characters.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use stacks_primitives::string::BoundedString;
+    /// # use stacks_primitives::string::Error;
+    /// let str = BoundedString::<0, 10>::new("finem")?;
+    /// let mut iter = str.iter();
+    /// assert_eq!(iter.next(), Some('f'));
+    /// assert_eq!(iter.next(), Some('i'));
+    /// assert_eq!(iter.next(), Some('n'));
+    /// assert_eq!(iter.next(), Some('e'));
+    /// assert_eq!(iter.next(), Some('m'));
+    /// assert_eq!(iter.next(), None);
+    /// # Ok::<(), Error>(())
+    /// ```
+    #[inline]
+    pub fn iter(&self) -> Chars<'_> {
+        self.__v.chars()
     }
 }
 
-impl<const MIN: usize, const MAX: usize, C: Constraint> core::fmt::Debug
-    for LengthPrefixedString<MIN, MAX, C>
+impl<const MIN: usize, const MAX: usize, C: Constraint> fmt::Display
+    for BoundedString<MIN, MAX, C>
 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "LengthPrefixedString({})", self.__v)
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        w!(f, "{}", self.__v)
     }
 }
 
-impl<const MIN: usize, const MAX: usize, C: Constraint>
-    core::borrow::Borrow<str> for LengthPrefixedString<MIN, MAX, C>
+impl<const MIN: usize, const MAX: usize, C: Constraint> fmt::Debug
+    for BoundedString<MIN, MAX, C>
 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        w!(f, "{}({})", any::type_name::<Self>(), self.__v)
+    }
+}
+
+impl<const MIN: usize, const MAX: usize, C: Constraint> fmt::LowerHex
+    for BoundedString<MIN, MAX, C>
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        w!(f, "{}", const_hex::encode_prefixed(self.as_bytes()))
+    }
+}
+
+impl<const MIN: usize, const MAX: usize, C: Constraint> fmt::UpperHex
+    for BoundedString<MIN, MAX, C>
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        w!(f, "{}", const_hex::encode_upper_prefixed(self.as_bytes()))
+    }
+}
+
+impl<const MIN: usize, const MAX: usize, C: Constraint> cmp::PartialEq<String>
+    for BoundedString<MIN, MAX, C>
+{
+    #[inline]
+    fn eq(&self, rhs: &String) -> bool {
+        self.as_ref() == rhs
+    }
+}
+
+impl<const MIN: usize, const MAX: usize, C: Constraint> cmp::PartialEq<str>
+    for BoundedString<MIN, MAX, C>
+{
+    #[inline]
+    fn eq(&self, rhs: &str) -> bool {
+        self.as_ref() == rhs
+    }
+}
+
+impl<const MIN: usize, const MAX: usize, C: Constraint> default::Default
+    for BoundedString<MIN, MAX, C>
+{
+    #[inline]
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
+impl<const MIN: usize, const MAX: usize, C: Constraint> borrow::Borrow<str>
+    for BoundedString<MIN, MAX, C>
+{
+    #[inline]
     fn borrow(&self) -> &str {
-        &self.__v
+        self.as_ref()
     }
 }
 
-impl<const MIN: usize, const MAX: usize, C: Constraint> core::ops::Deref
-    for LengthPrefixedString<MIN, MAX, C>
+impl<const MIN: usize, const MAX: usize, C: Constraint> borrow::BorrowMut<str>
+    for BoundedString<MIN, MAX, C>
+{
+    #[inline]
+    fn borrow_mut(&mut self) -> &mut str {
+        self.as_mut()
+    }
+}
+
+impl<const MIN: usize, const MAX: usize, C: Constraint> ops::Deref
+    for BoundedString<MIN, MAX, C>
 {
     type Target = str;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
-        &self.__v
+        self.as_ref()
+    }
+}
+
+impl<const MIN: usize, const MAX: usize, C: Constraint> ops::DerefMut
+    for BoundedString<MIN, MAX, C>
+{
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.as_mut()
+    }
+}
+
+impl<'a, const MIN: usize, const MAX: usize, C: Constraint> IntoIterator
+    for &'a BoundedString<MIN, MAX, C>
+{
+    type Item = char;
+    type IntoIter = Chars<'a>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 
 impl<const MIN: usize, const MAX: usize, C: Constraint>
-    From<LengthPrefixedString<MIN, MAX, C>> for String
+    From<BoundedString<MIN, MAX, C>> for String
 {
-    fn from(str: LengthPrefixedString<MIN, MAX, C>) -> String {
-        str.__v
+    #[inline]
+    fn from(str: BoundedString<MIN, MAX, C>) -> String {
+        str.raw()
+    }
+}
+
+impl<'a, const MIN: usize, const MAX: usize, C: Constraint>
+    From<&'a mut BoundedString<MIN, MAX, C>> for &'a mut String
+{
+    #[inline]
+    fn from(str: &'a mut BoundedString<MIN, MAX, C>) -> &'a mut String {
+        str.as_mut()
+    }
+}
+
+impl<'a, const MIN: usize, const MAX: usize, C: Constraint>
+    From<&'a BoundedString<MIN, MAX, C>> for &'a str
+{
+    fn from(str: &'a BoundedString<MIN, MAX, C>) -> Self {
+        str.as_ref()
     }
 }
 
 impl<const MIN: usize, const MAX: usize, C: Constraint> TryFrom<String>
-    for LengthPrefixedString<MIN, MAX, C>
+    for BoundedString<MIN, MAX, C>
 {
     type Error = Error;
 
+    #[inline]
     fn try_from(str: String) -> Result<Self, Self::Error> {
         Self::new(str)
     }
 }
 
 impl<const MIN: usize, const MAX: usize, C: Constraint> TryFrom<&str>
-    for LengthPrefixedString<MIN, MAX, C>
+    for BoundedString<MIN, MAX, C>
 {
     type Error = Error;
 
+    #[inline]
     fn try_from(str: &str) -> Result<Self, Self::Error> {
-        Self::new(str.to_string())
+        Self::new(str)
     }
 }
 
 impl<const MIN: usize, const MAX: usize, C: Constraint> AsRef<str>
-    for LengthPrefixedString<MIN, MAX, C>
+    for BoundedString<MIN, MAX, C>
 {
+    #[inline]
     fn as_ref(&self) -> &str {
         &self.__v
     }
 }
 
-impl<const MIN: usize, const MAX: usize, C: Constraint> AsRef<[u8]>
-    for LengthPrefixedString<MIN, MAX, C>
+impl<const MIN: usize, const MAX: usize, C: Constraint> AsMut<str>
+    for BoundedString<MIN, MAX, C>
 {
-    fn as_ref(&self) -> &[u8] {
-        self.__v.as_bytes()
+    #[inline]
+    fn as_mut(&mut self) -> &mut str {
+        &mut self.__v
     }
 }
 
-#[cfg(feature = "serde")]
-impl<const MIN: usize, const MAX: usize, C: Constraint> serde::Serialize
-    for LengthPrefixedString<MIN, MAX, C>
-where
-    C: Constraint,
+impl<const MIN: usize, const MAX: usize, C: Constraint> AsMut<String>
+    for BoundedString<MIN, MAX, C>
 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.__v.serialize(serializer)
+    #[inline]
+    fn as_mut(&mut self) -> &mut String {
+        &mut self.__v
     }
 }
 
-#[cfg(feature = "serde")]
-impl<'de, const MIN: usize, const MAX: usize, C: Constraint> Deserialize<'de>
-    for LengthPrefixedString<MIN, MAX, C>
-where
-    C: Constraint,
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Self::new(s).map_err(serde::de::Error::custom)
+/// Internal string validation constraints.
+///
+/// This is private to prevent type-confusion with generic parameters.
+#[doc(hidden)]
+pub(crate) mod __private {
+    use super::*;
+
+    define_fn_constraint! {
+        /// A function-constraint for valid memo strings.
+        Memo,
+        fn (_: &str) -> bool {
+            true
+        }
+    }
+
+    define_regex_constraint! {
+        /// A regex-constraint for valid name identifiers.
+        Identifier,
+        "^[a-zA-Z]([a-zA-Z0-9]|[-_!?+<>=/*])*$|^[-+=/*]$|^[<>]=?$"
     }
 }
 
-pub type Identifier = LengthPrefixedString<0, 128, Name>;
-pub type Memo = LengthPrefixedString<0, 34>;
+pub type Identifier = BoundedString<0, 128, __private::Identifier>;
+pub type Memo = BoundedString<0, 34, __private::Memo>;

@@ -14,13 +14,13 @@ pub enum Mode {
     P2PKH = 0x00,
     /// Legacy multi-signature address (sequential signing)
     P2SH = 0x01,
-    /// SegWit single-signature address
+    /// Segwit single-signature address
     P2WPKH = 0x02,
-    /// SegWit multi-signature address (sequential signing)
+    /// Segwit multi-signature address (sequential signing)
     P2WSH = 0x03,
     /// Multi-signature without sequential signing requirement
     P2SHNonSequential = 0x05,
-    /// SegWit multi-signature without sequential signing requirement
+    /// Segwit multi-signature without sequential signing requirement
     P2WSHNonSequential = 0x07,
 }
 

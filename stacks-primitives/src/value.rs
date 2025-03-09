@@ -11,6 +11,7 @@ use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use crate::address::Address;
 use crate::string::Identifier;
 
 pub enum Value {
@@ -21,8 +22,8 @@ pub enum Value {
     List(Vec<Value>),
     StringUTF8(String),
     StringASCII(String),
-    // StandardPrincipal(Principal),
-    // ContractPrincipal(Principal, Identifier),
+    StandardPrincipal(Address),
+    ContractPrincipal(Address, Identifier),
     Tuple(BTreeMap<Identifier, Value>),
     OptionalSome(Box<Value>),
     OptionalNone,

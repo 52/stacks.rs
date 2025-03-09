@@ -12,9 +12,17 @@ repository = "https://github.com/52/stacks-rs"
 homepage = "https://github.com/52/stacks-rs"
 
 [workspace.dependencies]
-bs58 = { version = "0.5", default-features = false, features = ["alloc"] }
-c32 = { version = "0.4", default-features = false, features = ["alloc"] }
-const-hex = { version = "1.14", default-features = false, features = ["alloc"] }
+# workspace
+stacks-primitives = { version = "0.4", path = "stacks-primitives" }
+
+# core
+bytes = { version = "1", default-features = false }
 lazy-regex = { version = "3.0", default-features = false, features = ["lite"] }
 rand = { version = "0.8", default-features = false, features = ["getrandom"] }
 serde = { version = "1.0", default-features = false, features = ["alloc"] }
+serde_bytes = { version = "0.11", default-features = false, features = ["alloc"] }
+
+# encoding
+bs58 = { version = "0.5", default-features = false, features = ["alloc"] }
+c32 = { version = "0.4", default-features = false, features = ["alloc"] }
+const-hex = { version = "1.14", default-features = false, features = ["alloc"] }

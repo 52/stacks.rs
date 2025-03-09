@@ -1,10 +1,9 @@
 [package]
-name = "stacks-tests"
+name = "stacks-indexer"
 description = ""
 keywords = []
 categories = []
 homepage = ""
-publish = false
 
 version.workspace = true
 edition.workspace = true
@@ -12,6 +11,3 @@ authors.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-
-[dependencies]
-stacks-primitives = { workspace = true }

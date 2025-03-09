@@ -7,27 +7,22 @@
 // Usage of this file is permitted solely under a sanctioned license.
 
 #![no_std]
-#![deny(unsafe_code)]
 #![allow(clippy::wildcard_imports)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![cfg_attr(docsrs, feature(doc_alias))]
 
 extern crate alloc;
 
-mod address;
-mod bytes;
-mod string;
-mod value;
+pub mod address;
+pub mod bytes;
+pub mod codec;
+pub mod string;
+pub mod value;
 
-/// Re-exports for feature compatibility.
+/// Re-exports for feature-specific type compatibility.
 ///
-/// This module provides a unified interface for common types.
+/// Provides a unified interface for common types and traits across features.
+#[doc(hidden)]
 pub(crate) mod lib {
-    #[cfg(feature = "serde")]
-    pub mod serde {
-        pub use serde::Deserialize;
-        pub use serde::Deserializer;
-        pub use serde::Serialize;
-        pub use serde::Serializer;
-    }
+    pub(crate) use write as w;
 }

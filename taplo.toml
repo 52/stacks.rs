@@ -1,0 +1,6 @@
+include = ["**/*.toml"]
+exclude = ["**/target/**", "**/.github/**"]
+
+[formatting]
+column_width = 100
+allowed_blank_lines = 1
