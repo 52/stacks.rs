@@ -64,7 +64,7 @@ mod private_key {
     fn from_bytes() {
         let k256 = k256::SigningKey::random(&mut rand_core::OsRng);
         let bytes = B256::from_slice(&k256.to_bytes());
-        let key = PrivateKey::from_bytes(bytes).unwrap();
+        let key = PrivateKey::from_bytes(&bytes).unwrap();
         assert_eq!(key.raw(), k256);
     }
 
@@ -72,7 +72,7 @@ mod private_key {
     fn to_bytes() {
         let k256 = k256::SigningKey::random(&mut rand_core::OsRng);
         let bytes = B256::from_slice(&k256.to_bytes());
-        let key = PrivateKey::from_bytes(bytes).unwrap();
+        let key = PrivateKey::from_bytes(&bytes).unwrap();
         assert_eq!(bytes, key.to_bytes());
     }
 
@@ -415,14 +415,14 @@ mod signature {
     #[test]
     fn from_bytes() {
         let bytes = FixedBytes::<65>::random();
-        let sig = Signature::from_bytes(bytes);
+        let sig = Signature::from_bytes(&bytes);
         assert_eq!(sig.to_bytes(), bytes);
     }
 
     #[test]
     fn to_bytes() {
         let bytes = FixedBytes::<65>::random();
-        let sig = Signature::from_bytes(bytes);
+        let sig = Signature::from_bytes(&bytes);
         assert_eq!(sig.to_bytes(), bytes);
     }
 

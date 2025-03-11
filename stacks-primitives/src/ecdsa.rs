@@ -162,13 +162,13 @@ impl PrivateKey {
     /// use stacks_primitives::ecdsa::PrivateKey;
     ///
     /// let bytes = PrivateKey::random().to_bytes();
-    /// let key = PrivateKey::from_bytes(bytes)?;
+    /// let key = PrivateKey::from_bytes(&bytes)?;
     /// assert_eq!(key.to_bytes(), bytes);
     /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub fn from_bytes(bytes: B256) -> Result<Self, Error> {
-        let key = k256::SigningKey::from_bytes(&bytes.raw().into())?;
+    pub fn from_bytes(bytes: &[u8; 32]) -> Result<Self, Error> {
+        let key = k256::SigningKey::from_bytes(bytes.into())?;
         Ok(Self { key })
     }
 
@@ -275,7 +275,7 @@ impl hex::FromHex for PrivateKey {
         let decoded = hex::decode(hex).map_err(|_| Error::new())?;
         let mut bytes = B256::zero();
         bytes.copy_from_slice(&decoded);
-        Self::from_bytes(bytes)
+        Self::from_bytes(&bytes)
     }
 }
 
@@ -320,7 +320,7 @@ impl TryFrom<[u8; 32]> for PrivateKey {
 
     #[inline]
     fn try_from(bytes: [u8; 32]) -> Result<Self, Self::Error> {
-        Self::from_bytes(bytes.into())
+        Self::from_bytes(&bytes)
     }
 }
 
@@ -633,8 +633,7 @@ impl serde::Serialize for PublicKey {
         S: serde::Serializer,
     {
         if ser.is_human_readable() {
-            let bytes = self.to_bytes(true);
-            ser.serialize_str(&hex::encode_prefixed(bytes))
+            ser.collect_str(self)
         } else {
             let bytes = self.to_bytes(true);
             ser.serialize_bytes(&bytes)
@@ -928,7 +927,7 @@ impl Signature {
     #[inline]
     pub fn from_slice(bytes: &[u8]) -> Result<Self, Error> {
         let bytes = FixedBytes::try_from(bytes).map_err(|_| Error::new())?;
-        Ok(Self::from_bytes(bytes))
+        Ok(Self::from_bytes(&bytes))
     }
 
     /// Creates a new [`Signature`] from a 65-byte fixed array.
@@ -948,12 +947,13 @@ impl Signature {
     /// use stacks_primitives::ecdsa::Signature;
     ///
     /// let bytes = FixedBytes::<65>::zero();
-    /// let signature = Signature::from_bytes(bytes);
+    /// let signature = Signature::from_bytes(&bytes);
     /// assert_eq!(signature, Signature::zero());
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_bytes(bytes: FixedBytes<65>) -> Self {
+    pub fn from_bytes(bytes: &[u8; 65]) -> Self {
+        let bytes = FixedBytes::new(*bytes);
         let (v, bytes) = bytes.split::<1, 64>();
         let (r, s) = bytes.split::<32, 32>();
         Self { r, s, v }
@@ -1153,7 +1153,7 @@ impl hex::FromHex for Signature {
         let decoded = hex::decode(hex).map_err(|_| Error::new())?;
         let mut bytes = FixedBytes::<65>::zero();
         bytes.copy_from_slice(&decoded);
-        Ok(Self::from_bytes(bytes))
+        Ok(Self::from_bytes(&bytes))
     }
 }
 
@@ -1163,8 +1163,11 @@ impl serde::Serialize for Signature {
     where
         S: serde::Serializer,
     {
-        let bytes = self.to_bytes();
-        bytes.serialize(ser)
+        if ser.is_human_readable() {
+            ser.collect_str(self)
+        } else {
+            todo!()
+        }
     }
 }
 
@@ -1175,8 +1178,8 @@ impl<'de> serde::Deserialize<'de> for Signature {
         D: serde::Deserializer<'de>,
     {
         if de.is_human_readable() {
-            use crate::serde::FromHexVisitor;
-            de.deserialize_str(FromHexVisitor {
+            use crate::serde::FromStrVisitor;
+            de.deserialize_str(FromStrVisitor {
                 __msg: format_args!("a hex-encoded 65-byte ECDSA signature"),
                 __type: marker::PhantomData,
             })
@@ -1193,7 +1196,7 @@ impl<'de> serde::Deserialize<'de> for Signature {
 impl From<[u8; 65]> for Signature {
     #[inline]
     fn from(bytes: [u8; 65]) -> Self {
-        Self::from_bytes(bytes.into())
+        Self::from_bytes(&bytes)
     }
 }
 
