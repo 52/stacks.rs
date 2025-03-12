@@ -219,8 +219,8 @@ pub struct BoundedString<
     C: Constraint = Any,
 > {
     /// The underlying raw string.
-    raw: String,
-    /// The associated constraint type `C`.
+    __raw: String,
+    /// The associated [`Constraint`] type `C`.
     __type: marker::PhantomData<C>,
 }
 
@@ -320,9 +320,9 @@ impl<const MIN: usize, const MAX: usize, C: Constraint>
     /// ```
     #[inline]
     #[must_use]
-    pub const fn new_unchecked(raw: String) -> Self {
+    pub const fn new_unchecked(str: String) -> Self {
         Self {
-            raw,
+            __raw: str,
             __type: marker::PhantomData,
         }
     }
@@ -341,7 +341,7 @@ impl<const MIN: usize, const MAX: usize, C: Constraint>
     #[inline]
     #[must_use]
     pub fn raw(self) -> String {
-        self.raw
+        self.__raw
     }
 
     /// Returns an iterator over the underlying string of [`BoundedString`].
@@ -363,7 +363,7 @@ impl<const MIN: usize, const MAX: usize, C: Constraint>
     /// ```
     #[inline]
     pub fn iter(&self) -> str::Chars<'_> {
-        self.raw.chars()
+        self.__raw.chars()
     }
 }
 
@@ -434,7 +434,11 @@ impl<const MIN: usize, const MAX: usize, C: Constraint> serde::Serialize
     where
         S: serde::Serializer,
     {
-        ser.collect_str(self)
+        if ser.is_human_readable() {
+            ser.collect_str(self)
+        } else {
+            ser.serialize_bytes(self.as_bytes())
+        }
     }
 }
 
@@ -446,14 +450,25 @@ impl<'de, const MIN: usize, const MAX: usize, C: Constraint>
     where
         D: serde::Deserializer<'de>,
     {
-        use crate::serde::FromStrVisitor;
-        de.deserialize_str(FromStrVisitor {
+        if de.is_human_readable() {
+            use crate::serde::FromStrVisitor;
+            de.deserialize_str(FromStrVisitor {
             __msg: format_args!(
-                "a string within length bounds of {MIN} to {MAX} bytes and constraint '{}'",
+                "a string within bounds '{MIN}' to '{MAX}' bytes and constraint '{}'",
                 any::type_name::<C>()
             ),
             __type: marker::PhantomData,
         })
+        } else {
+            use crate::serde::TryFromVisitor;
+            de.deserialize_bytes(TryFromVisitor {
+                __msg: format_args!(
+                    "a byte sequence of a string within bounds '{MIN}' to '{MAX}' bytes and constraint '{}'",
+                    any::type_name::<C>()
+                ),
+                __type: marker::PhantomData::<(Self, &[u8])>,
+            })
+        }
     }
 }
 
@@ -588,14 +603,14 @@ impl<const MIN: usize, const MAX: usize, C: Constraint>
     }
 }
 
-impl<const MIN: usize, const MAX: usize, C: Constraint> TryFrom<Vec<u8>>
+impl<const MIN: usize, const MAX: usize, C: Constraint> TryFrom<&str>
     for BoundedString<MIN, MAX, C>
 {
     type Error = Error;
 
     #[inline]
-    fn try_from(str: Vec<u8>) -> Result<Self, Self::Error> {
-        Self::try_from(str.as_slice())
+    fn try_from(str: &str) -> Result<Self, Self::Error> {
+        Self::new(str)
     }
 }
 
@@ -610,6 +625,17 @@ impl<const MIN: usize, const MAX: usize, C: Constraint> TryFrom<&[u8]>
     }
 }
 
+impl<const MIN: usize, const MAX: usize, C: Constraint> TryFrom<Vec<u8>>
+    for BoundedString<MIN, MAX, C>
+{
+    type Error = Error;
+
+    #[inline]
+    fn try_from(str: Vec<u8>) -> Result<Self, Self::Error> {
+        Self::try_from(str.as_slice())
+    }
+}
+
 impl<const MIN: usize, const MAX: usize, C: Constraint> TryFrom<Box<[u8]>>
     for BoundedString<MIN, MAX, C>
 {
@@ -618,17 +644,6 @@ impl<const MIN: usize, const MAX: usize, C: Constraint> TryFrom<Box<[u8]>>
     #[inline]
     fn try_from(str: Box<[u8]>) -> Result<Self, Self::Error> {
         Self::try_from(str.to_vec())
-    }
-}
-
-impl<const MIN: usize, const MAX: usize, C: Constraint> TryFrom<&str>
-    for BoundedString<MIN, MAX, C>
-{
-    type Error = Error;
-
-    #[inline]
-    fn try_from(str: &str) -> Result<Self, Self::Error> {
-        Self::new(str)
     }
 }
 
@@ -648,7 +663,7 @@ impl<const MIN: usize, const MAX: usize, C: Constraint> AsRef<str>
 {
     #[inline]
     fn as_ref(&self) -> &str {
-        &self.raw
+        &self.__raw
     }
 }
 
@@ -657,7 +672,7 @@ impl<const MIN: usize, const MAX: usize, C: Constraint> AsMut<str>
 {
     #[inline]
     fn as_mut(&mut self) -> &mut str {
-        &mut self.raw
+        &mut self.__raw
     }
 }
 
@@ -800,7 +815,7 @@ impl Decode for Identifier {
     fn read<B: Buf>(src: &mut B) -> Result<Self, Self::Error> {
         use de::Error;
 
-        // Ensure 'src' contains at least one byte for the length
+        // Ensure 'src' contains at least one byte for the length.
         if !src.has_remaining() {
             return Err(Error::missing_bytes(
                 "Identifier.length",
@@ -809,10 +824,10 @@ impl Decode for Identifier {
             ));
         }
 
-        // Read the string length
+        // Read the string length.
         let len = src.get_u8() as usize;
 
-        // Ensure 'src' contains enough bytes for the content
+        // Ensure 'src' contains enough bytes for the content.
         if src.remaining() < len {
             return Err(Error::missing_bytes(
                 "Identifier.content",
@@ -821,7 +836,7 @@ impl Decode for Identifier {
             ));
         }
 
-        // Read the string bytes and construct an identifier
+        // Read the string bytes and construct an identifier.
         let bytes = src.copy_to_bytes(len);
         Self::new(str::from_utf8(&bytes)?)
     }
@@ -944,7 +959,7 @@ impl Decode for Memo {
     fn read<B: Buf>(src: &mut B) -> Result<Self, Self::Error> {
         use de::Error;
 
-        // Ensure 'src' contains at least one byte for the length
+        // Ensure 'src' contains at least one byte for the length.
         if !src.has_remaining() {
             return Err(Error::missing_bytes(
                 "Memo.length",
@@ -956,7 +971,7 @@ impl Decode for Memo {
         // Read the string length
         let len = src.get_u8() as usize;
 
-        // Ensure 'src' contains enough bytes for the content
+        // Ensure 'src' contains enough bytes for the content.
         if src.remaining() < len {
             return Err(Error::missing_bytes(
                 "Memo.content",
@@ -965,7 +980,7 @@ impl Decode for Memo {
             ));
         }
 
-        // Read the string bytes and construct a memo
+        // Read the string bytes and construct a memo.
         let bytes = src.copy_to_bytes(len);
         Self::new(str::from_utf8(&bytes)?)
     }
